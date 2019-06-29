@@ -1,9 +1,3 @@
-/*
- * server.c
- * Version 20161003
- * Written by Harry Wong (RedAndBlueEraser)
- */
-
 #include <netinet/in.h>
 #include <pthread.h>
 #include <signal.h>
@@ -14,7 +8,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define BACKLOG 10
+#define BACKLOG 16
+#define PORT 7070
 
 typedef struct pthread_arg_t {
     int new_socket_fd;
@@ -28,7 +23,12 @@ void *pthread_routine(void *arg);
 /* Signal handler to handle SIGTERM and SIGINT signals. */
 void signal_handler(int signal_number);
 
+void read_config();
+
+const char *config[2];
+
 int main(int argc, char *argv[]) {
+    read_config();
     int port, socket_fd, new_socket_fd;
     struct sockaddr_in address;
     pthread_attr_t pthread_attr;
@@ -36,38 +36,41 @@ int main(int argc, char *argv[]) {
     pthread_t pthread;
     socklen_t client_address_len;
 
-    /* Get port from command line arguments or stdin. */
-    port = argc > 1 ? atoi(argv[1]) : 0;
-    if (!port) {
-        printf("Enter Port: ");
-        scanf("%d", &port);
-    }
-
-    /* Initialise IPv4 address. */
+    // buona pratica inizializzare tutta la struttura con degli zeri
     memset(&address, 0, sizeof address);
+
+    // famiglia di indirizzi ipv4
     address.sin_family = AF_INET;
-    address.sin_port = htons(port);
+
+    // assegno la porta su cui il socket deve ascoltare
+    address.sin_port = htons(PORT);
+
+    // la socket può essere associata a qualunque tipo di IP
     address.sin_addr.s_addr = INADDR_ANY;
 
-    /* Create TCP socket. */
+
+    // creo la TCP socket (SOCK_STREAM riferisce a TCP)
     if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("socket");
         exit(1);
     }
 
-    /* Bind address to socket. */
+    // associo l'indirizzo address alla socket
     if (bind(socket_fd, (struct sockaddr *)&address, sizeof address) == -1) {
         perror("bind");
         exit(1);
     }
 
-    /* Listen on socket. */
+    /*
+     * mi metto in ascolto sulla socket
+     * BACKLOG definisce il max numero di richieste in coda
+    */
     if (listen(socket_fd, BACKLOG) == -1) {
         perror("listen");
         exit(1);
     }
 
-    /* Assign signal handlers to signals. */
+    /* Assign signal handlers to signals
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
         perror("signal");
         exit(1);
@@ -80,26 +83,31 @@ int main(int argc, char *argv[]) {
         perror("signal");
         exit(1);
     }
+    */
 
-    /* Initialise pthread attribute to create detached threads. */
+    // il processo viene inizializzato con attributi di default
     if (pthread_attr_init(&pthread_attr) != 0) {
         perror("pthread_attr_init");
         exit(1);
     }
+
+    // setta l'attribute DETACHED al thread. (detached -> quando il thread muore libera tutte le risorse)
     if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
         perror("pthread_attr_setdetachstate");
         exit(1);
     }
 
+    // attesa
     while (1) {
         /* Create pthread argument for each connection to client. */
         /* TODO: malloc'ing before accepting a connection causes only one small
          * memory when the program exits. It can be safely ignored.
          */
-        pthread_arg = (pthread_arg_t *)malloc(sizeof *pthread_arg);
+        pthread_arg = (pthread_arg_t *)malloc(sizeof (pthread_arg_t));
         if (!pthread_arg) {
             perror("malloc");
-            continue;
+            break;
+            //continue;
         }
 
         /* Accept connection to client. */
@@ -144,6 +152,11 @@ void *pthread_routine(void *arg) {
      * write(new_socket_fd,,) and read(new_socket_fd,,) to send and receive
      * messages with the client.
      */
+    char buffer[128];
+    recv(new_socket_fd, buffer, sizeof buffer, 0);
+    puts(buffer);
+    send(new_socket_fd, buffer, strlen(buffer), 0);
+    //free(buffer);
 
 
     close(new_socket_fd);
@@ -153,4 +166,25 @@ void *pthread_routine(void *arg) {
 void signal_handler(int signal_number) {
     /* TODO: Put exit cleanup code here. */
     exit(0);
+}
+
+void read_config() {
+    FILE *stream;
+    char * line = NULL;
+    size_t len;
+    stream = fopen("../config.txt", "r");
+    if (stream == NULL) {
+        perror("Non posso aprire il file");
+        exit(1);
+    }
+
+    const char * ptr = NULL;
+    int i = 0;
+
+    while (getline(&line, &len, stream) != -1) {
+        strtok(line, ":");
+        ptr = strtok(NULL, "\n");
+        config[i] = strdup(ptr);
+        i++;
+    }
 }
