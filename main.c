@@ -9,7 +9,6 @@
 #include <unistd.h>
 
 #define BACKLOG 16
-#define PORT 7070
 
 typedef struct pthread_arg_t {
     int new_socket_fd;
@@ -17,19 +16,27 @@ typedef struct pthread_arg_t {
     /* TODO: Put arguments passed to threads here. See lines 116 and 139. */
 } pthread_arg_t;
 
+typedef struct configuration {
+    unsigned int port;
+    char * type;
+} configuration;
+
+struct configuration config;
+
 /* Thread routine to serve connection to client. */
 void *pthread_routine(void *arg);
 
 /* Signal handler to handle SIGTERM and SIGINT signals. */
 void signal_handler(int signal_number);
 
-void read_config();
+char * getParameter(char * line, FILE * stream);
 
-const char *config[2];
+void read_config();
 
 int main(int argc, char *argv[]) {
     read_config();
-    int port, socket_fd, new_socket_fd;
+    puts(config.type);
+    int socket_fd, new_socket_fd;
     struct sockaddr_in address;
     pthread_attr_t pthread_attr;
     pthread_arg_t *pthread_arg;
@@ -43,7 +50,7 @@ int main(int argc, char *argv[]) {
     address.sin_family = AF_INET;
 
     // assegno la porta su cui il socket deve ascoltare
-    address.sin_port = htons(PORT);
+    address.sin_port = htons(config.port);
 
     // la socket può essere associata a qualunque tipo di IP
     address.sin_addr.s_addr = INADDR_ANY;
@@ -156,7 +163,6 @@ void *pthread_routine(void *arg) {
     recv(new_socket_fd, buffer, sizeof buffer, 0);
     puts(buffer);
     send(new_socket_fd, buffer, strlen(buffer), 0);
-    //free(buffer);
 
 
     close(new_socket_fd);
@@ -171,20 +177,32 @@ void signal_handler(int signal_number) {
 void read_config() {
     FILE *stream;
     char * line = NULL;
-    size_t len;
     stream = fopen("../config.txt", "r");
     if (stream == NULL) {
         perror("Non posso aprire il file");
         exit(1);
     }
+    // prendo il numero di porta
+    config.port = strtoul(getParameter(line,stream), NULL, 10);
+    if (config.port == 0) {
+        perror("Porta errata");
+        exit(1);
+    }
+    // prendo il tipo di avvio (thread/process)
+    config.type = getParameter(line,stream);
+    if (config.type == NULL) {
+        perror("Errore scelta thread/process");
+        exit(1);
+    }
+}
 
-    const char * ptr = NULL;
-    int i = 0;
-
-    while (getline(&line, &len, stream) != -1) {
+char * getParameter(char * line, FILE * stream) {
+    size_t len;
+    char * ptr;
+    if (getline(&line, &len, stream) != -1) {
         strtok(line, ":");
         ptr = strtok(NULL, "\n");
-        config[i] = strdup(ptr);
-        i++;
+        return ptr;
     }
+    return NULL;
 }
