@@ -31,20 +31,21 @@ void signal_handler(int signal_number);
 
 char * getParameter(char * line, FILE * stream);
 
+void workWithThreads(int socket_fd);
+
+void workWithProcesses(int socket_fd);
+
+void doprocessing (int socket_fd);
+
 void read_config();
 
 int main(int argc, char *argv[]) {
     read_config();
-    puts(config.type);
-    int socket_fd, new_socket_fd;
+    int socket_fd;
     struct sockaddr_in address;
-    pthread_attr_t pthread_attr;
-    pthread_arg_t *pthread_arg;
-    pthread_t pthread;
-    socklen_t client_address_len;
 
     // buona pratica inizializzare tutta la struttura con degli zeri
-    memset(&address, 0, sizeof address);
+    bzero(&address, sizeof address);
 
     // famiglia di indirizzi ipv4
     address.sin_family = AF_INET;
@@ -92,58 +93,20 @@ int main(int argc, char *argv[]) {
     }
     */
 
-    // il processo viene inizializzato con attributi di default
-    if (pthread_attr_init(&pthread_attr) != 0) {
-        perror("pthread_attr_init");
-        exit(1);
-    }
-
-    // setta l'attribute DETACHED al thread. (detached -> quando il thread muore libera tutte le risorse)
-    if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
-        perror("pthread_attr_setdetachstate");
-        exit(1);
-    }
-
-    // attesa
-    while (1) {
-        /* Create pthread argument for each connection to client. */
-        /* TODO: malloc'ing before accepting a connection causes only one small
-         * memory when the program exits. It can be safely ignored.
-         */
-        pthread_arg = (pthread_arg_t *)malloc(sizeof (pthread_arg_t));
-        if (!pthread_arg) {
-            perror("malloc");
-            break;
-            //continue;
-        }
-
-        /* Accept connection to client. */
-        client_address_len = sizeof pthread_arg->client_address;
-        new_socket_fd = accept(socket_fd, (struct sockaddr *)&pthread_arg->client_address, &client_address_len);
-        if (new_socket_fd == -1) {
-            perror("accept");
-            free(pthread_arg);
-            continue;
-        }
-
-        /* Initialise pthread argument. */
-        pthread_arg->new_socket_fd = new_socket_fd;
-        /* TODO: Initialise arguments passed to threads here. See lines 22 and
-         * 139.
-         */
-
-        /* Create thread to serve connection to client. */
-        if (pthread_create(&pthread, &pthread_attr, pthread_routine, (void *)pthread_arg) != 0) {
-            perror("pthread_create");
-            free(pthread_arg);
-            continue;
-        }
-    }
-
     /* close(socket_fd);
      * TODO: If you really want to close the socket, you would do it in
      * signal_handler(), meaning socket_fd would need to be a global variable.
      */
+
+    if (strcmp(config.type, "thread") == 0) {
+        workWithThreads(socket_fd);
+    } else if (strcmp(config.type, "process") == 0) {
+        workWithProcesses(socket_fd);
+    } else {
+        perror("La modalità di avvio può essere solo 'thread' o 'process'");
+        exit(1);
+    }
+
     return 0;
 }
 
@@ -205,4 +168,112 @@ char * getParameter(char * line, FILE * stream) {
         return ptr;
     }
     return NULL;
+}
+
+void workWithThreads(int socket_fd) {
+    pthread_attr_t pthread_attr;
+    pthread_arg_t *pthread_arg;
+    pthread_t pthread;
+    socklen_t client_address_len;
+
+    // il processo viene inizializzato con attributi di default
+    if (pthread_attr_init(&pthread_attr) != 0) {
+        perror("pthread_attr_init");
+        exit(1);
+    }
+
+    // setta l'attribute DETACHED al thread. (detached -> quando il thread muore libera tutte le risorse)
+    if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
+        perror("pthread_attr_setdetachstate");
+        exit(1);
+    }
+
+    while (1) {
+        /* Create pthread argument for each connection to client. */
+        /* TODO: malloc'ing before accepting a connection causes only one small
+         * memory when the program exits. It can be safely ignored.
+         */
+        pthread_arg = (pthread_arg_t *)malloc(sizeof (pthread_arg_t));
+        if (!pthread_arg) {
+            perror("malloc");
+            break;
+            //continue;
+        }
+
+        /* Accept connection to client. */
+        client_address_len = sizeof pthread_arg->client_address;
+        int new_socket_fd = accept(socket_fd, (struct sockaddr *)&pthread_arg->client_address, &client_address_len);
+        if (new_socket_fd == -1) {
+            perror("accept");
+            free(pthread_arg);
+            continue;
+        }
+
+        /* Initialise pthread argument. */
+        pthread_arg->new_socket_fd = new_socket_fd;
+        /* TODO: Initialise arguments passed to threads here. See lines 22 and
+         * 139.
+         */
+
+        /* Create thread to serve connection to client. */
+        if (pthread_create(&pthread, &pthread_attr, pthread_routine, (void *)pthread_arg) != 0) {
+            perror("pthread_create");
+            free(pthread_arg);
+            continue;
+        }
+    }
+}
+
+void workWithProcesses(int socket_fd) {
+    struct sockaddr_in cli_addr;
+    socklen_t clilen;
+    while (1) {
+        int new_socket_fd = accept(socket_fd, (struct sockaddr *) &cli_addr, &clilen);
+
+        if (new_socket_fd < 0) {
+            perror("ERROR on accept");
+            exit(1);
+        }
+
+        /* Create child process */
+        int pid = fork();
+
+        if (pid < 0) {
+            perror("ERROR on fork");
+            exit(1);
+        }
+
+        if (pid == 0) {
+            /* This is the client process */
+            close(socket_fd);
+            doprocessing(new_socket_fd);
+            close(new_socket_fd);
+            exit(0);
+        }
+        else {
+            close(new_socket_fd);
+        }
+
+    } /* end of while */
+}
+
+void doprocessing (int sock) {
+    int n;
+    char buffer[256];
+    bzero(buffer,256);
+    n = read(sock,buffer,255);
+
+    if (n < 0) {
+        perror("ERROR reading from socket");
+        exit(1);
+    }
+
+    printf("Here is the message: %s\n",buffer);
+    n = write(sock,"I got your message",18);
+
+    if (n < 0) {
+        perror("ERROR writing to socket");
+        exit(1);
+    }
+
 }
