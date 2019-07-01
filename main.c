@@ -39,6 +39,31 @@ void doprocessing (int socket_fd);
 
 void read_config(int has_port, int has_type);
 
+int
+read_from_client (int filedes)
+{
+    char buffer[1024];
+    int nbytes;
+
+    nbytes = read (filedes, buffer, 1024);
+    puts("mario");
+    if (nbytes < 0)
+    {
+        /* Read error. */
+        perror ("read");
+        exit (EXIT_FAILURE);
+    }
+    else if (nbytes == 0)
+        /* End-of-file. */
+        return -1;
+    else
+    {
+        /* Data read. */
+        fprintf (stderr, "Server: got message: `%s'\n", buffer);
+        return 0;
+    }
+}
+
 int main(int argc, char *argv[]) {
 
     int has_port = 0, has_type = 0;
@@ -72,30 +97,33 @@ int main(int argc, char *argv[]) {
 
     read_config(has_port, has_type);
 
-    int socket_fd;
-    struct sockaddr_in address;
+    int sock;
+    fd_set read_fd_set;
+    int i;
+    struct sockaddr_in clientname;
+    socklen_t size;
 
     // buona pratica inizializzare tutta la struttura con degli zeri
-    bzero(&address, sizeof address);
+    bzero(&clientname, sizeof clientname);
 
     // famiglia di indirizzi ipv4
-    address.sin_family = AF_INET;
+    clientname.sin_family = AF_INET;
 
     // assegno la porta su cui il socket deve ascoltare
-    address.sin_port = htons(config.port);
+    clientname.sin_port = htons(config.port);
 
     // la socket può essere associata a qualunque tipo di IP
-    address.sin_addr.s_addr = INADDR_ANY;
+    clientname.sin_addr.s_addr = INADDR_ANY;
 
 
     // creo la TCP socket (SOCK_STREAM riferisce a TCP)
-    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("socket");
         exit(1);
     }
 
     // associo l'indirizzo address alla socket
-    if (bind(socket_fd, (struct sockaddr *)&address, sizeof address) == -1) {
+    if (bind(sock, (struct sockaddr *)&clientname, sizeof clientname) == -1) {
         perror("bind");
         exit(1);
     }
@@ -104,7 +132,7 @@ int main(int argc, char *argv[]) {
      * mi metto in ascolto sulla socket
      * BACKLOG definisce il max numero di richieste in coda
     */
-    if (listen(socket_fd, BACKLOG) == -1) {
+    if (listen(sock, BACKLOG) == -1) {
         perror("listen");
         exit(1);
     }
@@ -129,7 +157,7 @@ int main(int argc, char *argv[]) {
      * signal_handler(), meaning socket_fd would need to be a global variable.
      */
 
-    
+    /*
     if (strcmp(config.type, "thread") == 0) {
         workWithThreads(socket_fd);
     } else if (strcmp(config.type, "process") == 0) {
@@ -138,8 +166,69 @@ int main(int argc, char *argv[]) {
         perror("La modalità di avvio può essere solo 'thread' o 'process'");
         exit(1);
     }
+    */
 
-    return 0;
+    FD_ZERO (&read_fd_set);
+    FD_SET (sock, &read_fd_set);
+
+    while (1)
+    {
+        /* Block until input arrives on one or more active sockets. */
+        if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0)
+        {
+            perror ("select");
+            exit (EXIT_FAILURE);
+        }
+
+        /* Service all the sockets with input pending. */
+        for (i = 0; i < FD_SETSIZE; ++i)
+            if (FD_ISSET (i, &read_fd_set))
+            {
+                if (i == sock)
+                {
+                    /* Connection request on original socket. */
+                    int new;
+                    size = sizeof (clientname);
+                    new = accept (sock,
+                                  (struct sockaddr *) &clientname,
+                                  &size);
+                    if (new < 0)
+                    {
+                        perror ("accept");
+                        exit (EXIT_FAILURE);
+                    }
+                    FD_SET (new, &read_fd_set);
+                }
+                else
+                {
+                    if (strcmp(config.type, "thread") == 0) {
+
+                    } else if (strcmp(config.type, "process") == 0) {
+                        int pid = fork();
+
+                        if (pid < 0) {
+                            perror("ERROR on fork");
+                            exit(1);
+                        }
+
+                        if (pid == 0) {
+                            /* This is the client process */
+                            close(sock);
+                            doprocessing(i);
+                            close(sock);
+                            exit(0);
+                        }
+                        else {
+                            close(i);
+                            FD_CLR (i, &read_fd_set);
+                        }
+                    } else {
+                        perror ("Seleziona una modalità corretta di avvio");
+                        exit (EXIT_FAILURE);
+                    }
+                }
+            }
+    }
 }
 
 void *pthread_routine(void *arg) {
@@ -310,7 +399,7 @@ void doprocessing (int sock) {
     }
 
     printf("Here is the message: %s\n",buffer);
-    n = write(sock,"I got your message",18);
+    n = write(sock,"I got your message\n", 200);
 
     if (n < 0) {
         perror("ERROR writing to socket");
