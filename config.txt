@@ -1,2 +1,2 @@
 port:7070
-type:process
+type:thread

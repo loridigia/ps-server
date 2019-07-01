@@ -37,10 +37,41 @@ void workWithProcesses(int socket_fd);
 
 void doprocessing (int socket_fd);
 
-void read_config();
+void read_config(int has_port, int has_type);
 
 int main(int argc, char *argv[]) {
-    read_config();
+
+    int has_port = 0, has_type = 0;
+    // da portare a costanti
+    char * port_flag = "--port=";
+    char * type_flag="--type=";
+    char * help_flag="--help";
+    char * input;
+    for (int i = 1; i < argc; i++) {
+        input = argv[i];
+        if (strncmp(input, port_flag, strlen(port_flag)) == 0) {
+            has_port = 1;
+            config.port = strtoul(input + strlen(port_flag), NULL, 10);
+            if (config.port == 0) {
+                perror("Porta errata");
+                exit(1);
+            }
+        } else if (strncmp(input, type_flag, strlen(type_flag)) == 0) {
+            has_type = 1;
+            config.type = input + strlen(type_flag);
+            if (config.type == NULL) {
+                perror("Errore scelta thread/process");
+                exit(1);
+            }
+        } else if (strncmp(input, help_flag, strlen(help_flag)) == 0) {
+            puts("Il server viene lanciato di default sulla porta 7070 in modalità multi-thread.\n\n"
+                 "--port=<numero_porta> per specificare la porta su cui ascoltare all'avvio.\n"
+                 "--type=<thread/process> per specificare la modalità di avvio del server.\n");
+        }
+    }
+
+    read_config(has_port, has_type);
+
     int socket_fd;
     struct sockaddr_in address;
 
@@ -98,6 +129,7 @@ int main(int argc, char *argv[]) {
      * signal_handler(), meaning socket_fd would need to be a global variable.
      */
 
+    
     if (strcmp(config.type, "thread") == 0) {
         workWithThreads(socket_fd);
     } else if (strcmp(config.type, "process") == 0) {
@@ -137,7 +169,10 @@ void signal_handler(int signal_number) {
     exit(0);
 }
 
-void read_config() {
+void read_config(int has_port, int has_type) {
+    if (has_port && has_type) {
+        return;
+    }
     FILE *stream;
     char * line = NULL;
     stream = fopen("../config.txt", "r");
@@ -146,16 +181,22 @@ void read_config() {
         exit(1);
     }
     // prendo il numero di porta
-    config.port = strtoul(getParameter(line,stream), NULL, 10);
-    if (config.port == 0) {
-        perror("Porta errata");
-        exit(1);
+    char * port_param = getParameter(line,stream);
+    if (!has_port) {
+        config.port = strtoul(port_param, NULL, 10);
+        if (config.port == 0) {
+            perror("Porta errata");
+            exit(1);
+        }
     }
     // prendo il tipo di avvio (thread/process)
-    config.type = getParameter(line,stream);
-    if (config.type == NULL) {
-        perror("Errore scelta thread/process");
-        exit(1);
+    char * type_param = getParameter(line,stream);
+    if (!has_type) {
+        config.type = type_param;
+        if (config.type == NULL) {
+            perror("Errore scelta thread/process");
+            exit(1);
+        }
     }
 }
 
