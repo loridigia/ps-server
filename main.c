@@ -14,7 +14,6 @@
 
 typedef struct pthread_arg_t {
     int new_socket_fd;
-    struct sockaddr_in master;
 } pthread_arg_t;
 
 typedef struct configuration {
@@ -24,7 +23,7 @@ typedef struct configuration {
 
 void *pthread_routine(void *arg);
 
-void process_routine (int client_fd);
+void process_routine (int socket_fd);
 
 char * get_parameter(char * line, FILE * stream);
 
