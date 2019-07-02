@@ -9,11 +9,12 @@
 #include <unistd.h>
 
 #define BACKLOG 16
+#define CONFIG_PATH "../config.txt"
+#define equals(str1, str2) strcmp(str1,str2) == 0
 
 typedef struct pthread_arg_t {
     int new_socket_fd;
-    struct sockaddr_in client_address;
-    /* TODO: Put arguments passed to threads here. See lines 116 and 139. */
+    struct sockaddr_in master;
 } pthread_arg_t;
 
 typedef struct configuration {
@@ -21,59 +22,32 @@ typedef struct configuration {
     char * type;
 } configuration;
 
-struct configuration config;
-
-/* Thread routine to serve connection to client. */
 void *pthread_routine(void *arg);
 
-/* Signal handler to handle SIGTERM and SIGINT signals. */
-void signal_handler(int signal_number);
+void process_routine (int client_fd);
 
-char * getParameter(char * line, FILE * stream);
+char * get_parameter(char * line, FILE * stream);
 
-void workWithThreads(int socket_fd);
+void read_config(int has_port, int has_type, configuration * config);
 
-void workWithProcesses(int socket_fd);
+const char * port_flag = "--port=";
+const char * type_flag="--type=";
+const char * help_flag="--help";
 
-void doprocessing (int socket_fd);
-
-void read_config(int has_port, int has_type);
-
-int
-read_from_client (int filedes)
-{
-    char buffer[1024];
-    int nbytes;
-
-    nbytes = read (filedes, buffer, 1024);
-    puts("mario");
-    if (nbytes < 0)
-    {
-        /* Read error. */
-        perror ("read");
-        exit (EXIT_FAILURE);
-    }
-    else if (nbytes == 0)
-        /* End-of-file. */
-        return -1;
-    else
-    {
-        /* Data read. */
-        fprintf (stderr, "Server: got message: `%s'\n", buffer);
-        return 0;
-    }
-}
+/*
+ * Variabili che andranno splittate nel file dei thread.
+ */
+pthread_attr_t pthread_attr;
+pthread_arg_t *pthread_arg;
+pthread_t pthread;
 
 int main(int argc, char *argv[]) {
+    configuration config;
 
     int has_port = 0, has_type = 0;
-    // da portare a costanti
-    char * port_flag = "--port=";
-    char * type_flag="--type=";
-    char * help_flag="--help";
     char * input;
-    for (int i = 1; i < argc; i++) {
-        input = argv[i];
+    for (int fd = 1; fd < argc; fd++) {
+        input = argv[fd];
         if (strncmp(input, port_flag, strlen(port_flag)) == 0) {
             has_port = 1;
             config.port = strtoul(input + strlen(port_flag), NULL, 10);
@@ -95,201 +69,158 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    read_config(has_port, has_type);
+    read_config(has_port, has_type, &config);
 
-    int sock;
+    if (equals(config.type, "thread")) {
+        if (pthread_attr_init(&pthread_attr) != 0) {
+            perror("pthread_attr_init");
+            exit(1);
+        }
+
+        if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
+            perror("pthread_attr_setdetachstate");
+            exit(1);
+        }
+    }
+
+    int socket_fd;
+
+    struct sockaddr_in socket_addr;
+    bzero(&socket_addr, sizeof socket_addr);
+    socket_addr.sin_family = AF_INET;
+    socket_addr.sin_port = htons(config.port);
+    socket_addr.sin_addr.s_addr = INADDR_ANY;
+
+    socklen_t socket_size;
+
+    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("Errore durante la creazione della socket.");
+        exit(1);
+    }
+
+    if (bind(socket_fd, (struct sockaddr *)&socket_addr, sizeof socket_addr) == -1) {
+        perror("Errore durante il binding tra socket_fd e socket_address");
+        exit(1);
+    }
+
+    if (listen(socket_fd, BACKLOG) == -1) {
+        perror("Errore nel provare ad ascoltare sulla porta data in input.");
+        exit(1);
+    }
+
     fd_set read_fd_set;
-    int i;
-    struct sockaddr_in clientname;
-    socklen_t size;
-
-    // buona pratica inizializzare tutta la struttura con degli zeri
-    bzero(&clientname, sizeof clientname);
-
-    // famiglia di indirizzi ipv4
-    clientname.sin_family = AF_INET;
-
-    // assegno la porta su cui il socket deve ascoltare
-    clientname.sin_port = htons(config.port);
-
-    // la socket può essere associata a qualunque tipo di IP
-    clientname.sin_addr.s_addr = INADDR_ANY;
-
-
-    // creo la TCP socket (SOCK_STREAM riferisce a TCP)
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("socket");
-        exit(1);
-    }
-
-    // associo l'indirizzo address alla socket
-    if (bind(sock, (struct sockaddr *)&clientname, sizeof clientname) == -1) {
-        perror("bind");
-        exit(1);
-    }
-
-    /*
-     * mi metto in ascolto sulla socket
-     * BACKLOG definisce il max numero di richieste in coda
-    */
-    if (listen(sock, BACKLOG) == -1) {
-        perror("listen");
-        exit(1);
-    }
-
-    /* Assign signal handlers to signals
-    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
-        perror("signal");
-        exit(1);
-    }
-    if (signal(SIGTERM, signal_handler) == SIG_ERR) {
-        perror("signal");
-        exit(1);
-    }
-    if (signal(SIGINT, signal_handler) == SIG_ERR) {
-        perror("signal");
-        exit(1);
-    }
-    */
-
-    /* close(socket_fd);
-     * TODO: If you really want to close the socket, you would do it in
-     * signal_handler(), meaning socket_fd would need to be a global variable.
-     */
-
-    /*
-    if (strcmp(config.type, "thread") == 0) {
-        workWithThreads(socket_fd);
-    } else if (strcmp(config.type, "process") == 0) {
-        workWithProcesses(socket_fd);
-    } else {
-        perror("La modalità di avvio può essere solo 'thread' o 'process'");
-        exit(1);
-    }
-    */
-
     FD_ZERO (&read_fd_set);
-    FD_SET (sock, &read_fd_set);
+    FD_SET (socket_fd, &read_fd_set);
 
     while (1)
     {
-        /* Block until input arrives on one or more active sockets. */
         if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0)
         {
-            perror ("select");
-            exit (EXIT_FAILURE);
+            perror ("Errore durante la select.");
+            exit (1);
         }
 
-        /* Service all the sockets with input pending. */
-        for (i = 0; i < FD_SETSIZE; ++i)
-            if (FD_ISSET (i, &read_fd_set))
-            {
-                if (i == sock)
-                {
-                    /* Connection request on original socket. */
-                    int new;
-                    size = sizeof (clientname);
-                    new = accept (sock,
-                                  (struct sockaddr *) &clientname,
-                                  &size);
-                    if (new < 0)
-                    {
-                        perror ("accept");
-                        exit (EXIT_FAILURE);
+        for (int fd = 0; fd < FD_SETSIZE; fd++) {
+            if (FD_ISSET (fd, &read_fd_set)) {
+                if (fd == socket_fd) {
+                    /* Nuova connessione */
+                    socket_size = sizeof (socket_addr);
+                    int new = accept (socket_fd, (struct sockaddr *) &socket_addr, &socket_size);
+                    if (new < 0) {
+                        perror ("Errore durante l'accept del nuovo client.");
+                        exit (1);
                     }
                     FD_SET (new, &read_fd_set);
                 }
-                else
-                {
-                    if (strcmp(config.type, "thread") == 0) {
+                else {
+                    if (equals(config.type, "thread")) {
+                        pthread_arg = (pthread_arg_t *)malloc(sizeof (pthread_arg_t));
+                        if (!pthread_arg) {
+                            perror("Impossibile allocare memoria per gli argomenti di pthread.");
+                            //free(pthread_arg);
+                            continue;
+                        }
+                        pthread_arg->new_socket_fd = fd;
 
-                    } else if (strcmp(config.type, "process") == 0) {
+                        if (pthread_create(&pthread, &pthread_attr, pthread_routine, (void *)pthread_arg) != 0) {
+                            perror("Impossibile creare un nuovo thread.");
+                            free(pthread_arg);
+                            continue;
+                        }
+
+                        FD_CLR (fd, &read_fd_set);
+
+                    } else if (equals(config.type, "process")) {
                         int pid = fork();
 
                         if (pid < 0) {
-                            perror("ERROR on fork");
+                            perror("Errore nel fare fork.");
                             exit(1);
                         }
 
                         if (pid == 0) {
-                            /* This is the client process */
-                            close(sock);
-                            doprocessing(i);
-                            close(sock);
+                            process_routine(fd);
                             exit(0);
                         }
                         else {
-                            close(i);
-                            FD_CLR (i, &read_fd_set);
+                            close(fd);
+                            FD_CLR (fd, &read_fd_set);
                         }
                     } else {
-                        perror ("Seleziona una modalità corretta di avvio");
+                        perror ("Seleziona una modalità corretta di avvio (thread o process)");
                         exit (EXIT_FAILURE);
                     }
                 }
             }
+        }
     }
 }
 
 void *pthread_routine(void *arg) {
-    pthread_arg_t *pthread_arg = (pthread_arg_t *)arg;
-    int new_socket_fd = pthread_arg->new_socket_fd;
-    struct sockaddr_in client_address = pthread_arg->client_address;
-    /* TODO: Get arguments passed to threads here. See lines 22 and 116. */
+    pthread_arg_t *args = (pthread_arg_t *)arg;
+    int socket_fd = args->new_socket_fd;
 
     free(arg);
-
-    /* TODO: Put client interaction code here. For example, use
-     * write(new_socket_fd,,) and read(new_socket_fd,,) to send and receive
-     * messages with the client.
-     */
     char buffer[128];
-    recv(new_socket_fd, buffer, sizeof buffer, 0);
+    recv(socket_fd, buffer, sizeof buffer, 0);
     puts(buffer);
-    send(new_socket_fd, buffer, strlen(buffer), 0);
+    send(socket_fd, buffer, strlen(buffer), 0);
 
 
-    close(new_socket_fd);
+    close(socket_fd);
     return NULL;
 }
 
-void signal_handler(int signal_number) {
-    /* TODO: Put exit cleanup code here. */
-    exit(0);
-}
-
-void read_config(int has_port, int has_type) {
+void read_config(int has_port, int has_type, configuration * config) {
     if (has_port && has_type) {
         return;
     }
     FILE *stream;
     char * line = NULL;
-    stream = fopen("../config.txt", "r");
+    stream = fopen(CONFIG_PATH, "r");
     if (stream == NULL) {
-        perror("Non posso aprire il file");
+        perror("Impossibile aprire il file di configurazione.");
         exit(1);
     }
-    // prendo il numero di porta
-    char * port_param = getParameter(line,stream);
+    char * port_param = get_parameter(line,stream);
     if (!has_port) {
-        config.port = strtoul(port_param, NULL, 10);
-        if (config.port == 0) {
-            perror("Porta errata");
+        config->port = strtoul(port_param, NULL, 10);
+        if (config->port == 0) {
+            perror("Controllare che la porta sia scritta correttamente.");
             exit(1);
         }
     }
-    // prendo il tipo di avvio (thread/process)
-    char * type_param = getParameter(line,stream);
+    char * type_param = get_parameter(line,stream);
     if (!has_type) {
-        config.type = type_param;
-        if (config.type == NULL) {
-            perror("Errore scelta thread/process");
+        config->type = type_param;
+        if (config->type == NULL) {
+            perror("Seleziona una modalità corretta di avvio (thread o process)");
             exit(1);
         }
     }
 }
 
-char * getParameter(char * line, FILE * stream) {
+char * get_parameter(char * line, FILE * stream) {
     size_t len;
     char * ptr;
     if (getline(&line, &len, stream) != -1) {
@@ -300,110 +231,17 @@ char * getParameter(char * line, FILE * stream) {
     return NULL;
 }
 
-void workWithThreads(int socket_fd) {
-    pthread_attr_t pthread_attr;
-    pthread_arg_t *pthread_arg;
-    pthread_t pthread;
-    socklen_t client_address_len;
-
-    // il processo viene inizializzato con attributi di default
-    if (pthread_attr_init(&pthread_attr) != 0) {
-        perror("pthread_attr_init");
-        exit(1);
-    }
-
-    // setta l'attribute DETACHED al thread. (detached -> quando il thread muore libera tutte le risorse)
-    if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
-        perror("pthread_attr_setdetachstate");
-        exit(1);
-    }
-
-    while (1) {
-        /* Create pthread argument for each connection to client. */
-        /* TODO: malloc'ing before accepting a connection causes only one small
-         * memory when the program exits. It can be safely ignored.
-         */
-        pthread_arg = (pthread_arg_t *)malloc(sizeof (pthread_arg_t));
-        if (!pthread_arg) {
-            perror("malloc");
-            break;
-            //continue;
-        }
-
-        /* Accept connection to client. */
-        client_address_len = sizeof pthread_arg->client_address;
-        int new_socket_fd = accept(socket_fd, (struct sockaddr *)&pthread_arg->client_address, &client_address_len);
-        if (new_socket_fd == -1) {
-            perror("accept");
-            free(pthread_arg);
-            continue;
-        }
-
-        /* Initialise pthread argument. */
-        pthread_arg->new_socket_fd = new_socket_fd;
-        /* TODO: Initialise arguments passed to threads here. See lines 22 and
-         * 139.
-         */
-
-        /* Create thread to serve connection to client. */
-        if (pthread_create(&pthread, &pthread_attr, pthread_routine, (void *)pthread_arg) != 0) {
-            perror("pthread_create");
-            free(pthread_arg);
-            continue;
-        }
-    }
-}
-
-void workWithProcesses(int socket_fd) {
-    struct sockaddr_in cli_addr;
-    socklen_t clilen;
-    while (1) {
-        int new_socket_fd = accept(socket_fd, (struct sockaddr *) &cli_addr, &clilen);
-
-        if (new_socket_fd < 0) {
-            perror("ERROR on accept");
-            exit(1);
-        }
-
-        /* Create child process */
-        int pid = fork();
-
-        if (pid < 0) {
-            perror("ERROR on fork");
-            exit(1);
-        }
-
-        if (pid == 0) {
-            /* This is the client process */
-            close(socket_fd);
-            doprocessing(new_socket_fd);
-            close(new_socket_fd);
-            exit(0);
-        }
-        else {
-            close(new_socket_fd);
-        }
-
-    } /* end of while */
-}
-
-void doprocessing (int sock) {
-    int n;
+void process_routine(int socket_fd) {
     char buffer[256];
-    bzero(buffer,256);
-    n = read(sock,buffer,255);
-
+    int n = recv(socket_fd, buffer, sizeof buffer, 0);
     if (n < 0) {
         perror("ERROR reading from socket");
         exit(1);
     }
-
-    printf("Here is the message: %s\n",buffer);
-    n = write(sock,"I got your message\n", 200);
-
+    puts(buffer);
+    send(socket_fd, buffer, strlen(buffer), 0);
     if (n < 0) {
         perror("ERROR writing to socket");
         exit(1);
     }
-
 }
