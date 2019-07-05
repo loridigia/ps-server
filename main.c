@@ -8,9 +8,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 #define BACKLOG 16
 #define CONFIG_PATH "../config.txt"
+#define PUBLIC_PATH "../public"
 #define equals(str1, str2) strcmp(str1,str2) == 0
 
 typedef struct pthread_arg_t {
@@ -29,6 +31,12 @@ void process_routine (int socket_fd);
 char * get_parameter(char * line, FILE * stream);
 
 void read_config(int has_port, int has_type, configuration * config);
+
+char * extract_path(char * buffer);
+
+int is_file(char * path);
+
+int send_error(int socket_fd, char * err);
 
 const char * port_flag = "--port=";
 const char * type_flag="--type=";
@@ -73,12 +81,12 @@ int main(int argc, char *argv[]) {
 
     if (equals(config.type, "thread")) {
         if (pthread_attr_init(&pthread_attr) != 0) {
-            perror("pthread_attr_init");
+            perror("pthread_attr_init\n");
             exit(1);
         }
 
         if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
-            perror("pthread_attr_setdetachstate");
+            perror("pthread_attr_setdetachstate\n");
             exit(1);
         }
     }
@@ -94,17 +102,17 @@ int main(int argc, char *argv[]) {
     socklen_t socket_size;
 
     if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("Errore durante la creazione della socket.");
+        perror("Errore durante la creazione della socket.\n");
         exit(1);
     }
 
     if (bind(socket_fd, (struct sockaddr *)&socket_addr, sizeof socket_addr) == -1) {
-        perror("Errore durante il binding tra socket_fd e socket_address");
+        perror("Errore durante il binding tra socket_fd e socket_address\n");
         exit(1);
     }
 
     if (listen(socket_fd, BACKLOG) == -1) {
-        perror("Errore nel provare ad ascoltare sulla porta data in input.");
+        perror("Errore nel provare ad ascoltare sulla porta data in input.\n");
         exit(1);
     }
 
@@ -127,7 +135,7 @@ int main(int argc, char *argv[]) {
                     socket_size = sizeof (socket_addr);
                     int new = accept (socket_fd, (struct sockaddr *) &socket_addr, &socket_size);
                     if (new < 0) {
-                        perror ("Errore durante l'accept del nuovo client.");
+                        perror ("Errore durante l'accept del nuovo client.\n");
                         exit (1);
                     }
                     FD_SET (new, &read_fd_set);
@@ -136,14 +144,14 @@ int main(int argc, char *argv[]) {
                     if (equals(config.type, "thread")) {
                         pthread_arg = (pthread_arg_t *)malloc(sizeof (pthread_arg_t));
                         if (!pthread_arg) {
-                            perror("Impossibile allocare memoria per gli argomenti di pthread.");
+                            perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
                             //free(pthread_arg);
                             continue;
                         }
                         pthread_arg->new_socket_fd = fd;
 
                         if (pthread_create(&pthread, &pthread_attr, pthread_routine, (void *)pthread_arg) != 0) {
-                            perror("Impossibile creare un nuovo thread.");
+                            perror("Impossibile creare un nuovo thread.\n");
                             free(pthread_arg);
                             continue;
                         }
@@ -154,7 +162,7 @@ int main(int argc, char *argv[]) {
                         int pid = fork();
 
                         if (pid < 0) {
-                            perror("Errore nel fare fork.");
+                            perror("Errore nel fare fork.\n");
                             exit(1);
                         }
 
@@ -167,7 +175,7 @@ int main(int argc, char *argv[]) {
                             FD_CLR (fd, &read_fd_set);
                         }
                     } else {
-                        perror ("Seleziona una modalità corretta di avvio (thread o process)");
+                        perror ("Seleziona una modalità corretta di avvio (thread o process)\n");
                         exit (EXIT_FAILURE);
                     }
                 }
@@ -186,7 +194,7 @@ char *get_number_ext(const char *filename){
     else return "3";
 }
 
-char *get_dir_files(char * path, char * buffer) {
+char * get_dir_files(char * path, char * buffer) {
     DIR *d;
     struct dirent *dir;
 
@@ -205,7 +213,7 @@ char *get_dir_files(char * path, char * buffer) {
     }
     else {
         perror ("Impossibile aprire la directory");
-        exit(1);
+        return NULL;
     }
 
     return buffer;
@@ -216,19 +224,50 @@ void *pthread_routine(void *arg) {
     int socket_fd = args->new_socket_fd;
 
     free(arg);
-    char client_buffer[256];
+    char client_buffer[512];
     bzero(client_buffer, sizeof client_buffer);
-    int res = recv(socket_fd, client_buffer, sizeof client_buffer, 0);
 
+    if (recv(socket_fd, client_buffer, sizeof client_buffer, 0) == -1) {
+        perror("Errore nel ricevere dati dalla socket. (ricezione richiesta)\n");
+    }
+
+    char method[4];
+    memcpy( method, &client_buffer, 3);
+    method[3] = '\0';
+
+    if (!(equals(method,"GET"))) {
+        if (send_error(socket_fd, "Il server accetta solo richieste di tipo GET.\n") == -1) {
+            perror("Errore nel comunicare con la socket. (accetta solo conn. GET)\n");
+        }
+        close(socket_fd);
+        return NULL;
+    }
+
+    char *files;
     char listing_buffer[4096];
     bzero(listing_buffer, sizeof listing_buffer);
-    char *files;
-    if (res == 2) {
-        files = get_dir_files("../files", listing_buffer);
-        send(socket_fd, files, strlen(files), 0);
+    char * extracted = extract_path(client_buffer);
+
+    char path[128];
+    strcpy(path, PUBLIC_PATH);
+    strcat(path, extracted);
+
+    if (is_file(path)) {
+
     } else {
-        
+        files = get_dir_files(path, listing_buffer);
+        if (files == NULL) {
+            if (send_error(socket_fd, "Directory non esistente.\n") == -1) {
+                perror("Errore nel comunicare con la socket. (directory non esistente)\n");
+            }
+        }
+        else {
+            if (send(socket_fd, files, strlen(files), 0) == -1) {
+                perror("Errore nel comunicare con la socket. (invio lista files)\n");
+            }
+        }
     }
+
     close(socket_fd);
     return NULL;
 
@@ -242,14 +281,14 @@ void read_config(int has_port, int has_type, configuration * config) {
     char * line = NULL;
     stream = fopen(CONFIG_PATH, "r");
     if (stream == NULL) {
-        perror("Impossibile aprire il file di configurazione.");
+        perror("Impossibile aprire il file di configurazione.\n");
         exit(1);
     }
     char * port_param = get_parameter(line,stream);
     if (!has_port) {
         config->port = strtoul(port_param, NULL, 10);
         if (config->port == 0) {
-            perror("Controllare che la porta sia scritta correttamente.");
+            perror("Controllare che la porta sia scritta correttamente.\n");
             exit(1);
         }
     }
@@ -257,7 +296,7 @@ void read_config(int has_port, int has_type, configuration * config) {
     if (!has_type) {
         config->type = type_param;
         if (config->type == NULL) {
-            perror("Seleziona una modalità corretta di avvio (thread o process)");
+            perror("Seleziona una modalità corretta di avvio (thread o process)\n");
             exit(1);
         }
     }
@@ -287,4 +326,34 @@ void process_routine(int socket_fd) {
         perror("ERROR writing to socket");
         exit(1);
     }
+}
+
+char * extract_path(char * buffer) {
+    const char *STR1 = "GET ";
+    const char *STR2 = " HTTP";
+
+    char *target = NULL;
+    char *start, *end;
+
+    if ((start = strstr(buffer, STR1))) {
+        start += strlen(STR1);
+        if ((end = strstr(start, STR2)))
+        {
+            target = (char*)malloc(end - start + 1);
+            memcpy( target, start, end - start );
+            target[end - start] = '\0';
+        }
+    }
+    return target;
+}
+
+int is_file(char * path)
+{
+    struct stat path_stat;
+    stat(path, &path_stat);
+    return S_ISREG(path_stat.st_mode);
+}
+
+int send_error(int socket_fd, char * err) {
+    return send(socket_fd, err, strlen(err), 0) == -1;
 }
