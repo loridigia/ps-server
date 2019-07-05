@@ -176,13 +176,27 @@ int main(int argc, char *argv[]) {
     }
 }
 
-char * get_dir_files(char * path, char * buffer) {
+
+char *get_number_ext(const char *filename){
+    const char *ext = strrchr(filename, '.');
+    if (ext == NULL) return "1";
+    else if (equals(ext, ".txt")) return "0";
+    else if (equals(ext, ".gif")) return "g";
+    else if (equals(ext, ".jpeg")) return "i";
+    else return "3";
+}
+
+char *get_dir_files(char * path, char * buffer) {
     DIR *d;
     struct dirent *dir;
 
     if ((d = opendir (path)) != NULL)
     {
         while ((dir = readdir (d)) != NULL) {
+            if (equals(dir->d_name, ".") || equals(dir->d_name, "..")) {
+                continue;
+            }
+            strcat(buffer, get_number_ext(dir->d_name));
             strcat(buffer, dir->d_name);
             strcat(buffer, "\n");
         }
@@ -208,7 +222,7 @@ void *pthread_routine(void *arg) {
 
     char listing_buffer[2048];
     bzero(listing_buffer, sizeof listing_buffer);
-    char * files = get_dir_files("../files", listing_buffer);
+    char *files = get_dir_files("../files", listing_buffer);
     send(socket_fd, files, strlen(files), 0);
 
     close(socket_fd);
