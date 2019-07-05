@@ -182,7 +182,7 @@ char *get_number_ext(const char *filename){
     if (ext == NULL) return "1";
     else if (equals(ext, ".txt")) return "0";
     else if (equals(ext, ".gif")) return "g";
-    else if (equals(ext, ".jpeg")) return "i";
+    else if (equals(ext, ".jpeg")) return "I";
     else return "3";
 }
 
@@ -220,11 +220,15 @@ void *pthread_routine(void *arg) {
     bzero(client_buffer, sizeof client_buffer);
     int res = recv(socket_fd, client_buffer, sizeof client_buffer, 0);
 
-    char listing_buffer[2048];
+    char listing_buffer[4096];
     bzero(listing_buffer, sizeof listing_buffer);
-    char *files = get_dir_files("../files", listing_buffer);
-    send(socket_fd, files, strlen(files), 0);
-
+    char *files;
+    if (res == 2) {
+        files = get_dir_files("../files", listing_buffer);
+        send(socket_fd, files, strlen(files), 0);
+    } else {
+        
+    }
     close(socket_fd);
     return NULL;
 
