@@ -2,8 +2,7 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
     <generated>
-      <config projectName="ps_server" targetName="PS" />
-      <config projectName="ps_server" targetName="ps_server" />
+      <config projectName="PS" targetName="PS" />
     </generated>
   </component>
   <component name="CMakeSettings">
@@ -13,10 +12,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7f07cd6c-b336-4153-a2da-92d8df351a8d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/gopher-instructions.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/files/image.jpeg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/files/text.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/main.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/todo-list.html" beforeDir="false" afterPath="$PROJECT_DIR$/todo-list.html" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -28,33 +27,14 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="DockManager">
-    <window id="1">
-      <content type="file-editors">
-        <state>
-          <leaf>
-            <file pinned="false" current-in-tab="true">
-              <entry file="file://$PROJECT_DIR$/todo-list.html">
-                <provider selected="true" editor-type-id="text-editor">
-                  <state relative-caret-position="304">
-                    <caret line="22" lean-forward="true" selection-start-line="22" selection-end-line="22" />
-                  </state>
-                </provider>
-              </entry>
-            </file>
-          </leaf>
-        </state>
-      </content>
-    </window>
-  </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="360">
-              <caret line="137" column="82" lean-forward="true" selection-start-line="137" selection-start-column="82" selection-end-line="137" selection-end-column="82" />
+            <state relative-caret-position="588">
+              <caret line="210" column="49" lean-forward="true" selection-start-line="210" selection-start-column="49" selection-end-line="210" selection-end-column="49" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -62,9 +42,13 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/gopher-instructions.html">
-          <provider selected="true" editor-type-id="text-editor" />
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="540">
+              <caret line="30" column="8" selection-start-line="30" selection-start-column="8" selection-end-line="30" selection-end-column="8" />
+            </state>
+          </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
@@ -114,6 +98,7 @@
       <find>clientname</find>
       <find>size</find>
       <find>perror</find>
+      <find>puts</find>
     </findStrings>
     <replaceStrings>
       <replace>&amp;</replace>
@@ -130,23 +115,22 @@
         <option value="$PROJECT_DIR$/config.txt" />
         <option value="$PROJECT_DIR$/main2.c" />
         <option value="$PROJECT_DIR$/todo-list.html" />
-        <option value="$PROJECT_DIR$/main.c" />
         <option value="$PROJECT_DIR$/gopher-instructions.html" />
+        <option value="$PROJECT_DIR$/CMakeLists.txt" />
+        <option value="$PROJECT_DIR$/main.c" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="16" />
+  <component name="ProjectFrameBounds">
     <option name="y" value="23" />
-    <option name="width" value="1901" />
-    <option name="height" value="980" />
+    <option name="width" value="1920" />
+    <option name="height" value="977" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -158,6 +142,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -182,7 +167,7 @@
     </option>
   </component>
   <component name="RunManager">
-    <configuration name="PS" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="--type=process" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ps_server" TARGET_NAME="ps_server" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="ps_server" RUN_TARGET_NAME="ps_server">
+    <configuration name="PS" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="PS" TARGET_NAME="PS" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="PS" RUN_TARGET_NAME="PS">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -204,16 +189,20 @@
       <workItem from="1561996927891" duration="21000" />
       <workItem from="1562060268369" duration="5443000" />
       <workItem from="1562073947185" duration="901000" />
+      <workItem from="1562178210762" duration="580000" />
+      <workItem from="1562253780433" duration="6449000" />
+      <workItem from="1562310492834" duration="2579000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="16293000" />
+    <option name="totallyTimeSpent" value="25901000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="1920" height="977" extended-state="6" />
+    <frame x="0" y="23" width="1920" height="977" extended-state="0" />
+    <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.18796591" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.19329074" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -224,15 +213,15 @@
       <window_info anchor="bottom" id="TODO" order="5" />
       <window_info anchor="bottom" id="Version Control" order="6" />
       <window_info anchor="bottom" id="Database Changes" order="7" />
-      <window_info anchor="bottom" id="CMake" order="8" />
+      <window_info anchor="bottom" id="CMake" order="8" show_stripe_button="false" weight="0.32996634" />
       <window_info anchor="bottom" id="Terminal" order="9" weight="0.3299435" />
       <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Database" order="3" />
-      <window_info anchor="right" id="Run" order="4" weight="0.21458998" />
-      <window_info anchor="right" id="Messages" order="5" weight="0.22736955" />
+      <window_info active="true" anchor="right" id="Run" order="4" visible="true" weight="0.21458998" />
+      <window_info anchor="right" id="Messages" order="5" weight="0.2342918" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -243,9 +232,32 @@
     <entry file="file://$PROJECT_DIR$/todo-list.html">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="304">
-          <caret line="22" lean-forward="true" selection-start-line="22" selection-end-line="22" />
+          <caret line="22" selection-start-line="22" selection-end-line="22" />
         </state>
       </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/CMakeLists.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="90">
+          <caret line="5" column="25" selection-start-line="5" selection-start-column="25" selection-end-line="5" selection-end-column="25" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/files/image.jpeg">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/files/text.txt">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gopher-instructions.html">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="540">
+          <caret line="30" column="8" selection-start-line="30" selection-start-column="8" selection-end-line="30" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/LICENSE">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/config.txt">
       <provider selected="true" editor-type-id="text-editor">
@@ -254,21 +266,22 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/LICENSE">
-      <provider selected="true" editor-type-id="text-editor" />
+    <entry file="file:///usr/include/stdio.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="282">
+          <caret line="172" column="22" selection-start-line="172" selection-start-column="22" selection-end-line="172" selection-end-column="22" />
+        </state>
+      </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/main.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="137" column="82" lean-forward="true" selection-start-line="137" selection-start-column="82" selection-end-line="137" selection-end-column="82" />
+        <state relative-caret-position="588">
+          <caret line="210" column="49" lean-forward="true" selection-start-line="210" selection-start-column="49" selection-end-line="210" selection-end-column="49" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>
         </state>
       </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/gopher-instructions.html">
-      <provider selected="true" editor-type-id="text-editor" />
     </entry>
   </component>
 </project>

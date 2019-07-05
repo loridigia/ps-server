@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #define BACKLOG 16
 #define CONFIG_PATH "../config.txt"
@@ -175,19 +176,40 @@ int main(int argc, char *argv[]) {
     }
 }
 
+char * get_dir_files(char * path){
+    int n=0, i=0;
+    struct dirent *dir;
+    DIR *d;
+    d = opendir(path);
+    
+    while((readdir(d)) != NULL) {
+        n++;
+    }
+    rewinddir(d);
+    char *filesList[n];
+    while((dir = readdir(d)) != NULL) {
+        filesList[i] = (char*) malloc(strlen(dir->d_name)+1);
+        strncpy(filesList[i],dir->d_name, strlen(dir->d_name));
+        puts(dir->d_name);
+        i++;
+    }
+    rewinddir(d);
+    return *filesList;
+}
+
 void *pthread_routine(void *arg) {
-    pthread_arg_t *args = (pthread_arg_t *)arg;
+    pthread_arg_t *args = (pthread_arg_t *) arg;
     int socket_fd = args->new_socket_fd;
 
     free(arg);
-    char buffer[128];
-    recv(socket_fd, buffer, sizeof buffer, 0);
-    puts(buffer);
-    send(socket_fd, buffer, strlen(buffer), 0);
-
-
-    close(socket_fd);
-    return NULL;
+    char buffer[256];
+    int res = recv(socket_fd, buffer, sizeof buffer, 0);
+    if (res == 2) {
+        memset(buffer, 0, sizeof buffer);
+        char *files = get_dir_files("../files");
+        send(socket_fd, files, strlen(files), 0);
+        close(socket_fd);
+    }
 }
 
 void read_config(int has_port, int has_type, configuration * config) {
