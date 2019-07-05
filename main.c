@@ -214,14 +214,13 @@ char * get_dir_files(char * route, char * path, char * buffer) {
     DIR *d;
     struct dirent *dir;
 
-    if ((d = opendir (path)) != NULL)
-    {
+    if ((d = opendir (path)) != NULL) {
         while ((dir = readdir (d)) != NULL) {
             if (equals(dir->d_name, ".") || equals(dir->d_name, "..")) {
                 continue;
             }
             strcat(buffer, get_number_ext(dir->d_name));
-            strcat(buffer, extract_name_only(dir->d_name));
+            strcat(buffer, dir->d_name);
             strcat(buffer, "\t");
             strcat(buffer, route);
             if (path[strlen(path)-1] != '/') {
@@ -281,7 +280,8 @@ void *pthread_routine(void *arg) {
     strcat(path, route);
 
     if (is_file(path)) {
-
+        /* send file */
+        send_error(socket_fd, "FILE!!!");
     } else {
         files = get_dir_files(route, path, listing_buffer);
         if (files == NULL) {
@@ -378,8 +378,7 @@ char * extract_name_only(char * file) {
     return end-size;
 }
 
-int is_file(char * path)
-{
+int is_file(char * path) {
     struct stat path_stat;
     stat(path, &path_stat);
     return S_ISREG(path_stat.st_mode);
