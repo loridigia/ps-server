@@ -190,7 +190,7 @@ char *get_number_ext(const char *filename){
     if (ext == NULL) return "1";
     else if (equals(ext, ".txt")) return "0";
     else if (equals(ext, ".gif")) return "g";
-    else if (equals(ext, ".jpeg")) return "I";
+    else if (equals(ext, ".jpeg") || equals(ext, ".jpg")) return "I";
     else return "3";
 }
 
