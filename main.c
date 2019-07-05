@@ -9,6 +9,10 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#include <ifaddrs.h>
 
 #define BACKLOG 16
 #define CONFIG_PATH "../config.txt"
@@ -20,8 +24,9 @@ typedef struct pthread_arg_t {
 } pthread_arg_t;
 
 typedef struct configuration {
-    unsigned int port;
     char * type;
+    char * ip;
+    unsigned int port;
 } configuration;
 
 void *pthread_routine(void *arg);
@@ -30,7 +35,7 @@ void process_routine (int socket_fd);
 
 char * get_parameter(char * line, FILE * stream);
 
-void read_config(int has_port, int has_type, configuration * config);
+void read_config(int has_port, int has_type);
 
 char * extract_route(char * buffer);
 
@@ -39,6 +44,8 @@ int is_file(char * path);
 int send_error(int socket_fd, char * err);
 
 char * extract_name_only(char * file);
+
+char * get_ip();
 
 const char * port_flag = "--port=";
 const char * type_flag="--type=";
@@ -51,8 +58,9 @@ pthread_attr_t pthread_attr;
 pthread_arg_t *pthread_arg;
 pthread_t pthread;
 
+configuration config;
+
 int main(int argc, char *argv[]) {
-    configuration config;
 
     int has_port = 0, has_type = 0;
     char * input;
@@ -79,7 +87,13 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    read_config(has_port, has_type, &config);
+    read_config(has_port, has_type);
+    config.ip = get_ip();
+
+    if (config.ip == NULL) {
+        perror("Impossibile ottenere l'ip del server.");
+        exit(1);
+    }
 
     if (equals(config.type, "thread")) {
         if (pthread_attr_init(&pthread_attr) != 0) {
@@ -213,6 +227,12 @@ char * get_dir_files(char * route, char * path, char * buffer) {
             if (path[strlen(path)-1] != '/') {
                 strcat(buffer, "/");
             }
+            strcat(buffer,"\t");
+            strcat(buffer,config.ip);
+            strcat(buffer,"\t");
+            char port[6];
+            sprintf(port,"%d",config.port);
+            strcat(buffer,port);
             strcat(buffer, "\n");
         }
         strcat(buffer, ".\n");
@@ -281,7 +301,7 @@ void *pthread_routine(void *arg) {
 
 }
 
-void read_config(int has_port, int has_type, configuration * config) {
+void read_config(int has_port, int has_type) {
     if (has_port && has_type) {
         return;
     }
@@ -294,16 +314,16 @@ void read_config(int has_port, int has_type, configuration * config) {
     }
     char * port_param = get_parameter(line,stream);
     if (!has_port) {
-        config->port = strtoul(port_param, NULL, 10);
-        if (config->port == 0) {
+        config.port = strtoul(port_param, NULL, 10);
+        if (config.port == 0) {
             perror("Controllare che la porta sia scritta correttamente.\n");
             exit(1);
         }
     }
     char * type_param = get_parameter(line,stream);
     if (!has_type) {
-        config->type = type_param;
-        if (config->type == NULL) {
+        config.type = type_param;
+        if (config.type == NULL) {
             perror("Seleziona una modalità corretta di avvio (thread o process)\n");
             exit(1);
         }
@@ -367,4 +387,19 @@ int is_file(char * path)
 
 int send_error(int socket_fd, char * err) {
     return send(socket_fd, err, strlen(err), 0) == -1;
+}
+
+char * get_ip() {
+    struct ifaddrs *addrs;
+    getifaddrs(&addrs);
+    struct ifaddrs *tmp = addrs;
+
+    while (tmp) {
+        if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET) {
+            struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
+            return inet_ntoa(pAddr->sin_addr);
+        } tmp = tmp->ifa_next;
+    }
+    //freeifaddrs(addrs);
+    return NULL;
 }
