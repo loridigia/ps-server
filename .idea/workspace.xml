@@ -49,8 +49,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="234">
-              <caret line="224" column="33" lean-forward="true" selection-start-line="224" selection-start-column="33" selection-end-line="224" selection-end-column="33" />
+            <state relative-caret-position="311">
+              <caret line="283" column="8" lean-forward="true" selection-start-line="283" selection-start-column="8" selection-end-line="283" selection-end-column="8" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -78,7 +78,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>ead_fd_set</find>
       <find>select</find>
       <find>doproce</find>
       <find>getParameter</find>
@@ -108,6 +107,7 @@
       <find>config</find>
       <find>get_ip</find>
       <find>directory</find>
+      <find>FILE</find>
     </findStrings>
     <replaceStrings>
       <replace>&amp;</replace>
@@ -209,12 +209,12 @@
       <workItem from="1562253780433" duration="6449000" />
       <workItem from="1562310492834" duration="3946000" />
       <workItem from="1562341317461" duration="1746000" />
-      <workItem from="1562355705089" duration="3601000" />
+      <workItem from="1562355705089" duration="3852000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="43469000" />
+    <option name="totallyTimeSpent" value="43720000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1920" height="977" extended-state="6" />
@@ -281,7 +281,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/public/animazione.gif">
+    <entry file="file://$PROJECT_DIR$/public/anim.gif">
       <provider selected="true" editor-type-id="images" />
     </entry>
     <entry file="file://$PROJECT_DIR$/public/folder/carlo.txt">
@@ -294,7 +294,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/public/new_image.jpeg">
+    <entry file="file://$PROJECT_DIR$/public/image.jpeg">
       <provider selected="true" editor-type-id="images" />
     </entry>
     <entry file="file://$PROJECT_DIR$/config.txt">
@@ -313,8 +313,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/main.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="234">
-          <caret line="224" column="33" lean-forward="true" selection-start-line="224" selection-start-column="33" selection-end-line="224" selection-end-column="33" />
+        <state relative-caret-position="311">
+          <caret line="283" column="8" lean-forward="true" selection-start-line="283" selection-start-column="8" selection-end-line="283" selection-end-column="8" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>

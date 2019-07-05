@@ -280,8 +280,11 @@ void *pthread_routine(void *arg) {
     strcat(path, route);
 
     if (is_file(path)) {
-        /* send file */
-        send_error(socket_fd, "FILE!!!");
+        /* map file in memory */
+
+        /* create thread */
+
+        /* send file using thread */
     } else {
         files = get_dir_files(route, path, listing_buffer);
         if (files == NULL) {
@@ -362,6 +365,7 @@ char * extract_route(char * buffer) {
     return strtok(NULL, " ");
 }
 
+/*
 char * extract_name_only(char * file) {
     if (strchr(file, '.') == NULL) {
         return file;
@@ -377,6 +381,7 @@ char * extract_name_only(char * file) {
     *end = '\0';
     return end-size;
 }
+*/
 
 int is_file(char * path) {
     struct stat path_stat;
