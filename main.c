@@ -181,20 +181,19 @@ char * get_dir_files(char * path){
     struct dirent *dir;
     DIR *d;
     d = opendir(path);
-    
+
     while((readdir(d)) != NULL) {
         n++;
     }
     rewinddir(d);
-    char *filesList[n];
+    char filesList[256];
     while((dir = readdir(d)) != NULL) {
-        filesList[i] = (char*) malloc(strlen(dir->d_name)+1);
-        strncpy(filesList[i],dir->d_name, strlen(dir->d_name));
-        puts(dir->d_name);
+        strcat(filesList, dir->d_name);
+        strcat(filesList, "\n");
         i++;
     }
     rewinddir(d);
-    return *filesList;
+    return filesList;
 }
 
 void *pthread_routine(void *arg) {
@@ -210,6 +209,11 @@ void *pthread_routine(void *arg) {
         send(socket_fd, files, strlen(files), 0);
         close(socket_fd);
     }
+    else {
+        send(socket_fd, buffer, strlen(buffer), 0);
+        close(socket_fd);
+    }
+    exit(0);
 }
 
 void read_config(int has_port, int has_type, configuration * config) {
