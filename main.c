@@ -176,24 +176,25 @@ int main(int argc, char *argv[]) {
     }
 }
 
-char * get_dir_files(char * path){
-    int n=0, i=0;
-    struct dirent *dir;
+char * get_dir_files(char * path, char * buffer) {
     DIR *d;
-    d = opendir(path);
+    struct dirent *dir;
 
-    while((readdir(d)) != NULL) {
-        n++;
+    if ((d = opendir (path)) != NULL)
+    {
+        while ((dir = readdir (d)) != NULL) {
+            strcat(buffer, dir->d_name);
+            strcat(buffer, "\n");
+        }
+        rewinddir(d);
+        closedir (d);
     }
-    rewinddir(d);
-    char filesList[256];
-    while((dir = readdir(d)) != NULL) {
-        strcat(filesList, dir->d_name);
-        strcat(filesList, "\n");
-        i++;
+    else {
+        perror ("Impossibile aprire la directory");
+        exit(1);
     }
-    rewinddir(d);
-    return filesList;
+
+    return buffer;
 }
 
 void *pthread_routine(void *arg) {
@@ -201,19 +202,18 @@ void *pthread_routine(void *arg) {
     int socket_fd = args->new_socket_fd;
 
     free(arg);
-    char buffer[256];
-    int res = recv(socket_fd, buffer, sizeof buffer, 0);
-    if (res == 2) {
-        memset(buffer, 0, sizeof buffer);
-        char *files = get_dir_files("../files");
-        send(socket_fd, files, strlen(files), 0);
-        close(socket_fd);
-    }
-    else {
-        send(socket_fd, buffer, strlen(buffer), 0);
-        close(socket_fd);
-    }
-    exit(0);
+    char client_buffer[256];
+    bzero(client_buffer, sizeof client_buffer);
+    int res = recv(socket_fd, client_buffer, sizeof client_buffer, 0);
+
+    char listing_buffer[2048];
+    bzero(listing_buffer, sizeof listing_buffer);
+    char * files = get_dir_files("../files", listing_buffer);
+    send(socket_fd, files, strlen(files), 0);
+
+    close(socket_fd);
+    return NULL;
+
 }
 
 void read_config(int has_port, int has_type, configuration * config) {
