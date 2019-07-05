@@ -32,11 +32,13 @@ char * get_parameter(char * line, FILE * stream);
 
 void read_config(int has_port, int has_type, configuration * config);
 
-char * extract_path(char * buffer);
+char * extract_route(char * buffer);
 
 int is_file(char * path);
 
 int send_error(int socket_fd, char * err);
+
+char * extract_name_only(char * file);
 
 const char * port_flag = "--port=";
 const char * type_flag="--type=";
@@ -187,14 +189,14 @@ int main(int argc, char *argv[]) {
 
 char *get_number_ext(const char *filename){
     const char *ext = strrchr(filename, '.');
-    if (ext == NULL) return "1";
-    else if (equals(ext, ".txt")) return "0";
-    else if (equals(ext, ".gif")) return "g";
-    else if (equals(ext, ".jpeg") || equals(ext, ".jpg")) return "I";
+    if (ext == NULL) return "1 ";
+    else if (equals(ext, ".txt")) return "0 ";
+    else if (equals(ext, ".gif")) return "g ";
+    else if (equals(ext, ".jpeg") || equals(ext, ".jpg")) return "I ";
     else return "3";
 }
 
-char * get_dir_files(char * path, char * buffer) {
+char * get_dir_files(char * route, char * path, char * buffer) {
     DIR *d;
     struct dirent *dir;
 
@@ -205,9 +207,15 @@ char * get_dir_files(char * path, char * buffer) {
                 continue;
             }
             strcat(buffer, get_number_ext(dir->d_name));
-            strcat(buffer, dir->d_name);
+            strcat(buffer, extract_name_only(dir->d_name));
+            strcat(buffer, "\t");
+            strcat(buffer, route);
+            if (path[strlen(path)-1] != '/') {
+                strcat(buffer, "/");
+            }
             strcat(buffer, "\n");
         }
+        strcat(buffer, ".\n");
         rewinddir(d);
         closedir (d);
     }
@@ -232,7 +240,7 @@ void *pthread_routine(void *arg) {
     }
 
     char method[4];
-    memcpy( method, &client_buffer, 3);
+    memcpy(method, &client_buffer, 3);
     method[3] = '\0';
 
     if (!(equals(method,"GET"))) {
@@ -246,16 +254,16 @@ void *pthread_routine(void *arg) {
     char *files;
     char listing_buffer[4096];
     bzero(listing_buffer, sizeof listing_buffer);
-    char * extracted = extract_path(client_buffer);
+    char * route = extract_route(client_buffer);
 
     char path[128];
     strcpy(path, PUBLIC_PATH);
-    strcat(path, extracted);
+    strcat(path, route);
 
     if (is_file(path)) {
 
     } else {
-        files = get_dir_files(path, listing_buffer);
+        files = get_dir_files(route, path, listing_buffer);
         if (files == NULL) {
             if (send_error(socket_fd, "Directory non esistente.\n") == -1) {
                 perror("Errore nel comunicare con la socket. (directory non esistente)\n");
@@ -328,23 +336,26 @@ void process_routine(int socket_fd) {
     }
 }
 
-char * extract_path(char * buffer) {
-    const char *STR1 = "GET ";
-    const char *STR2 = " HTTP";
+char * extract_route(char * buffer) {
+    char * route = strdup(buffer);
+    strtok(route, " ");
+    return strtok(NULL, " ");
+}
 
-    char *target = NULL;
-    char *start, *end;
-
-    if ((start = strstr(buffer, STR1))) {
-        start += strlen(STR1);
-        if ((end = strstr(start, STR2)))
-        {
-            target = (char*)malloc(end - start + 1);
-            memcpy( target, start, end - start );
-            target[end - start] = '\0';
-        }
+char * extract_name_only(char * file) {
+    if (strchr(file, '.') == NULL) {
+        return file;
     }
-    return target;
+
+    int size = strlen(file);
+    char *end = file + size;
+    while (*end != '.') {
+        end--;
+        size--;
+    }
+
+    *end = '\0';
+    return end-size;
 }
 
 int is_file(char * path)
