@@ -11,8 +11,13 @@
 #include <sys/stat.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
 #include <ifaddrs.h>
+#include <sys/file.h>
+
+#define   LOCK_SH   1    /* shared lock */
+#define   LOCK_EX   2    /* exclusive lock */
+#define   LOCK_NB   4    /* don't block when locking */
+#define   LOCK_UN   8    /* unlock */
 
 #define BACKLOG 16
 #define CONFIG_PATH "../config.txt"
@@ -280,6 +285,21 @@ void *pthread_routine(void *arg) {
     strcat(path, route);
 
     if (is_file(path)) {
+        /* read file */
+        int fd = open(path, O_RDONLY);
+        if(fd == -1)
+        {
+            perror("Errore nell'apertura del file");
+            exit(1);
+        }
+        int lock = flock(fd, LOCK_SH); //LOCK
+        struct stat v;
+        stat(path,&v);
+        char *p = malloc(v.st_size * sizeof(char));
+        int res = read(fd,p,v.st_size);
+        puts(p);
+        int release = flock(fd, LOCK_UN); //UNLOCK
+
         /* map file in memory */
 
         /* create thread */
