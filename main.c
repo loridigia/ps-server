@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <sys/file.h>
+#include <sys/mman.h>
 
 #define   LOCK_SH   1    /* shared lock */
 #define   LOCK_EX   2    /* exclusive lock */
@@ -28,6 +29,11 @@ typedef struct pthread_arg_t {
     int new_socket_fd;
 } pthread_arg_t;
 
+typedef struct pthread_arg_file {
+    int new_socket_fd;
+    char *mem_file;
+} pthread_arg_file;
+
 typedef struct configuration {
     char * type;
     char * ip;
@@ -35,6 +41,8 @@ typedef struct configuration {
 } configuration;
 
 void *pthread_routine(void *arg);
+
+void *pthread_send_file(void *arg);
 
 void process_routine (int socket_fd);
 
@@ -59,6 +67,8 @@ const char * help_flag="--help";
 /*
  * Variabili che andranno splittate nel file dei thread.
  */
+pthread_arg_file *pthread_file;
+
 pthread_attr_t pthread_attr;
 pthread_arg_t *pthread_arg;
 pthread_t pthread;
@@ -166,7 +176,7 @@ int main(int argc, char *argv[]) {
                         pthread_arg = (pthread_arg_t *)malloc(sizeof (pthread_arg_t));
                         if (!pthread_arg) {
                             perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
-                            //free(pthread_arg);
+                            free(pthread_arg);
                             continue;
                         }
                         pthread_arg->new_socket_fd = fd;
@@ -285,6 +295,7 @@ void *pthread_routine(void *arg) {
     strcat(path, route);
 
     if (is_file(path)) {
+
         /* read file */
         int fd = open(path, O_RDONLY);
         if(fd == -1)
@@ -294,17 +305,27 @@ void *pthread_routine(void *arg) {
         }
         int lock = flock(fd, LOCK_SH); //LOCK
         struct stat v;
-        stat(path,&v);
-        char *p = malloc(v.st_size * sizeof(char));
-        int res = read(fd,p,v.st_size);
-        puts(p);
-        int release = flock(fd, LOCK_UN); //UNLOCK
+        if (stat(path,&v) == -1){
+            perror("Errore nel prendere la grandezza del file");
+        }
 
         /* map file in memory */
+        char *file_in_memory = mmap(NULL, v.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
-        /* create thread */
+        /* create thread and send file */
+        pthread_file = (pthread_arg_file *)malloc(sizeof (pthread_arg_file));
+        if (!pthread_file) {
+            perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
+            free(pthread_file);
+        }
+        pthread_file->new_socket_fd = socket_fd;
+        pthread_file->mem_file = file_in_memory;
+        if (pthread_create(&pthread, &pthread_attr, pthread_send_file, (void *)pthread_file) != 0){
+            perror("Impossibile creare un nuovo thread.\n");
+        }
 
-        /* send file using thread */
+        int release = flock(fd, LOCK_UN); //UNLOCK
+
     } else {
         files = get_dir_files(route, path, listing_buffer);
         if (files == NULL) {
@@ -322,6 +343,16 @@ void *pthread_routine(void *arg) {
     close(socket_fd);
     return NULL;
 
+}
+
+void *pthread_send_file(void *arg){
+    pthread_arg_file *args = (pthread_arg_file *) arg;
+    int socket_fd = args->new_socket_fd;
+    char *file_mem = args ->mem_file;
+    puts(file_mem);
+    if (send(socket_fd, file_mem, strlen(file_mem), 0) == -1) {
+        perror("dddErrore nel comunicare con la socket. (invio lista files)\n");
+    }
 }
 
 void read_config(int has_port, int has_type) {
