@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+
+
+
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -14,11 +18,6 @@
 #include <ifaddrs.h>
 #include <sys/file.h>
 #include <sys/mman.h>
-
-#define   LOCK_SH   1    /* shared lock */
-#define   LOCK_EX   2    /* exclusive lock */
-#define   LOCK_NB   4    /* don't block when locking */
-#define   LOCK_UN   8    /* unlock */
 
 #define BACKLOG 16
 #define CONFIG_PATH "../config.txt"
@@ -32,6 +31,7 @@ typedef struct pthread_arg_t {
 typedef struct pthread_arg_file {
     int new_socket_fd;
     char *mem_file;
+    int file_fd;
 } pthread_arg_file;
 
 typedef struct configuration {
@@ -298,19 +298,28 @@ void *pthread_routine(void *arg) {
 
         /* read file */
         int fd = open(path, O_RDONLY);
-        if(fd == -1)
-        {
-            perror("Errore nell'apertura del file");
-            exit(1);
+        if (fd == -1) {
+            char * err = "Errore nell'apertura del file";
+            perror(err);
+            send_error(socket_fd, err);
+            //exit(1);
         }
-        int lock = flock(fd, LOCK_SH); //LOCK
+
         struct stat v;
-        if (stat(path,&v) == -1){
+        if (stat(path,&v) == -1) {
             perror("Errore nel prendere la grandezza del file");
+        }
+
+        if (equals("../public/text.t.txt", path)) {
+            sleep(5);
         }
 
         /* map file in memory */
         char *file_in_memory = mmap(NULL, v.st_size, PROT_READ, MAP_SHARED, fd, 0);
+        // controllare errore
+        // ma il file va unmappato?
+
+
 
         /* create thread and send file */
         pthread_file = (pthread_arg_file *)malloc(sizeof (pthread_arg_file));
@@ -320,11 +329,12 @@ void *pthread_routine(void *arg) {
         }
         pthread_file->new_socket_fd = socket_fd;
         pthread_file->mem_file = file_in_memory;
+        pthread_file->file_fd = fd;
+
+
         if (pthread_create(&pthread, &pthread_attr, pthread_send_file, (void *)pthread_file) != 0){
             perror("Impossibile creare un nuovo thread.\n");
         }
-
-        int release = flock(fd, LOCK_UN); //UNLOCK
 
     } else {
         files = get_dir_files(route, path, listing_buffer);
@@ -338,9 +348,8 @@ void *pthread_routine(void *arg) {
                 perror("Errore nel comunicare con la socket. (invio lista files)\n");
             }
         }
+        close(socket_fd);
     }
-
-    close(socket_fd);
     return NULL;
 
 }
@@ -348,11 +357,22 @@ void *pthread_routine(void *arg) {
 void *pthread_send_file(void *arg){
     pthread_arg_file *args = (pthread_arg_file *) arg;
     int socket_fd = args->new_socket_fd;
-    char *file_mem = args ->mem_file;
-    puts(file_mem);
-    if (send(socket_fd, file_mem, strlen(file_mem), 0) == -1) {
+    char *file_mem = args->mem_file;
+    //int file_fd = args->file_fd;
+
+    free(arg);
+
+    char * new_str = malloc(strlen(file_mem) + 2);
+    strcpy(new_str, file_mem);
+    strcat(new_str, "\n");
+
+    if (send(socket_fd, new_str, strlen(new_str), 0) == -1) {
         perror("dddErrore nel comunicare con la socket. (invio lista files)\n");
     }
+    // controllo errori
+    free(new_str);
+    close(socket_fd);
+    return NULL;
 }
 
 void read_config(int has_port, int has_type) {
