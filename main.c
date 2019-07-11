@@ -15,23 +15,23 @@
 #include <sys/file.h>
 #include <sys/mman.h>
 
-#define BACKLOG 16
+#define BACKLOG 32
 #define CONFIG_PATH "../config.txt"
 #define PUBLIC_PATH "../public"
 #define equals(str1, str2) strcmp(str1,str2) == 0
 
-typedef struct pthread_arg_t {
+typedef struct pthread_arg_receiver {
     int new_socket_fd;
-} pthread_arg_t;
+} pthread_arg_receiver;
 
-typedef struct pthread_arg_file {
+typedef struct pthread_arg_sender {
     int new_socket_fd;
     char *mem_file;
-} pthread_arg_file;
+} pthread_arg_sender;
 
 typedef struct configuration {
-    char * type;
-    char * ip;
+    char *type;
+    char *ip;
     unsigned int port;
 } configuration;
 
@@ -41,34 +41,28 @@ void *pthread_send_file(void *arg);
 
 void process_routine (int socket_fd);
 
-char * get_parameter(char * line, FILE * stream);
+char *get_parameter(char *line, FILE *stream);
 
 void read_config(int has_port, int has_type);
 
-char * extract_route(char * buffer);
+char *extract_route(char *buffer);
 
-int is_file(char * path);
+int is_file(char *path);
 
-int send_error(int socket_fd, char * err);
+int send_error(int socket_fd, char *err);
 
-char * extract_name_only(char * file);
+char *get_ip();
 
-char * get_ip();
+const char *PORT_FLAG = "--port=";
+const char *TYPE_FLAG="--type=";
+const char *HELP_FLAG="--help";
+configuration config;
 
-const char * port_flag = "--port=";
-const char * type_flag="--type=";
-const char * help_flag="--help";
-
-/*
- * Variabili che andranno splittate nel file dei thread.
- */
-pthread_arg_file *pthread_file;
+pthread_arg_sender *pthread_file;
 
 pthread_attr_t pthread_attr;
-pthread_arg_t *pthread_arg;
+pthread_arg_receiver *pthread_arg;
 pthread_t pthread;
-
-configuration config;
 
 int main(int argc, char *argv[]) {
 
@@ -76,21 +70,21 @@ int main(int argc, char *argv[]) {
     char * input;
     for (int fd = 1; fd < argc; fd++) {
         input = argv[fd];
-        if (strncmp(input, port_flag, strlen(port_flag)) == 0) {
+        if (strncmp(input, PORT_FLAG, strlen(PORT_FLAG)) == 0) {
             has_port = 1;
-            config.port = strtoul(input + strlen(port_flag), NULL, 10);
+            config.port = strtoul(input + strlen(PORT_FLAG), NULL, 10);
             if (config.port == 0) {
                 perror("Porta errata");
                 exit(1);
             }
-        } else if (strncmp(input, type_flag, strlen(type_flag)) == 0) {
+        } else if (strncmp(input, TYPE_FLAG, strlen(TYPE_FLAG)) == 0) {
             has_type = 1;
-            config.type = input + strlen(type_flag);
+            config.type = input + strlen(TYPE_FLAG);
             if (config.type == NULL) {
                 perror("Errore scelta thread/process");
                 exit(1);
             }
-        } else if (strncmp(input, help_flag, strlen(help_flag)) == 0) {
+        } else if (strncmp(input, HELP_FLAG, strlen(HELP_FLAG)) == 0) {
             puts("Il server viene lanciato di default sulla porta 7070 in modalità multi-thread.\n\n"
                  "--port=<numero_porta> per specificare la porta su cui ascoltare all'avvio.\n"
                  "--type=<thread/process> per specificare la modalità di avvio del server.\n");
@@ -168,7 +162,7 @@ int main(int argc, char *argv[]) {
                 }
                 else {
                     if (equals(config.type, "thread")) {
-                        pthread_arg = (pthread_arg_t *)malloc(sizeof (pthread_arg_t));
+                        pthread_arg = (pthread_arg_receiver *)malloc(sizeof (pthread_arg_receiver));
                         if (!pthread_arg) {
                             perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
                             free(pthread_arg);
@@ -257,7 +251,7 @@ char * get_dir_files(char * route, char * path, char * buffer) {
 }
 
 void *pthread_routine(void *arg) {
-    pthread_arg_t *args = (pthread_arg_t *) arg;
+    pthread_arg_receiver *args = (pthread_arg_receiver *) arg;
     int socket_fd = args->new_socket_fd;
 
     free(arg);
@@ -304,14 +298,10 @@ void *pthread_routine(void *arg) {
         if (stat(path,&v) == -1) {
             perror("Errore nel prendere la grandezza del file");
         }
-
-        if (equals("../public/text.t.txt", path)) {
-            sleep(5);
-        }
-
         /* map file in memory */
         flock(fd, LOCK_EX);
         char *file_in_memory = mmap(NULL, v.st_size, PROT_READ, MAP_SHARED, fd, 0);
+        puts(path);
         flock(fd, LOCK_UN);
         // controllare errore
         // ma il file va unmappato?
@@ -319,7 +309,7 @@ void *pthread_routine(void *arg) {
 
 
         /* create thread and send file */
-        pthread_file = (pthread_arg_file *)malloc(sizeof (pthread_arg_file));
+        pthread_file = (pthread_arg_sender *)malloc(sizeof (pthread_arg_sender));
         if (!pthread_file) {
             perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
             free(pthread_file);
@@ -350,7 +340,7 @@ void *pthread_routine(void *arg) {
 }
 
 void *pthread_send_file(void *arg){
-    pthread_arg_file *args = (pthread_arg_file *) arg;
+    pthread_arg_sender *args = (pthread_arg_sender *) arg;
     int socket_fd = args->new_socket_fd;
     char *file_mem = args->mem_file;
     //int file_fd = args->file_fd;
@@ -473,3 +463,19 @@ char * get_ip() {
     //freeifaddrs(addrs);
     return NULL;
 }
+
+/*
+int thread_init(pthread_attr_t pthread_attr) {
+    if (pthread_attr_init(&pthread_attr) != 0) {
+        perror("pthread_attr_init\n");
+        return -1;
+    }
+
+    if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
+        perror("pthread_attr_setdetachstate\n");
+        return -1;
+    }
+
+    return 0;
+}
+ */
