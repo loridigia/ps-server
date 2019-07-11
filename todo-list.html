@@ -19,7 +19,7 @@ partenza (tramite opzione da linea comandi e/o lettura di un file di configurazi
 
 <!-- * Il processo o thread principale attende con una select() il completamento di una richiesta di connessione. -->
 
-* I file devono essere acceduti in modalità esclusiva anche se in sola lettura; è richiesto quindi un meccanismo di lock per l'accesso ai file.
+<!-- * I file devono essere acceduti in modalità esclusiva anche se in sola lettura; è richiesto quindi un meccanismo di lock per l'accesso ai file. -->
 
 <!-- * Per determinare il tipo di file (necessario per definire il primo carattere dell'output inviato dal server)
 è possibile utilizzare il comando file da Linux (invocato utilizzando la funzione popen()). -->
@@ -39,8 +39,8 @@ nome file
 dimensione file
 indirizzo IP e numero di porta del client che ha effettuato la richiesta
 
-* La lista dei file da rendere disponibile deve essere costruita utilizzando le primitive specifiche
-della piattaforma per la lettura delle directory, senza fare uso dei comandi di sistema.
+<!-- * La lista dei file da rendere disponibile deve essere costruita utilizzando le primitive specifiche
+della piattaforma per la lettura delle directory, senza fare uso dei comandi di sistema. -->
 
 * Il server deve funzionare in modalità daemon sotto Unix/Linux.
 

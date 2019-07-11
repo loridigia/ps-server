@@ -4,10 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-
-
-
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -31,7 +27,6 @@ typedef struct pthread_arg_t {
 typedef struct pthread_arg_file {
     int new_socket_fd;
     char *mem_file;
-    int file_fd;
 } pthread_arg_file;
 
 typedef struct configuration {
@@ -315,7 +310,9 @@ void *pthread_routine(void *arg) {
         }
 
         /* map file in memory */
+        flock(fd, LOCK_EX);
         char *file_in_memory = mmap(NULL, v.st_size, PROT_READ, MAP_SHARED, fd, 0);
+        flock(fd, LOCK_UN);
         // controllare errore
         // ma il file va unmappato?
 
@@ -329,8 +326,6 @@ void *pthread_routine(void *arg) {
         }
         pthread_file->new_socket_fd = socket_fd;
         pthread_file->mem_file = file_in_memory;
-        pthread_file->file_fd = fd;
-
 
         if (pthread_create(&pthread, &pthread_attr, pthread_send_file, (void *)pthread_file) != 0){
             perror("Impossibile creare un nuovo thread.\n");
