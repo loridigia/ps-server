@@ -14,11 +14,7 @@
 #include <ifaddrs.h>
 #include <sys/file.h>
 #include <sys/mman.h>
-
-#define BACKLOG 32
-#define CONFIG_PATH "../config.txt"
-#define PUBLIC_PATH "../public"
-#define equals(str1, str2) strcmp(str1,str2) == 0
+#include "commons/commons.h"
 
 typedef struct pthread_arg_receiver {
     int new_socket_fd;
@@ -29,90 +25,30 @@ typedef struct pthread_arg_sender {
     char *mem_file;
 } pthread_arg_sender;
 
-typedef struct configuration {
-    char *type;
-    char *ip;
-    unsigned int port;
-} configuration;
-
 void *pthread_routine(void *arg);
 
 void *pthread_send_file(void *arg);
 
 void process_routine (int socket_fd);
 
-char *get_parameter(char *line, FILE *stream);
-
-void read_config(int has_port, int has_type);
-
-char *extract_route(char *buffer);
-
-int is_file(char *path);
-
-int send_error(int socket_fd, char *err);
-
-char *get_ip();
-
-const char *PORT_FLAG = "--port=";
-const char *TYPE_FLAG="--type=";
-const char *HELP_FLAG="--help";
 configuration config;
-
-pthread_arg_sender *pthread_file;
-
-pthread_attr_t pthread_attr;
-pthread_arg_receiver *pthread_arg;
 pthread_t pthread;
+pthread_attr_t pthread_attr;
 
 int main(int argc, char *argv[]) {
+    init_server(&config, argc, argv);
 
-    int has_port = 0, has_type = 0;
-    char * input;
-    for (int fd = 1; fd < argc; fd++) {
-        input = argv[fd];
-        if (strncmp(input, PORT_FLAG, strlen(PORT_FLAG)) == 0) {
-            has_port = 1;
-            config.port = strtoul(input + strlen(PORT_FLAG), NULL, 10);
-            if (config.port == 0) {
-                perror("Porta errata");
-                exit(1);
-            }
-        } else if (strncmp(input, TYPE_FLAG, strlen(TYPE_FLAG)) == 0) {
-            has_type = 1;
-            config.type = input + strlen(TYPE_FLAG);
-            if (config.type == NULL) {
-                perror("Errore scelta thread/process");
-                exit(1);
-            }
-        } else if (strncmp(input, HELP_FLAG, strlen(HELP_FLAG)) == 0) {
-            puts("Il server viene lanciato di default sulla porta 7070 in modalità multi-thread.\n\n"
-                 "--port=<numero_porta> per specificare la porta su cui ascoltare all'avvio.\n"
-                 "--type=<thread/process> per specificare la modalità di avvio del server.\n");
-        }
-    }
-
-    read_config(has_port, has_type);
-    config.ip = get_ip();
-
-    if (config.ip == NULL) {
-        perror("Impossibile ottenere l'ip del server.");
+    if (pthread_attr_init(&pthread_attr) != 0) {
+        perror("pthread_attr_init\n");
         exit(1);
     }
 
-    if (equals(config.type, "thread")) {
-        if (pthread_attr_init(&pthread_attr) != 0) {
-            perror("pthread_attr_init\n");
-            exit(1);
-        }
-
-        if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
-            perror("pthread_attr_setdetachstate\n");
-            exit(1);
-        }
+    if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
+        perror("pthread_attr_setdetachstate\n");
+        exit(1);
     }
 
     int socket_fd;
-
     struct sockaddr_in socket_addr;
     bzero(&socket_addr, sizeof socket_addr);
     socket_addr.sin_family = AF_INET;
@@ -140,10 +76,8 @@ int main(int argc, char *argv[]) {
     FD_ZERO (&read_fd_set);
     FD_SET (socket_fd, &read_fd_set);
 
-    while (1)
-    {
-        if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0)
-        {
+    while (1) {
+        if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
             perror ("Errore durante la select.");
             exit (1);
         }
@@ -151,7 +85,6 @@ int main(int argc, char *argv[]) {
         for (int fd = 0; fd < FD_SETSIZE; fd++) {
             if (FD_ISSET (fd, &read_fd_set)) {
                 if (fd == socket_fd) {
-                    /* Nuova connessione */
                     socket_size = sizeof (socket_addr);
                     int new = accept (socket_fd, (struct sockaddr *) &socket_addr, &socket_size);
                     if (new < 0) {
@@ -162,7 +95,7 @@ int main(int argc, char *argv[]) {
                 }
                 else {
                     if (equals(config.type, "thread")) {
-                        pthread_arg = (pthread_arg_receiver *)malloc(sizeof (pthread_arg_receiver));
+                        pthread_arg_receiver *pthread_arg = (pthread_arg_receiver *)malloc(sizeof (pthread_arg_receiver));
                         if (!pthread_arg) {
                             perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
                             free(pthread_arg);
@@ -214,7 +147,7 @@ char *get_number_ext(const char *filename){
     else return "3";
 }
 
-char * get_dir_files(char * route, char * path, char * buffer) {
+char *get_dir_files(char *route, char *path, char *buffer) {
     DIR *d;
     struct dirent *dir;
 
@@ -231,7 +164,7 @@ char * get_dir_files(char * route, char * path, char * buffer) {
                 strcat(buffer, "/");
             }
             strcat(buffer,"\t");
-            strcat(buffer,config.ip);
+            strcat(buffer,config.ip_address);
             strcat(buffer,"\t");
             char port[6];
             sprintf(port,"%d",config.port);
@@ -277,7 +210,7 @@ void *pthread_routine(void *arg) {
     char *files;
     char listing_buffer[4096];
     bzero(listing_buffer, sizeof listing_buffer);
-    char * route = extract_route(client_buffer);
+    char *route = extract_route(client_buffer);
 
     char path[128];
     strcpy(path, PUBLIC_PATH);
@@ -285,10 +218,10 @@ void *pthread_routine(void *arg) {
 
     if (is_file(path)) {
 
-        /* read file */
+        /*read file */
         int fd = open(path, O_RDONLY);
         if (fd == -1) {
-            char * err = "Errore nell'apertura del file";
+            char *err = "Errore nell'apertura del file";
             perror(err);
             send_error(socket_fd, err);
             //exit(1);
@@ -298,7 +231,7 @@ void *pthread_routine(void *arg) {
         if (stat(path,&v) == -1) {
             perror("Errore nel prendere la grandezza del file");
         }
-        /* map file in memory */
+        /*map file in memory */
         flock(fd, LOCK_EX);
         char *file_in_memory = mmap(NULL, v.st_size, PROT_READ, MAP_SHARED, fd, 0);
         puts(path);
@@ -308,11 +241,12 @@ void *pthread_routine(void *arg) {
 
 
 
-        /* create thread and send file */
-        pthread_file = (pthread_arg_sender *)malloc(sizeof (pthread_arg_sender));
+        /*create thread and send file */
+        pthread_arg_sender *pthread_file = (pthread_arg_sender *)malloc(sizeof (pthread_arg_sender));
         if (!pthread_file) {
             perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
             free(pthread_file);
+            return NULL;
         }
         pthread_file->new_socket_fd = socket_fd;
         pthread_file->mem_file = file_in_memory;
@@ -347,7 +281,7 @@ void *pthread_send_file(void *arg){
 
     free(arg);
 
-    char * new_str = malloc(strlen(file_mem) + 2);
+    char *new_str = malloc(strlen(file_mem) + 2);
     strcpy(new_str, file_mem);
     strcat(new_str, "\n");
 
@@ -357,46 +291,6 @@ void *pthread_send_file(void *arg){
     // controllo errori
     free(new_str);
     close(socket_fd);
-    return NULL;
-}
-
-void read_config(int has_port, int has_type) {
-    if (has_port && has_type) {
-        return;
-    }
-    FILE *stream;
-    char * line = NULL;
-    stream = fopen(CONFIG_PATH, "r");
-    if (stream == NULL) {
-        perror("Impossibile aprire il file di configurazione.\n");
-        exit(1);
-    }
-    char * port_param = get_parameter(line,stream);
-    if (!has_port) {
-        config.port = strtoul(port_param, NULL, 10);
-        if (config.port == 0) {
-            perror("Controllare che la porta sia scritta correttamente.\n");
-            exit(1);
-        }
-    }
-    char * type_param = get_parameter(line,stream);
-    if (!has_type) {
-        config.type = type_param;
-        if (config.type == NULL) {
-            perror("Seleziona una modalità corretta di avvio (thread o process)\n");
-            exit(1);
-        }
-    }
-}
-
-char * get_parameter(char * line, FILE * stream) {
-    size_t len;
-    char * ptr;
-    if (getline(&line, &len, stream) != -1) {
-        strtok(line, ":");
-        ptr = strtok(NULL, "\n");
-        return ptr;
-    }
     return NULL;
 }
 
@@ -414,68 +308,3 @@ void process_routine(int socket_fd) {
         exit(1);
     }
 }
-
-char * extract_route(char * buffer) {
-    char * route = strdup(buffer);
-    strtok(route, " ");
-    return strtok(NULL, " ");
-}
-
-/*
-char * extract_name_only(char * file) {
-    if (strchr(file, '.') == NULL) {
-        return file;
-    }
-
-    int size = strlen(file);
-    char *end = file + size;
-    while (*end != '.') {
-        end--;
-        size--;
-    }
-
-    *end = '\0';
-    return end-size;
-}
-*/
-
-int is_file(char * path) {
-    struct stat path_stat;
-    stat(path, &path_stat);
-    return S_ISREG(path_stat.st_mode);
-}
-
-int send_error(int socket_fd, char * err) {
-    return send(socket_fd, err, strlen(err), 0) == -1;
-}
-
-char * get_ip() {
-    struct ifaddrs *addrs;
-    getifaddrs(&addrs);
-    struct ifaddrs *tmp = addrs;
-
-    while (tmp) {
-        if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET) {
-            struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
-            return inet_ntoa(pAddr->sin_addr);
-        } tmp = tmp->ifa_next;
-    }
-    //freeifaddrs(addrs);
-    return NULL;
-}
-
-/*
-int thread_init(pthread_attr_t pthread_attr) {
-    if (pthread_attr_init(&pthread_attr) != 0) {
-        perror("pthread_attr_init\n");
-        return -1;
-    }
-
-    if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
-        perror("pthread_attr_setdetachstate\n");
-        return -1;
-    }
-
-    return 0;
-}
- */
