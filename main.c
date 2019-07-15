@@ -16,6 +16,10 @@
 #include <sys/mman.h>
 #include "commons/commons.h"
 
+typedef struct pthread_arg_listener {
+    int port;
+} pthread_arg_listener;
+
 typedef struct pthread_arg_receiver {
     int new_socket_fd;
 } pthread_arg_receiver;
@@ -30,6 +34,16 @@ void *pthread_routine(void *arg);
 void *pthread_send_file(void *arg);
 
 void process_routine (int socket_fd);
+
+void *pthread_listener_routine(void *arg);
+
+void *process_listener_routine(void *arg);
+
+void *handle_requests(int port, int (*handle)(int, fd_set*));
+
+int work_with_threads(int fd, fd_set *read_fd_set);
+
+int work_with_processes(int fd, fd_set read_fd_set);
 
 configuration config;
 pthread_t pthread;
@@ -54,75 +68,23 @@ int main(int argc, char *argv[]) {
         perror("pthread_attr_setdetachstate\n");
         exit(1);
     }
-    int socket_fd;
-    struct sockaddr_in socket_addr;
-    listen_on(config.port, &socket_fd, &socket_addr);
 
-    fd_set read_fd_set;
-    FD_ZERO (&read_fd_set);
-    FD_SET (socket_fd, &read_fd_set);
-
-    socklen_t socket_size;
-    while (1) {
-        if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
-            perror ("Errore durante la select.");
-            exit (1);
+    if (equals(config.type, "thread")) {
+        pthread_arg_listener *pthread_arg = (pthread_arg_listener *)malloc(sizeof (pthread_arg_listener));
+        if (!pthread_arg) {
+            perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
+            free(pthread_arg);
+            exit(1);
         }
+        pthread_arg->port = config.port;
 
-        for (int fd = 0; fd < FD_SETSIZE; fd++) {
-            if (FD_ISSET (fd, &read_fd_set)) {
-                if (fd == socket_fd) {
-                    socket_size = sizeof (socket_addr);
-                    int new = accept (socket_fd, (struct sockaddr *) &socket_addr, &socket_size);
-                    if (new < 0) {
-                        perror ("Errore durante l'accept del nuovo client.\n");
-                        exit (1);
-                    }
-                    FD_SET (new, &read_fd_set);
-                }
-                else {
-                    if (equals(config.type, "thread")) {
-                        pthread_arg_receiver *pthread_arg = (pthread_arg_receiver *)malloc(sizeof (pthread_arg_receiver));
-                        if (!pthread_arg) {
-                            perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
-                            free(pthread_arg);
-                            continue;
-                        }
-                        pthread_arg->new_socket_fd = fd;
-
-                        if (pthread_create(&pthread, &pthread_attr, pthread_routine, (void *)pthread_arg) != 0) {
-                            perror("Impossibile creare un nuovo thread.\n");
-                            free(pthread_arg);
-                            continue;
-                        }
-
-                        FD_CLR (fd, &read_fd_set);
-
-                    } else if (equals(config.type, "process")) {
-                        int pid = fork();
-
-                        if (pid < 0) {
-                            perror("Errore nel fare fork.\n");
-                            exit(1);
-                        }
-
-                        if (pid == 0) {
-                            process_routine(fd);
-                            exit(0);
-                        }
-                        else {
-                            close(fd);
-                            FD_CLR (fd, &read_fd_set);
-                        }
-                    } else {
-                        perror ("Seleziona una modalità corretta di avvio (thread o process)\n");
-                        exit (EXIT_FAILURE);
-                    }
-                }
-            }
+        if (pthread_create(&pthread, &pthread_attr, pthread_listener_routine, (void *)pthread_arg) != 0) {
+            perror("Impossibile creare un nuovo thread.\n");
+            free(pthread_arg);
+            exit(1);
         }
     }
-
+    while(1);
 }
 
 char *get_dir_files(char *route, char *path, char *buffer) {
@@ -211,7 +173,6 @@ void *pthread_routine(void *arg) {
         /*map file in memory */
         flock(fd, LOCK_EX);
         char *file_in_memory = mmap(NULL, v.st_size, PROT_READ, MAP_SHARED, fd, 0);
-        puts(path);
         flock(fd, LOCK_UN);
         // controllare errore
         // ma il file va unmappato?
@@ -285,3 +246,88 @@ void process_routine(int socket_fd) {
         exit(1);
     }
 }
+
+void *handle_requests(int port, int (*handle)(int, fd_set*)) {
+    int socket_fd;
+    struct sockaddr_in socket_addr;
+    listen_on(port, &socket_fd, &socket_addr);
+
+    fd_set read_fd_set;
+    FD_ZERO (&read_fd_set);
+    FD_SET (socket_fd, &read_fd_set);
+
+    socklen_t socket_size;
+    while (1) {
+        if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
+            perror ("Errore durante la select.");
+            exit (1);
+        }
+
+        for (int fd = 0; fd < FD_SETSIZE; fd++) {
+            if (FD_ISSET (fd, &read_fd_set)) {
+                if (fd == socket_fd) {
+                    socket_size = sizeof (socket_addr);
+                    int new = accept (socket_fd, (struct sockaddr *) &socket_addr, &socket_size);
+                    if (new < 0) {
+                        perror ("Errore durante l'accept del nuovo client.\n");
+                        exit (1);
+                    }
+                    FD_SET (new, &read_fd_set);
+                }
+                else {
+                    handle(fd, &read_fd_set);
+                }
+            }
+        }
+    }
+}
+
+void *pthread_listener_routine(void *arg) {
+    pthread_arg_listener *args = (pthread_arg_listener *) arg;
+    handle_requests(args->port, work_with_threads);
+    return NULL;
+}
+
+void *process_listener_routine(void *arg) {
+    return NULL;
+}
+
+int work_with_threads(int fd, fd_set *read_fd_set) {
+    pthread_arg_receiver *pthread_arg = (pthread_arg_receiver *)malloc(sizeof (pthread_arg_receiver));
+    if (!pthread_arg) {
+        perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
+        free(pthread_arg);
+        return -1;
+    }
+    pthread_arg->new_socket_fd = fd;
+
+    if (pthread_create(&pthread, &pthread_attr, pthread_routine, (void *)pthread_arg) != 0) {
+        perror("Impossibile creare un nuovo thread.\n");
+        free(pthread_arg);
+        return -1;
+    }
+
+    FD_CLR (fd, read_fd_set);
+    return 0;
+}
+
+/*
+int work_with_processes() {
+    int pid = fork();
+
+    if (pid < 0) {
+        perror("Errore nel fare fork.\n");
+        exit(1);
+    }
+
+    if (pid == 0) {
+        process_routine(fd);
+        exit(0);
+    }
+    else {
+        close(fd);
+        FD_CLR (fd, &read_fd_set);
+    }
+    return 0;
+}
+ */
