@@ -33,17 +33,11 @@ void *pthread_routine(void *arg);
 
 void *pthread_send_file(void *arg);
 
-void process_routine (int socket_fd);
-
 void *pthread_listener_routine(void *arg);
-
-void *process_listener_routine(void *arg);
 
 void *handle_requests(int port, int (*handle)(int, fd_set*));
 
 int work_with_threads(int fd, fd_set *read_fd_set);
-
-int work_with_processes(int fd, fd_set read_fd_set);
 
 configuration config;
 pthread_t pthread;
@@ -84,6 +78,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     }
+    // for debugging purpose
     while(1);
 }
 
@@ -232,21 +227,6 @@ void *pthread_send_file(void *arg){
     return NULL;
 }
 
-void process_routine(int socket_fd) {
-    char buffer[256];
-    int n = recv(socket_fd, buffer, sizeof buffer, 0);
-    if (n < 0) {
-        perror("ERROR reading from socket");
-        exit(1);
-    }
-    puts(buffer);
-    send(socket_fd, buffer, strlen(buffer), 0);
-    if (n < 0) {
-        perror("ERROR writing to socket");
-        exit(1);
-    }
-}
-
 void *handle_requests(int port, int (*handle)(int, fd_set*)) {
     int socket_fd;
     struct sockaddr_in socket_addr;
@@ -288,10 +268,6 @@ void *pthread_listener_routine(void *arg) {
     return NULL;
 }
 
-void *process_listener_routine(void *arg) {
-    return NULL;
-}
-
 int work_with_threads(int fd, fd_set *read_fd_set) {
     pthread_arg_receiver *pthread_arg = (pthread_arg_receiver *)malloc(sizeof (pthread_arg_receiver));
     if (!pthread_arg) {
@@ -310,24 +286,3 @@ int work_with_threads(int fd, fd_set *read_fd_set) {
     FD_CLR (fd, read_fd_set);
     return 0;
 }
-
-/*
-int work_with_processes() {
-    int pid = fork();
-
-    if (pid < 0) {
-        perror("Errore nel fare fork.\n");
-        exit(1);
-    }
-
-    if (pid == 0) {
-        process_routine(fd);
-        exit(0);
-    }
-    else {
-        close(fd);
-        FD_CLR (fd, &read_fd_set);
-    }
-    return 0;
-}
- */

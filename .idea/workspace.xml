@@ -13,6 +13,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7f07cd6c-b336-4153-a2da-92d8df351a8d" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/threads/threads.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/threads/threads.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/main.c" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
@@ -59,8 +62,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/commons/commons.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2772">
-              <caret line="154" column="1" selection-start-line="154" selection-start-column="1" selection-end-line="154" selection-end-column="1" />
+            <state>
+              <caret selection-end-line="16" selection-end-column="20" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -68,16 +71,31 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="673">
-              <caret line="279" column="13" lean-forward="true" selection-start-line="279" selection-start-column="13" selection-end-line="279" selection-end-column="13" />
+            <state relative-caret-position="-3248">
+              <caret line="38" selection-start-line="38" selection-end-line="38" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
             </state>
           </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/threads/threads.h">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/threads/threads.c">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/LICENSE">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
     </leaf>
@@ -91,7 +109,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>directory</find>
       <find>FILE</find>
       <find>close</find>
       <find>flock</find>
@@ -108,7 +125,6 @@
       <find>pthread</find>
       <find>pthread_</find>
       <find>*</find>
-      <find>thread</find>
       <find>pthread_attr</find>
       <find>pthread_arg_receiver</find>
       <find>pthread_arg</find>
@@ -121,6 +137,8 @@
       <find>config.port</find>
       <find>read_fd</find>
       <find>Errore nel ricevere dati dalla socket</find>
+      <find>thread</find>
+      <find>work_with_threads</find>
     </findStrings>
     <replaceStrings>
       <replace>&amp;</replace>
@@ -133,6 +151,7 @@
       <replace>HELP_FLAG</replace>
       <replace>*</replace>
       <replace>get_extension_code</replace>
+      <replace>work_with_threads</replace>
     </replaceStrings>
   </component>
   <component name="Git.Settings">
@@ -152,7 +171,9 @@
         <option value="$PROJECT_DIR$/commons.c" />
         <option value="$PROJECT_DIR$/commons/commons.c" />
         <option value="$PROJECT_DIR$/commons/commons.h" />
+        <option value="$PROJECT_DIR$/threads/threads.h" />
         <option value="$PROJECT_DIR$/main.c" />
+        <option value="$PROJECT_DIR$/threads/threads.c" />
       </list>
     </option>
   </component>
@@ -179,6 +200,11 @@
               <item name="PS" type="b2602c69:ProjectViewProjectNode" />
               <item name="ps-server" type="462c0819:PsiDirectoryNode" />
               <item name="commons" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PS" type="b2602c69:ProjectViewProjectNode" />
+              <item name="ps-server" type="462c0819:PsiDirectoryNode" />
+              <item name="threads" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -256,13 +282,13 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="80577000" />
+    <option name="totallyTimeSpent" value="81171000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-11" y="23" width="1920" height="977" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.1368477" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.1368477" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -281,8 +307,8 @@
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Database" order="3" />
-      <window_info active="true" anchor="right" id="Run" order="4" visible="true" weight="0.32428116" />
-      <window_info anchor="right" id="Messages" order="5" weight="0.3343983" />
+      <window_info anchor="right" id="Run" order="4" weight="0.32428116" />
+      <window_info anchor="right" id="Messages" order="5" visible="true" weight="0.3343983" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -318,9 +344,6 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/public/image.jpeg">
       <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/LICENSE">
-      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/config.txt">
       <provider selected="true" editor-type-id="text-editor">
@@ -377,6 +400,19 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/LICENSE">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-3248">
+          <caret line="38" selection-start-line="38" selection-end-line="38" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/commons/commons.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="342">
@@ -386,23 +422,19 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/commons/commons.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2772">
-          <caret line="154" column="1" selection-start-line="154" selection-start-column="1" selection-end-line="154" selection-end-column="1" />
+        <state>
+          <caret selection-end-line="16" selection-end-column="20" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="673">
-          <caret line="279" column="13" lean-forward="true" selection-start-line="279" selection-start-column="13" selection-end-line="279" selection-end-column="13" />
-          <folding>
-            <element signature="e#0#23#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
+    <entry file="file://$PROJECT_DIR$/threads/threads.h">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/threads/threads.c">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
   </component>
 </project>
