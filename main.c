@@ -36,7 +36,14 @@ pthread_t pthread;
 pthread_attr_t pthread_attr;
 
 int main(int argc, char *argv[]) {
-    init_server(&config, argc, argv);
+    read_arguments(&config, argc, argv);
+    read_configuration(&config);
+    config.ip_address = get_ip();
+
+    if (config.ip_address == NULL) {
+        perror("Impossibile ottenere l'ip del server.");
+        exit(1);
+    }
 
     if (pthread_attr_init(&pthread_attr) != 0) {
         perror("pthread_attr_init\n");
@@ -47,35 +54,15 @@ int main(int argc, char *argv[]) {
         perror("pthread_attr_setdetachstate\n");
         exit(1);
     }
-
     int socket_fd;
     struct sockaddr_in socket_addr;
-    bzero(&socket_addr, sizeof socket_addr);
-    socket_addr.sin_family = AF_INET;
-    socket_addr.sin_port = htons(config.port);
-    socket_addr.sin_addr.s_addr = INADDR_ANY;
-
-    socklen_t socket_size;
-
-    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("Errore durante la creazione della socket.\n");
-        exit(1);
-    }
-
-    if (bind(socket_fd, (struct sockaddr *)&socket_addr, sizeof socket_addr) == -1) {
-        perror("Errore durante il binding tra socket_fd e socket_address\n");
-        exit(1);
-    }
-
-    if (listen(socket_fd, BACKLOG) == -1) {
-        perror("Errore nel provare ad ascoltare sulla porta data in input.\n");
-        exit(1);
-    }
+    listen_on(config.port, &socket_fd, &socket_addr);
 
     fd_set read_fd_set;
     FD_ZERO (&read_fd_set);
     FD_SET (socket_fd, &read_fd_set);
 
+    socklen_t socket_size;
     while (1) {
         if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
             perror ("Errore durante la select.");
@@ -135,16 +122,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-}
 
-
-char *get_number_ext(const char *filename){
-    const char *ext = strrchr(filename, '.');
-    if (ext == NULL) return "1 ";
-    else if (equals(ext, ".txt")) return "0 ";
-    else if (equals(ext, ".gif")) return "g ";
-    else if (equals(ext, ".jpeg") || equals(ext, ".jpg")) return "I ";
-    else return "3";
 }
 
 char *get_dir_files(char *route, char *path, char *buffer) {
@@ -156,7 +134,7 @@ char *get_dir_files(char *route, char *path, char *buffer) {
             if (equals(dir->d_name, ".") || equals(dir->d_name, "..")) {
                 continue;
             }
-            strcat(buffer, get_number_ext(dir->d_name));
+            strcat(buffer, get_extension_code(dir->d_name));
             strcat(buffer, dir->d_name);
             strcat(buffer, "\t");
             strcat(buffer, route);
@@ -179,7 +157,6 @@ char *get_dir_files(char *route, char *path, char *buffer) {
         perror ("Impossibile aprire la directory");
         return NULL;
     }
-
     return buffer;
 }
 

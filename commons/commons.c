@@ -21,15 +21,6 @@
 #define TYPE_FLAG "--type="
 #define HELP_FLAG "--help"
 
-void init_server(configuration *config, int argc, char *argv[]) {
-    read_arguments(config, argc, argv);
-    read_configuration(config);
-    config->ip_address = get_ip();
-    if (config->ip_address == NULL) {
-        /* qualche errore */
-    }
-}
-
 void read_arguments(configuration *config, int argc, char *argv[]) {
     char *input;
     for (int i = 1; i < argc; i++) {
@@ -58,7 +49,9 @@ void read_arguments(configuration *config, int argc, char *argv[]) {
 void read_configuration(configuration *config) {
     int port_on = config->port > 0;
     int type_on = config->type != NULL;
-    if (port_on && type_on) { return; }
+    if (port_on && type_on) {
+        return;
+    }
 
     FILE *stream;
     char *line = NULL;
@@ -126,4 +119,37 @@ char *extract_route(char *buffer) {
     char *route = strdup(buffer);
     strtok(route, " ");
     return strtok(NULL, " ");
+}
+
+char *get_extension_code(const char *filename){
+    const char *ext = strrchr(filename, '.');
+    if (ext == NULL) return "1 ";
+    else if (equals(ext, ".txt")) return "0 ";
+    else if (equals(ext, ".gif")) return "g ";
+    else if (equals(ext, ".jpeg") || equals(ext, ".jpg")) return "I ";
+    else return "3";
+}
+
+int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
+    bzero(socket_addr, sizeof *socket_addr);
+    socket_addr->sin_family = AF_INET;
+    socket_addr->sin_port = htons(port);
+    socket_addr->sin_addr.s_addr = INADDR_ANY;
+
+    if ((*socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("Errore durante la creazione della socket.\n");
+        return -1;
+    }
+
+    if (bind(*socket_fd, (struct sockaddr *)socket_addr, sizeof *socket_addr) == -1) {
+        perror("Errore durante il binding tra socket_fd e socket_address\n");
+        return -1;
+    }
+
+    if (listen(*socket_fd, BACKLOG) == -1) {
+        perror("Errore nel provare ad ascoltare sulla porta data in input.\n");
+        return -1;
+    }
+
+    return 0;
 }
