@@ -25,16 +25,17 @@ void read_arguments(configuration *config, int argc, char *argv[]) {
     char *input;
     for (int i = 1; i < argc; i++) {
         input = argv[i];
+        char *endptr;
         if (strncmp(input, PORT_FLAG, strlen(PORT_FLAG)) == 0) {
-            config->port = strtoul(input + strlen(PORT_FLAG), NULL, 10);
-            if (config->port == 0) {
-                perror("Porta errata");
+            config->port = strtol(input, &endptr, 10);
+            if (*endptr != '\0' || endptr == input) {
+                perror("Controllare che la porta sia scritta correttamente. \n");
                 exit(1);
             }
         } else if (strncmp(input, TYPE_FLAG, strlen(TYPE_FLAG)) == 0) {
             config->type = input + strlen(TYPE_FLAG);
-            if (config->type == NULL) {
-                perror("Errore scelta thread/process");
+            if (!(equals(config->type, "thread") || equals(config->type, "process"))) {
+                perror("Seleziona una modalità corretta di avvio (thread o process)\n");
                 exit(1);
             }
         } else if (strncmp(input, HELP_FLAG, strlen(HELP_FLAG)) == 0) {
@@ -61,17 +62,18 @@ void read_configuration(configuration *config) {
         exit(1);
     }
     char *port_param = get_parameter(line,stream);
+    char *endptr;
     if (!port_on) {
-        config->port = strtoul(port_param, NULL, 10);
-        if (config->port == 0) {
-            perror("Controllare che la porta sia scritta correttamente.\n");
+        config->port = strtol(port_param, &endptr, 10);
+        if (*endptr != '\0' || endptr == port_param) {
+            perror("Controllare che la porta sia scritta correttamente. \n");
             exit(1);
         }
     }
     char *type_param = get_parameter(line,stream);
     if (!type_on) {
         config->type = type_param;
-        if (config->type == NULL) {
+        if (!(equals(config->type, "thread") || equals(config->type, "process"))) {
             perror("Seleziona una modalità corretta di avvio (thread o process)\n");
             exit(1);
         }

@@ -64,7 +64,8 @@ int main(int argc, char *argv[]) {
     }
 
     if (equals(config.type, "thread")) {
-        pthread_arg_listener *pthread_arg = (pthread_arg_listener *)malloc(sizeof (pthread_arg_listener));
+        pthread_arg_listener *pthread_arg =
+                (pthread_arg_listener *)malloc(sizeof (pthread_arg_listener));
         if (!pthread_arg) {
             perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
             free(pthread_arg);
@@ -72,7 +73,11 @@ int main(int argc, char *argv[]) {
         }
         pthread_arg->port = config.port;
 
-        if (pthread_create(&pthread, &pthread_attr, pthread_listener_routine, (void *)pthread_arg) != 0) {
+        if (pthread_create(
+                &pthread,
+                &pthread_attr,
+                pthread_listener_routine,
+                (void *)pthread_arg) != 0) {
             perror("Impossibile creare un nuovo thread.\n");
             free(pthread_arg);
             exit(1);
@@ -230,7 +235,9 @@ void *pthread_send_file(void *arg){
 void *handle_requests(int port, int (*handle)(int, fd_set*)) {
     int socket_fd;
     struct sockaddr_in socket_addr;
-    listen_on(port, &socket_fd, &socket_addr);
+    if (listen_on(port, &socket_fd, &socket_addr) != 0) {
+
+    }
 
     fd_set read_fd_set;
     FD_ZERO (&read_fd_set);
