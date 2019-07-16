@@ -26,26 +26,24 @@ typedef struct pthread_arg_receiver {
 
 typedef struct pthread_arg_sender {
     int new_socket_fd;
-    char *mem_file;
+    char *file;
+    size_t file_size;
 } pthread_arg_sender;
 
 void *pthread_routine(void *arg);
-
-void *pthread_send_file(void *arg);
-
+int serve_client(int client_fd);
+void *pthread_sender_routine(void *arg);
 void *pthread_listener_routine(void *arg);
-
 void handle_requests(int port, int (*handle)(int, fd_set*));
-
 int work_with_threads(int fd, fd_set *read_fd_set);
+int is_get_method(char *client_buffer);
 
-configuration config;
 pthread_t pthread;
 pthread_attr_t pthread_attr;
 
 int main(int argc, char *argv[]) {
-    load_arguments(&config, argc, argv);
-    if (load_configuration(&config) == -1) {
+    load_arguments(argc, argv);
+    if (load_configuration() == -1) {
         exit(1);
     }
 
@@ -83,145 +81,120 @@ int main(int argc, char *argv[]) {
     while(1);
 }
 
-char *get_file_listing(char *route, char *path, char *buffer) {
-    DIR *d;
-    struct dirent *dir;
-
-    if ((d = opendir (path)) != NULL) {
-        while ((dir = readdir (d)) != NULL) {
-            if (equals(dir->d_name, ".") || equals(dir->d_name, "..")) {
-                continue;
-            }
-            strcat(buffer, get_extension_code(dir->d_name));
-            strcat(buffer, dir->d_name);
-            strcat(buffer, "\t");
-            strcat(buffer, route);
-            if (path[strlen(path)-1] != '/') {
-                strcat(buffer, "/");
-            }
-            strcat(buffer,"\t");
-            strcat(buffer,config.ip_address);
-            strcat(buffer,"\t");
-            char port[6];
-            sprintf(port,"%d",config.port);
-            strcat(buffer,port);
-            strcat(buffer, "\n");
-        }
-        strcat(buffer, ".\n");
-        rewinddir(d);
-        closedir (d);
-    }
-    else {
-        return NULL;
-    }
-    return buffer;
-}
-
 void *pthread_routine(void *arg) {
     pthread_arg_receiver *args = (pthread_arg_receiver *) arg;
-    int socket_fd = args->new_socket_fd;
-
+    serve_client(args->new_socket_fd);
     free(arg);
-    char client_buffer[512];
+    return NULL;
+}
+
+int is_get_method(char *client_buffer) {
+    char method[4];
+    memcpy(method, client_buffer, 3);
+    method[3] = '\0';
+    return equals(method,"GET");
+}
+
+int serve_client(int client_fd) {
+    char client_buffer[1024];
     bzero(client_buffer, sizeof client_buffer);
 
-    if (recv(socket_fd, client_buffer, sizeof client_buffer, 0) == -1) {
-        perror("Errore nel ricevere dati dalla socket.\n");
+    if (recv(client_fd, client_buffer, sizeof client_buffer, 0) == -1) {
+        char *err = "\"Errore nel ricevere i dati.\n";
+        perror(err);
+        send_error(client_fd, err);
     }
 
-    char method[4];
-    memcpy(method, &client_buffer, 3);
-    method[3] = '\0';
-
-    if (!(equals(method,"GET"))) {
-        if (send_error(socket_fd, "Il server accetta solo richieste di tipo GET.\n") == -1) {
+    if (!is_get_method(client_buffer)) {
+        if (send_error(client_fd, "Il server accetta solo richieste di tipo GET.\n") == -1) {
             perror("Errore nel comunicare con la socket.\n");
         }
-        close(socket_fd);
-        return NULL;
+        close(client_fd);
+        return -1;
     }
 
     char *files;
-    char listing_buffer[4096];
+    //da allocare dinamicamente
+    char listing_buffer[8192];
     bzero(listing_buffer, sizeof listing_buffer);
     char *route = extract_route(client_buffer);
-
-    char path[128];
+    char path[1024];
     strcpy(path, PUBLIC_PATH);
     strcat(path, route);
 
     if (is_file(path)) {
-
-        /*read file */
-        int fd = open(path, O_RDONLY);
-        if (fd == -1) {
+        int file_fd = open(path, O_RDONLY);
+        if (file_fd == -1) {
             char *err = "Errore nell'apertura del file.\n";
             perror(err);
-            send_error(socket_fd, err);
-            //exit(1);
+            send_error(client_fd, err);
+            return -1;
         }
 
         struct stat v;
         if (stat(path,&v) == -1) {
             perror("Errore nel prendere la grandezza del file.\n");
         }
-        /*map file in memory */
-        flock(fd, LOCK_EX);
-        char *file_in_memory = mmap(NULL, v.st_size, PROT_READ, MAP_SHARED, fd, 0);
-        flock(fd, LOCK_UN);
-        // controllare errore
-        // ma il file va unmappato?
 
-
-
-        /*create thread and send file */
-        pthread_arg_sender *pthread_file = (pthread_arg_sender *)malloc(sizeof (pthread_arg_sender));
-        if (!pthread_file) {
-            perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
-            free(pthread_file);
-            return NULL;
+        flock(file_fd, LOCK_EX);
+        char *file_in_memory = mmap(NULL, v.st_size, PROT_READ, MAP_PRIVATE, file_fd, 0);
+        if (file_in_memory == MAP_FAILED) {
+            perror("Errore nell'operazione di mapping del file.\n");
         }
-        pthread_file->new_socket_fd = socket_fd;
-        pthread_file->mem_file = file_in_memory;
+        flock(file_fd, LOCK_UN);
 
-        if (pthread_create(&pthread, &pthread_attr, pthread_send_file, (void *)pthread_file) != 0){
+        pthread_arg_sender *pthread_sender = (pthread_arg_sender *)malloc(sizeof (pthread_arg_sender));
+        if (!pthread_sender) {
+            perror("Impossibile allocare memoria per gli argomenti del thread sender.\n");
+            free(pthread_sender);
+            return -1;
+        }
+        pthread_sender->new_socket_fd = client_fd;
+        pthread_sender->file = file_in_memory;
+        pthread_sender->file_size = v.st_size;
+
+        if (pthread_create(&pthread, &pthread_attr, pthread_sender_routine, (void *)pthread_sender) != 0){
             perror("Impossibile creare un nuovo thread.\n");
+            return -1;
         }
 
     } else {
         files = get_file_listing(route, path, listing_buffer);
         if (files == NULL) {
-            if (send_error(socket_fd, "File o directory non esistente.\n") == -1) {
+            if (send_error(client_fd, "File o directory non esistente.\n") == -1) {
                 perror("Errore nel comunicare con la socket.\n");
+                close(client_fd);
+                return -1;
             }
         }
         else {
-            if (send(socket_fd, files, strlen(files), 0) == -1) {
+            if (send(client_fd, files, strlen(files), 0) == -1) {
                 perror("Errore nel comunicare con la socket.\n");
+                close(client_fd);
+                return -1;
             }
         }
-        close(socket_fd);
+        close(client_fd);
     }
-    return NULL;
-
+    return 0;
 }
 
-void *pthread_send_file(void *arg){
+void *pthread_sender_routine(void *arg){
     pthread_arg_sender *args = (pthread_arg_sender *) arg;
     int socket_fd = args->new_socket_fd;
-    char *file_mem = args->mem_file;
-    //int file_fd = args->file_fd;
+    char *file = args->file;
+    size_t file_size = args->file_size;
 
     free(arg);
 
-    char *new_str = malloc(strlen(file_mem) + 2);
-    strcpy(new_str, file_mem);
+    char *new_str = malloc(strlen(file) + 2);
+    strcpy(new_str, file);
     strcat(new_str, "\n");
 
     if (send(socket_fd, new_str, strlen(new_str), 0) == -1) {
-        perror("dddErrore nel comunicare con la socket.\n");
+        perror("Errore nel comunicare con la socket.\n");
     }
-    // controllo errori
+    munmap(file, file_size);
     free(new_str);
     close(socket_fd);
     return NULL;

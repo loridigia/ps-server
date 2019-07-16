@@ -21,20 +21,20 @@
 #define TYPE_FLAG "--type="
 #define HELP_FLAG "--help"
 
-void load_arguments(configuration *config, int argc, char *argv[]) {
+void load_arguments(int argc, char *argv[]) {
     char *input;
     for (int i = 1; i < argc; i++) {
         input = argv[i];
         char *endptr;
         if (strncmp(input, PORT_FLAG, strlen(PORT_FLAG)) == 0) {
-            config->port = strtol(input + strlen(PORT_FLAG), &endptr, 10);
-            if (config->port < 1024 || *endptr != '\0' || endptr == (input + strlen(PORT_FLAG))) {
+            config.port = strtol(input + strlen(PORT_FLAG), &endptr, 10);
+            if (config.port < 1024 || *endptr != '\0' || endptr == (input + strlen(PORT_FLAG))) {
                 perror("Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
                 exit(1);
             }
         } else if (strncmp(input, TYPE_FLAG, strlen(TYPE_FLAG)) == 0) {
-            config->type = input + strlen(TYPE_FLAG);
-            if (!(equals(config->type, "thread") || equals(config->type, "process"))) {
+            config.type = input + strlen(TYPE_FLAG);
+            if (!(equals(config.type, "thread") || equals(config.type, "process"))) {
                 perror("Seleziona una modalità corretta di avvio (thread o process)\n");
                 exit(1);
             }
@@ -47,9 +47,9 @@ void load_arguments(configuration *config, int argc, char *argv[]) {
     }
 }
 
-int load_configuration(configuration *config) {
-    int port_on = config->port > 0;
-    int type_on = config->type != NULL;
+int load_configuration() {
+    int port_on = config.port > 0;
+    int type_on = config.type != NULL;
     if (port_on && type_on) {
         return 0;
     }
@@ -64,23 +64,23 @@ int load_configuration(configuration *config) {
     char *port_param = get_parameter(line,stream);
     char *endptr;
     if (!port_on) {
-        config->port = strtol(port_param, &endptr, 10);
-        if (config->port < 1024 || *endptr != '\0' || endptr == port_param) {
+        config.port = strtol(port_param, &endptr, 10);
+        if (config.port < 1024 || *endptr != '\0' || endptr == port_param) {
             perror("Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
             return -1;
         }
     }
     char *type_param = get_parameter(line,stream);
     if (!type_on) {
-        config->type = type_param;
-        if (!(equals(config->type, "thread") || equals(config->type, "process"))) {
+        config.type = type_param;
+        if (!(equals(config.type, "thread") || equals(config.type, "process"))) {
             perror("Seleziona una modalità corretta di avvio (thread o process)\n");
             return -1;
         }
     }
 
-    config->ip_address = get_ip();
-    if (config->ip_address == NULL) {
+    config.ip_address = get_ip();
+    if (config.ip_address == NULL) {
         perror("Impossibile ottenere l'ip del server.");
         return -1;
     }
@@ -161,4 +161,38 @@ int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
     }
 
     return 0;
+}
+
+char *get_file_listing(char *route, char *path, char *buffer) {
+    DIR *d;
+    struct dirent *dir;
+
+    if ((d = opendir (path)) != NULL) {
+        while ((dir = readdir (d)) != NULL) {
+            if (equals(dir->d_name, ".") || equals(dir->d_name, "..")) {
+                continue;
+            }
+            strcat(buffer, get_extension_code(dir->d_name));
+            strcat(buffer, dir->d_name);
+            strcat(buffer, "\t");
+            strcat(buffer, route);
+            if (path[strlen(path)-1] != '/') {
+                strcat(buffer, "/");
+            }
+            strcat(buffer,"\t");
+            strcat(buffer,config.ip_address);
+            strcat(buffer,"\t");
+            char port[6];
+            sprintf(port,"%d",config.port);
+            strcat(buffer,port);
+            strcat(buffer, "\n");
+        }
+        strcat(buffer, ".\n");
+        rewinddir(d);
+        closedir (d);
+    }
+    else {
+        return NULL;
+    }
+    return buffer;
 }
