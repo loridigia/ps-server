@@ -35,7 +35,7 @@ void *pthread_send_file(void *arg);
 
 void *pthread_listener_routine(void *arg);
 
-void *handle_requests(int port, int (*handle)(int, fd_set*));
+void handle_requests(int port, int (*handle)(int, fd_set*));
 
 int work_with_threads(int fd, fd_set *read_fd_set);
 
@@ -44,22 +44,18 @@ pthread_t pthread;
 pthread_attr_t pthread_attr;
 
 int main(int argc, char *argv[]) {
-    read_arguments(&config, argc, argv);
-    read_configuration(&config);
-    config.ip_address = get_ip();
-
-    if (config.ip_address == NULL) {
-        perror("Impossibile ottenere l'ip del server.");
+    load_arguments(&config, argc, argv);
+    if (load_configuration(&config) == -1) {
         exit(1);
     }
 
     if (pthread_attr_init(&pthread_attr) != 0) {
-        perror("pthread_attr_init\n");
+        perror("Errore nell'inizializzazione degli attributi del thread.\n");
         exit(1);
     }
 
     if (pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED) != 0) {
-        perror("pthread_attr_setdetachstate\n");
+        perror("Errore nel settare DETACHED_STATE al thread.\n");
         exit(1);
     }
 
@@ -67,7 +63,7 @@ int main(int argc, char *argv[]) {
         pthread_arg_listener *pthread_arg =
                 (pthread_arg_listener *)malloc(sizeof (pthread_arg_listener));
         if (!pthread_arg) {
-            perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
+            perror("Impossibile allocare memoria per gli argomenti del thread.\n");
             free(pthread_arg);
             exit(1);
         }
@@ -87,7 +83,7 @@ int main(int argc, char *argv[]) {
     while(1);
 }
 
-char *get_dir_files(char *route, char *path, char *buffer) {
+char *get_file_listing(char *route, char *path, char *buffer) {
     DIR *d;
     struct dirent *dir;
 
@@ -116,7 +112,7 @@ char *get_dir_files(char *route, char *path, char *buffer) {
         closedir (d);
     }
     else {
-        perror ("Impossibile aprire la directory");
+        perror("Impossibile aprire la directory.\n");
         return NULL;
     }
     return buffer;
@@ -131,7 +127,7 @@ void *pthread_routine(void *arg) {
     bzero(client_buffer, sizeof client_buffer);
 
     if (recv(socket_fd, client_buffer, sizeof client_buffer, 0) == -1) {
-        perror("Errore nel ricevere dati dalla socket. (ricezione richiesta)\n");
+        perror("Errore nel ricevere dati dalla socket.\n");
     }
 
     char method[4];
@@ -160,7 +156,7 @@ void *pthread_routine(void *arg) {
         /*read file */
         int fd = open(path, O_RDONLY);
         if (fd == -1) {
-            char *err = "Errore nell'apertura del file";
+            char *err = "Errore nell'apertura del file.\n";
             perror(err);
             send_error(socket_fd, err);
             //exit(1);
@@ -168,7 +164,7 @@ void *pthread_routine(void *arg) {
 
         struct stat v;
         if (stat(path,&v) == -1) {
-            perror("Errore nel prendere la grandezza del file");
+            perror("Errore nel prendere la grandezza del file.\n");
         }
         /*map file in memory */
         flock(fd, LOCK_EX);
@@ -194,10 +190,10 @@ void *pthread_routine(void *arg) {
         }
 
     } else {
-        files = get_dir_files(route, path, listing_buffer);
+        files = get_file_listing(route, path, listing_buffer);
         if (files == NULL) {
             if (send_error(socket_fd, "Directory non esistente.\n") == -1) {
-                perror("Errore nel comunicare con la socket. (directory non esistente)\n");
+                perror("Errore nel comunicare con la socket.\n");
             }
         }
         else {
@@ -232,11 +228,11 @@ void *pthread_send_file(void *arg){
     return NULL;
 }
 
-void *handle_requests(int port, int (*handle)(int, fd_set*)) {
+void handle_requests(int port, int (*handle)(int, fd_set*)) {
     int socket_fd;
     struct sockaddr_in socket_addr;
     if (listen_on(port, &socket_fd, &socket_addr) != 0) {
-
+        return;
     }
 
     fd_set read_fd_set;
@@ -246,23 +242,25 @@ void *handle_requests(int port, int (*handle)(int, fd_set*)) {
     socklen_t socket_size;
     while (1) {
         if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
-            perror ("Errore durante la select.");
-            exit (1);
+            perror("Errore durante l'operazione di select.\n");
+            return;
         }
 
         for (int fd = 0; fd < FD_SETSIZE; fd++) {
             if (FD_ISSET (fd, &read_fd_set)) {
                 if (fd == socket_fd) {
                     socket_size = sizeof (socket_addr);
-                    int new = accept (socket_fd, (struct sockaddr *) &socket_addr, &socket_size);
+                    int new = accept(socket_fd, (struct sockaddr *) &socket_addr, &socket_size);
                     if (new < 0) {
-                        perror ("Errore durante l'accept del nuovo client.\n");
-                        exit (1);
+                        perror("Errore durante l'accept del nuovo client.\n");
+                        return;
                     }
                     FD_SET (new, &read_fd_set);
                 }
                 else {
-                    handle(fd, &read_fd_set);
+                    if (handle(fd, &read_fd_set) == -1) {
+                        return;
+                    }
                 }
             }
         }

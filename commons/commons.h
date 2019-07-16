@@ -8,8 +8,8 @@ typedef struct configuration {
     unsigned int port;
 } configuration;
 
-void read_arguments(configuration *config, int argc, char *argv[]);
-void read_configuration(configuration *config);
+void load_arguments(configuration *config, int argc, char *argv[]);
+int load_configuration(configuration *config);
 char *get_parameter(char *line, FILE *stream);
 char *get_ip();
 int send_error(int socket_fd, char *err);

@@ -21,7 +21,7 @@
 #define TYPE_FLAG "--type="
 #define HELP_FLAG "--help"
 
-void read_arguments(configuration *config, int argc, char *argv[]) {
+void load_arguments(configuration *config, int argc, char *argv[]) {
     char *input;
     for (int i = 1; i < argc; i++) {
         input = argv[i];
@@ -47,11 +47,11 @@ void read_arguments(configuration *config, int argc, char *argv[]) {
     }
 }
 
-void read_configuration(configuration *config) {
+int load_configuration(configuration *config) {
     int port_on = config->port > 0;
     int type_on = config->type != NULL;
     if (port_on && type_on) {
-        return;
+        return 0;
     }
 
     FILE *stream;
@@ -59,7 +59,7 @@ void read_configuration(configuration *config) {
     stream = fopen(CONFIG_PATH, "r");
     if (stream == NULL) {
         perror("Impossibile aprire il file di configurazione.\n");
-        exit(1);
+        return -1;
     }
     char *port_param = get_parameter(line,stream);
     char *endptr;
@@ -67,7 +67,7 @@ void read_configuration(configuration *config) {
         config->port = strtol(port_param, &endptr, 10);
         if (*endptr != '\0' || endptr == port_param) {
             perror("Controllare che la porta sia scritta correttamente. \n");
-            exit(1);
+            return -1;
         }
     }
     char *type_param = get_parameter(line,stream);
@@ -75,9 +75,17 @@ void read_configuration(configuration *config) {
         config->type = type_param;
         if (!(equals(config->type, "thread") || equals(config->type, "process"))) {
             perror("Seleziona una modalità corretta di avvio (thread o process)\n");
-            exit(1);
+            return -1;
         }
     }
+
+    config->ip_address = get_ip();
+    if (config->ip_address == NULL) {
+        perror("Impossibile ottenere l'ip del server.");
+        return -1;
+    }
+
+    return 0;
 }
 
 char *get_parameter(char *line, FILE *stream) {
@@ -109,7 +117,6 @@ char *get_ip() {
 int send_error(int socket_fd, char *err) {
     return send(socket_fd, err, strlen(err), 0) == -1;
 }
-
 
 int is_file(char *path) {
     struct stat path_stat;
