@@ -27,9 +27,9 @@ void load_arguments(configuration *config, int argc, char *argv[]) {
         input = argv[i];
         char *endptr;
         if (strncmp(input, PORT_FLAG, strlen(PORT_FLAG)) == 0) {
-            config->port = strtol(input, &endptr, 10);
-            if (*endptr != '\0' || endptr == input) {
-                perror("Controllare che la porta sia scritta correttamente. \n");
+            config->port = strtol(input + strlen(PORT_FLAG), &endptr, 10);
+            if (config->port < 1024 || *endptr != '\0' || endptr == (input + strlen(PORT_FLAG))) {
+                perror("Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
                 exit(1);
             }
         } else if (strncmp(input, TYPE_FLAG, strlen(TYPE_FLAG)) == 0) {
@@ -65,8 +65,8 @@ int load_configuration(configuration *config) {
     char *endptr;
     if (!port_on) {
         config->port = strtol(port_param, &endptr, 10);
-        if (*endptr != '\0' || endptr == port_param) {
-            perror("Controllare che la porta sia scritta correttamente. \n");
+        if (config->port < 1024 || *endptr != '\0' || endptr == port_param) {
+            perror("Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
             return -1;
         }
     }

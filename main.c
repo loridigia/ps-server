@@ -112,7 +112,6 @@ char *get_file_listing(char *route, char *path, char *buffer) {
         closedir (d);
     }
     else {
-        perror("Impossibile aprire la directory.\n");
         return NULL;
     }
     return buffer;
@@ -136,7 +135,7 @@ void *pthread_routine(void *arg) {
 
     if (!(equals(method,"GET"))) {
         if (send_error(socket_fd, "Il server accetta solo richieste di tipo GET.\n") == -1) {
-            perror("Errore nel comunicare con la socket. (accetta solo conn. GET)\n");
+            perror("Errore nel comunicare con la socket.\n");
         }
         close(socket_fd);
         return NULL;
@@ -192,13 +191,13 @@ void *pthread_routine(void *arg) {
     } else {
         files = get_file_listing(route, path, listing_buffer);
         if (files == NULL) {
-            if (send_error(socket_fd, "Directory non esistente.\n") == -1) {
+            if (send_error(socket_fd, "File o directory non esistente.\n") == -1) {
                 perror("Errore nel comunicare con la socket.\n");
             }
         }
         else {
             if (send(socket_fd, files, strlen(files), 0) == -1) {
-                perror("Errore nel comunicare con la socket. (invio lista files)\n");
+                perror("Errore nel comunicare con la socket.\n");
             }
         }
         close(socket_fd);
@@ -220,7 +219,7 @@ void *pthread_send_file(void *arg){
     strcat(new_str, "\n");
 
     if (send(socket_fd, new_str, strlen(new_str), 0) == -1) {
-        perror("dddErrore nel comunicare con la socket. (invio lista files)\n");
+        perror("dddErrore nel comunicare con la socket.\n");
     }
     // controllo errori
     free(new_str);
