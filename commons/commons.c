@@ -47,44 +47,44 @@ void load_arguments(int argc, char *argv[]) {
     }
 }
 
-int load_configuration() {
-    int port_on = config.port > 0;
-    int type_on = config.type != NULL;
-    if (port_on && type_on) {
-        return 0;
-    }
-
+int load_configuration(int mode) {
     FILE *stream;
     char *line = NULL;
     stream = fopen(CONFIG_PATH, "r");
     if (stream == NULL) {
         perror("Impossibile aprire il file di configurazione.\n");
+        fclose(stream);
         return -1;
     }
+
     char *port_param = get_parameter(line,stream);
     char *endptr;
-    if (!port_on) {
-        config.port = strtol(port_param, &endptr, 10);
-        if (config.port < 1024 || *endptr != '\0' || endptr == port_param) {
-            perror("Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
-            return -1;
-        }
+    config.port = strtol(port_param, &endptr, 10);
+    if (config.port < 1024 || *endptr != '\0' || endptr == port_param) {
+        perror("Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
+        fclose(stream);
+        return -1;
+    }
+    if (mode == PORT_ONLY) {
+        fclose(stream);
+        return 0;
     }
     char *type_param = get_parameter(line,stream);
-    if (!type_on) {
-        config.type = type_param;
-        if (!(equals(config.type, "thread") || equals(config.type, "process"))) {
-            perror("Seleziona una modalità corretta di avvio (thread o process)\n");
-            return -1;
-        }
+    config.type = type_param;
+    if (!(equals(config.type, "thread") || equals(config.type, "process"))) {
+        perror("Seleziona una modalità corretta di avvio (thread o process)\n");
+        fclose(stream);
+        return -1;
     }
+
 
     config.ip_address = get_ip();
     if (config.ip_address == NULL) {
         perror("Impossibile ottenere l'ip del server.");
+        fclose(stream);
         return -1;
     }
-
+    fclose(stream);
     return 0;
 }
 

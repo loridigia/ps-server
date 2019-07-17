@@ -37,15 +37,19 @@ void *pthread_listener_routine(void *arg);
 void handle_requests(int port, int (*handle)(int, fd_set*));
 int work_with_threads(int fd, fd_set *read_fd_set);
 int is_get_method(char *client_buffer);
+void start();
+void restart();
 
 pthread_t pthread;
 pthread_attr_t pthread_attr;
 
 int main(int argc, char *argv[]) {
+    load_configuration(COMPLETE);
     load_arguments(argc, argv);
-    if (load_configuration() == -1) {
-        exit(1);
-    }
+
+    //debugging purpose
+    int pid = getpid();
+    fprintf(stdout,"Pid:%d\n",pid);
 
     if (pthread_attr_init(&pthread_attr) != 0) {
         perror("Errore nell'inizializzazione degli attributi del thread.\n");
@@ -56,7 +60,14 @@ int main(int argc, char *argv[]) {
         perror("Errore nel settare DETACHED_STATE al thread.\n");
         exit(1);
     }
+    start();
+    signal(SIGHUP, restart);
+    while(1) {
+        sleep(1);
+    }
+}
 
+void start() {
     if (equals(config.type, "thread")) {
         pthread_arg_listener *pthread_arg =
                 (pthread_arg_listener *)malloc(sizeof (pthread_arg_listener));
@@ -77,8 +88,11 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     }
-    // for debugging purpose
-    while(1);
+}
+
+void restart() {
+    load_configuration(PORT_ONLY);
+    start();
 }
 
 void *pthread_routine(void *arg) {

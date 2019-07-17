@@ -1,5 +1,7 @@
 #define PUBLIC_PATH "../public"
 #define BACKLOG 32
+#define COMPLETE 0
+#define PORT_ONLY 1
 #define equals(str1, str2) strcmp(str1,str2) == 0
 
 typedef struct configuration {
@@ -11,7 +13,7 @@ typedef struct configuration {
 configuration config;
 
 void load_arguments(int argc, char *argv[]);
-int load_configuration();
+int load_configuration(int first_start);
 char *get_parameter(char *line, FILE *stream);
 char *get_ip();
 int send_error(int socket_fd, char *err);
