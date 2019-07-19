@@ -14,6 +14,7 @@
 #include <ifaddrs.h>
 #include <sys/file.h>
 #include <sys/mman.h>
+#include <errno.h>
 #include "commons.h"
 
 #define CONFIG_PATH "../config.txt"
@@ -99,6 +100,34 @@ char *get_parameter(char *line, FILE *stream) {
     return NULL;
 }
 
+char * get_client_buffer(int client_fd){
+    char *client_buffer = (char*)calloc(sizeof(char),10);
+    char *reciver_buffer = (char*)calloc(sizeof(char),10);
+
+    int nData;
+    int i = 0;
+    int pointer;
+
+    while ((nData = recv(client_fd, reciver_buffer, 10, MSG_DONTWAIT)) > 0 ){
+        if (i > 0){
+            pointer = strlen(client_buffer);
+            client_buffer = (char *)realloc(client_buffer,((10 * i) +nData));
+            memcpy(&client_buffer[pointer], reciver_buffer, nData);
+        } else {
+            memcpy(client_buffer, reciver_buffer, nData);
+        }
+        i++;
+        memset(reciver_buffer, 0, strlen(reciver_buffer));
+    }
+
+    if (nData == -1 && (errno != EAGAIN || errno != EWOULDBLOCK)){
+        char *err = "\"Errore nel ricevere i dati.\n";
+        perror(err);
+        send_error(client_fd, err);
+    }
+    return client_buffer;
+}
+
 char *get_ip() {
     struct ifaddrs *addrs;
     getifaddrs(&addrs);
@@ -123,6 +152,7 @@ int is_file(char *path) {
     stat(path, &path_stat);
     return S_ISREG(path_stat.st_mode);
 }
+
 
 char *extract_route(char *buffer) {
     char *route = strdup(buffer);

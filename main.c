@@ -102,6 +102,7 @@ void *pthread_routine(void *arg) {
     return NULL;
 }
 
+//rimuovere
 int is_get_method(char *client_buffer) {
     char method[4];
     memcpy(method, client_buffer, 3);
@@ -109,32 +110,25 @@ int is_get_method(char *client_buffer) {
     return equals(method,"GET");
 }
 
+
 int serve_client(int client_fd) {
-    char client_buffer[1024];
-    bzero(client_buffer, sizeof client_buffer);
 
-    if (recv(client_fd, client_buffer, sizeof client_buffer, 0) == -1) {
-        char *err = "\"Errore nel ricevere i dati.\n";
-        perror(err);
-        send_error(client_fd, err);
-    }
+    char *client_buffer = get_client_buffer(client_fd);
 
-    if (!is_get_method(client_buffer)) {
-        if (send_error(client_fd, "Il server accetta solo richieste di tipo GET.\n") == -1) {
-            perror("Errore nel comunicare con la socket.\n");
-        }
-        close(client_fd);
-        return -1;
-    }
+    puts(client_buffer); //test: bug " file/dir non esiste"
 
     char *files;
     //da allocare dinamicamente
     char listing_buffer[8192];
     bzero(listing_buffer, sizeof listing_buffer);
-    char *route = extract_route(client_buffer);
+    char *route = strdup(client_buffer);
     char path[1024];
     strcpy(path, PUBLIC_PATH);
     strcat(path, route);
+
+
+    puts(path); //test: bug " file/dir non esiste"
+    puts(route); //test: bug " file/dir non esiste"
 
     if (is_file(path)) {
         int file_fd = open(path, O_RDONLY);
