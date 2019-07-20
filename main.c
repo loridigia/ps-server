@@ -104,25 +104,24 @@ void *pthread_routine(void *arg) {
 
 int serve_client(int client_fd) {
 
+    // da cambiare
     char *client_buffer = get_client_buffer(client_fd);
-    //send(client_fd, client_buffer, sizeof(client_buffer), 0); //test: bug " file/dir non esiste"
-
-    puts(client_buffer); //test: bug " file/dir non esiste"
+    int end = index_of(client_buffer, '\r');
 
     char *files;
-    //da allocare dinamicamente
-    char listing_buffer[8192];
-    bzero(listing_buffer, sizeof listing_buffer);
-    char *route = strdup(client_buffer);
+
+    char route[end+1];
+    strncpy(route, client_buffer, sizeof route-1);
+    route[sizeof route-1] = '\0';
+
     char path[sizeof(PUBLIC_PATH) + strlen(route)];
     strcpy(path, PUBLIC_PATH);
     strcat(path, route);
 
-
-    puts(path); //test: bug " file/dir non esiste"
-    puts(route); //test: bug " file/dir non esiste"
-
     if (is_file(path)) {
+
+        /* da controllare grandezza file (con size 0 crasha) */
+
         int file_fd = open(path, O_RDONLY);
         if (file_fd == -1) {
             char *err = "Errore nell'apertura del file.\n";
@@ -159,6 +158,9 @@ int serve_client(int client_fd) {
         }
 
     } else {
+        //da fare dinamico
+        char listing_buffer[8192];
+        bzero(listing_buffer, sizeof listing_buffer);
         files = get_file_listing(route, path, listing_buffer);
         if (files == NULL) {
             if (send_error(client_fd, "File o directory non esistente.\n") == -1) {

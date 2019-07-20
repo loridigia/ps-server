@@ -102,22 +102,22 @@ char *get_parameter(char *line, FILE *stream) {
 
 char * get_client_buffer(int client_fd){
     char *client_buffer = (char*)calloc(sizeof(char),10);
-    char *reciver_buffer = (char*)calloc(sizeof(char),10);
+    char *receiver_buffer = (char*)calloc(sizeof(char),10);
 
     int nData;
     int i = 0;
     int pointer;
 
-    while ((nData = recv(client_fd, reciver_buffer, 10, MSG_DONTWAIT)) > 0 ){
+    while ((nData = recv(client_fd, receiver_buffer, 10, MSG_DONTWAIT)) > 0 ){
         if (i > 0){
             pointer = strlen(client_buffer);
             client_buffer = (char *)realloc(client_buffer,((10 * i) +nData));
-            memcpy(&client_buffer[pointer], reciver_buffer, nData);
+            memcpy(&client_buffer[pointer], receiver_buffer, nData);
         } else {
-            memcpy(client_buffer, reciver_buffer, nData);
+            memcpy(client_buffer, receiver_buffer, nData);
         }
         i++;
-        memset(reciver_buffer, 0, strlen(reciver_buffer));
+        memset(receiver_buffer, 0, strlen(receiver_buffer));
     }
 
     if (nData == -1 && (errno != EAGAIN || errno != EWOULDBLOCK)){
@@ -225,4 +225,9 @@ char *get_file_listing(char *route, char *path, char *buffer) {
         return NULL;
     }
     return buffer;
+}
+
+int index_of(char *values, char find) {
+    const char *ptr = strchr(values, find);
+    return ptr ? ptr-values : -1;
 }

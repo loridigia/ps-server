@@ -23,3 +23,4 @@ char *extract_route(char *buffer);
 char *get_extension_code(const char *filename);
 int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr);
 char *get_file_listing(char *route, char *path, char *buffer);
+int index_of(char *values, char find);
