@@ -104,23 +104,23 @@ char * get_client_buffer(int client_fd){
     char *client_buffer = (char*)calloc(sizeof(char),10);
     char *receiver_buffer = (char*)calloc(sizeof(char),10);
 
-    int nData;
+    int n_data;
     int i = 0;
     int pointer;
 
-    while ((nData = recv(client_fd, receiver_buffer, 10, MSG_DONTWAIT)) > 0 ){
+    while ((n_data = recv(client_fd, receiver_buffer, 10, MSG_DONTWAIT)) > 0 ){
         if (i > 0){
             pointer = strlen(client_buffer);
-            client_buffer = (char *)realloc(client_buffer,((10 * i) +nData));
-            memcpy(&client_buffer[pointer], receiver_buffer, nData);
+            client_buffer = (char *)realloc(client_buffer,((10 * i) + n_data));
+            memcpy(&client_buffer[pointer], receiver_buffer, n_data);
         } else {
-            memcpy(client_buffer, receiver_buffer, nData);
+            memcpy(client_buffer, receiver_buffer, n_data);
         }
         i++;
         memset(receiver_buffer, 0, strlen(receiver_buffer));
     }
 
-    if (nData == -1 && (errno != EAGAIN || errno != EWOULDBLOCK)){
+    if (n_data == -1 && (errno != EAGAIN || errno != EWOULDBLOCK)){
         char *err = "\"Errore nel ricevere i dati.\n";
         perror(err);
         send_error(client_fd, err);
