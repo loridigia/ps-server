@@ -102,18 +102,10 @@ void *pthread_routine(void *arg) {
     return NULL;
 }
 
-//rimuovere
-int is_get_method(char *client_buffer) {
-    char method[4];
-    memcpy(method, client_buffer, 3);
-    method[3] = '\0';
-    return equals(method,"GET");
-}
-
-
 int serve_client(int client_fd) {
 
     char *client_buffer = get_client_buffer(client_fd);
+    //send(client_fd, client_buffer, sizeof(client_buffer), 0); //test: bug " file/dir non esiste"
 
     puts(client_buffer); //test: bug " file/dir non esiste"
 
@@ -122,7 +114,7 @@ int serve_client(int client_fd) {
     char listing_buffer[8192];
     bzero(listing_buffer, sizeof listing_buffer);
     char *route = strdup(client_buffer);
-    char path[1024];
+    char path[sizeof(PUBLIC_PATH) + strlen(route)];
     strcpy(path, PUBLIC_PATH);
     strcat(path, route);
 
