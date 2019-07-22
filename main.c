@@ -24,19 +24,12 @@ typedef struct pthread_arg_receiver {
     int new_socket_fd;
 } pthread_arg_receiver;
 
-typedef struct pthread_arg_sender {
-    int new_socket_fd;
-    char *file;
-    size_t file_size;
-} pthread_arg_sender;
 
-void *pthread_routine(void *arg);
+void *pthread_receiver_routine(void *arg);
 int serve_client(int client_fd);
-void *pthread_sender_routine(void *arg);
 void *pthread_listener_routine(void *arg);
 void handle_requests(int port, int (*handle)(int, fd_set*));
 int work_with_threads(int fd, fd_set *read_fd_set);
-int is_get_method(char *client_buffer);
 void start();
 void restart();
 
@@ -95,7 +88,77 @@ void restart() {
     start();
 }
 
-void *pthread_routine(void *arg) {
+void *pthread_listener_routine(void *arg) {
+    pthread_arg_listener *args = (pthread_arg_listener *) arg;
+    handle_requests(args->port, work_with_threads);
+    return NULL;
+}
+
+void handle_requests(int port, int (*handle)(int, fd_set*)) {
+    int socket_fd;
+    struct sockaddr_in socket_addr;
+    if (listen_on(port, &socket_fd, &socket_addr) != 0) {
+        return;
+    }
+
+    fd_set read_fd_set;
+    FD_ZERO (&read_fd_set);
+    FD_SET (socket_fd, &read_fd_set);
+
+    socklen_t socket_size;
+    while (1) {
+        if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
+            perror("Errore durante l'operazione di select.\n");
+            return;
+        }
+
+        for (int fd = 0; fd < FD_SETSIZE; fd++) {
+            if (FD_ISSET (fd, &read_fd_set)) {
+                if (fd == socket_fd) {
+                    socket_size = sizeof (socket_addr);
+                    int new = accept(socket_fd, (struct sockaddr *) &socket_addr, &socket_size);
+                    if (new < 0) {
+                        perror("Errore durante l'accept del nuovo client.\n");
+                        return;
+                    }
+                    FD_SET (new, &read_fd_set);
+                }
+                else {
+                    if (handle(fd, &read_fd_set) == -1) {
+                        return;
+                    }
+
+                }
+            }
+        }
+    }
+}
+
+
+int work_with_threads(int fd, fd_set *read_fd_set) {
+    pthread_arg_receiver *pthread_arg = (pthread_arg_receiver *)malloc(sizeof (pthread_arg_receiver));
+    if (!pthread_arg) {
+        perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
+        free(pthread_arg);
+        return -1;
+    }
+    pthread_arg->new_socket_fd = fd;
+    pthread_t pthread_rcv;
+
+    if (pthread_create(&pthread_rcv, &pthread_attr, pthread_receiver_routine, (void *) pthread_arg) != 0) {
+        perror("Impossibile creare un nuovo thread.\n");
+        free(pthread_arg);
+        return -1;
+    }
+
+    fprintf(stderr, "%lo", (long) pthread_rcv);
+
+    FD_CLR (fd, read_fd_set);
+    return 0;
+}
+
+
+void *pthread_receiver_routine(void *arg) {
     pthread_arg_receiver *args = (pthread_arg_receiver *) arg;
     serve_client(args->new_socket_fd);
     free(arg);
@@ -142,17 +205,7 @@ int serve_client(int client_fd) {
         }
         flock(file_fd, LOCK_UN);
 
-        pthread_arg_sender *pthread_sender = (pthread_arg_sender *)malloc(sizeof (pthread_arg_sender));
-        if (!pthread_sender) {
-            perror("Impossibile allocare memoria per gli argomenti del thread sender.\n");
-            free(pthread_sender);
-            return -1;
-        }
-        pthread_sender->new_socket_fd = client_fd;
-        pthread_sender->file = file_in_memory;
-        pthread_sender->file_size = v.st_size;
-
-        if (pthread_create(&pthread, &pthread_attr, pthread_sender_routine, (void *)pthread_sender) != 0){
+        if (send_file(client_fd, file_in_memory, v.st_size) != 0){
             perror("Impossibile creare un nuovo thread.\n");
             return -1;
         }
@@ -181,6 +234,8 @@ int serve_client(int client_fd) {
     return 0;
 }
 
+
+/*
 void *pthread_sender_routine(void *arg){
     pthread_arg_sender *args = (pthread_arg_sender *) arg;
     int socket_fd = args->new_socket_fd;
@@ -202,66 +257,5 @@ void *pthread_sender_routine(void *arg){
     return NULL;
 }
 
-void handle_requests(int port, int (*handle)(int, fd_set*)) {
-    int socket_fd;
-    struct sockaddr_in socket_addr;
-    if (listen_on(port, &socket_fd, &socket_addr) != 0) {
-        return;
-    }
+ */
 
-    fd_set read_fd_set;
-    FD_ZERO (&read_fd_set);
-    FD_SET (socket_fd, &read_fd_set);
-
-    socklen_t socket_size;
-    while (1) {
-        if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
-            perror("Errore durante l'operazione di select.\n");
-            return;
-        }
-
-        for (int fd = 0; fd < FD_SETSIZE; fd++) {
-            if (FD_ISSET (fd, &read_fd_set)) {
-                if (fd == socket_fd) {
-                    socket_size = sizeof (socket_addr);
-                    int new = accept(socket_fd, (struct sockaddr *) &socket_addr, &socket_size);
-                    if (new < 0) {
-                        perror("Errore durante l'accept del nuovo client.\n");
-                        return;
-                    }
-                    FD_SET (new, &read_fd_set);
-                }
-                else {
-                    if (handle(fd, &read_fd_set) == -1) {
-                        return;
-                    }
-                }
-            }
-        }
-    }
-}
-
-void *pthread_listener_routine(void *arg) {
-    pthread_arg_listener *args = (pthread_arg_listener *) arg;
-    handle_requests(args->port, work_with_threads);
-    return NULL;
-}
-
-int work_with_threads(int fd, fd_set *read_fd_set) {
-    pthread_arg_receiver *pthread_arg = (pthread_arg_receiver *)malloc(sizeof (pthread_arg_receiver));
-    if (!pthread_arg) {
-        perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
-        free(pthread_arg);
-        return -1;
-    }
-    pthread_arg->new_socket_fd = fd;
-
-    if (pthread_create(&pthread, &pthread_attr, pthread_routine, (void *)pthread_arg) != 0) {
-        perror("Impossibile creare un nuovo thread.\n");
-        free(pthread_arg);
-        return -1;
-    }
-
-    FD_CLR (fd, read_fd_set);
-    return 0;
-}

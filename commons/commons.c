@@ -231,3 +231,18 @@ int index_of(char *values, char find) {
     const char *ptr = strchr(values, find);
     return ptr ? ptr-values : -1;
 }
+
+int send_file(int socket_fd, char *file, size_t file_size){
+    char *new_str = malloc(strlen(file) + 2);
+    strcpy(new_str, file);
+    strcat(new_str, "\n");
+
+    if (send(socket_fd, new_str, strlen(new_str), 0) == -1) {
+        perror("Errore nel comunicare con la socket.\n");
+        return 1;
+    }
+    munmap(file, file_size);
+    free(new_str);
+    close(socket_fd);
+    return 0;
+}
