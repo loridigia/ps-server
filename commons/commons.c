@@ -143,8 +143,10 @@ char *get_ip() {
     return NULL;
 }
 
-int send_error(int socket_fd, char *err) {
-    return send(socket_fd, err, strlen(err), 0) == -1;
+int send_error(int socket_fd, char *err) { // return 0 on successful and != 0 on fail
+    int sended = send(socket_fd, err, strlen(err), 0);
+    int closed = close(socket_fd);
+    return sended + closed;
 }
 
 int is_file(char *path) {

@@ -117,7 +117,7 @@ void handle_requests(int port, int (*handle)(int, fd_set*)){
         FD_ZERO (&read_fd_set);
         FD_SET (socket_fd, &read_fd_set);
 
-        fprintf(stderr, "%d", config.port); // DEBUG
+        fprintf(stderr, "%d \n", config.port); // DEBUG
 
         if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
             perror("Errore durante l'operazione di select.\n");
@@ -125,7 +125,7 @@ void handle_requests(int port, int (*handle)(int, fd_set*)){
         }
 
         if(config.port != port) {
-            fprintf(stderr, "porta diversa, interrompo listing");
+            fprintf(stderr, "porta diversa, interrompo listing \n");
             break;
         }
 
@@ -214,6 +214,12 @@ int serve_client(int client_fd) {
         if (stat(path,&v) == -1) {
             perror("Errore nel prendere la grandezza del file.\n");
         }
+        if (v.st_size == 0) {
+            char *err = "Il file richiesto è vuoto.\n";
+            perror(err);
+            send_error(client_fd, err);
+            return -1;
+        }
 
         flock(file_fd, LOCK_EX);
         char *file_in_memory = mmap(NULL, v.st_size, PROT_READ, MAP_PRIVATE, file_fd, 0);
@@ -233,14 +239,14 @@ int serve_client(int client_fd) {
         bzero(listing_buffer, sizeof listing_buffer);
         files = get_file_listing(route, path, listing_buffer);
         if (files == NULL) {
-            if (send_error(client_fd, "File o directory non esistente.\n") == -1) {
+            if (send_error(client_fd, "File o directory non esistente.\n") != 0) {
                 perror("Errore nel comunicare con la socket.\n");
                 close(client_fd);
                 return -1;
             }
         }
         else {
-            if (send(client_fd, files, strlen(files), 0) == -1) {
+            if (send(client_fd, files, strlen(files), 0) != 0) {
                 perror("Errore nel comunicare con la socket.\n");
                 close(client_fd);
                 return -1;
