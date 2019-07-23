@@ -153,13 +153,6 @@ int is_file(char *path) {
     return S_ISREG(path_stat.st_mode);
 }
 
-
-char *extract_route(char *buffer) {
-    char *route = strdup(buffer);
-    strtok(route, " ");
-    return strtok(NULL, " ");
-}
-
 char *get_extension_code(const char *filename){
     const char *ext = strrchr(filename, '.');
     if (ext == NULL) return "1 ";

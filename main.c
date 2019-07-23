@@ -33,6 +33,10 @@ int work_with_threads(int fd, fd_set *read_fd_set);
 void start();
 void restart();
 
+pthread_t *listner_array;
+int counter = 0;
+
+
 pthread_t pthread;
 pthread_attr_t pthread_attr;
 
@@ -53,6 +57,9 @@ int main(int argc, char *argv[]) {
         perror("Errore nel settare DETACHED_STATE al thread.\n");
         exit(1);
     }
+
+    listner_array = malloc(sizeof(pthread) * 10);
+
     start();
     signal(SIGHUP, restart);
     while(1) {
@@ -72,13 +79,15 @@ void start() {
         pthread_arg->port = config.port;
 
         if (pthread_create(
-                &pthread,
+                &listner_array[counter],
                 &pthread_attr,
                 pthread_listener_routine,
                 (void *)pthread_arg) != 0) {
             perror("Impossibile creare un nuovo thread.\n");
             free(pthread_arg);
             exit(1);
+        } else {
+            counter++;
         }
     }
 }
@@ -94,7 +103,8 @@ void *pthread_listener_routine(void *arg) {
     return NULL;
 }
 
-void handle_requests(int port, int (*handle)(int, fd_set*)) {
+void handle_requests(int port, int (*handle)(int, fd_set*)){
+
     int socket_fd;
     struct sockaddr_in socket_addr;
     if (listen_on(port, &socket_fd, &socket_addr) != 0) {
@@ -102,36 +112,42 @@ void handle_requests(int port, int (*handle)(int, fd_set*)) {
     }
 
     fd_set read_fd_set;
-    FD_ZERO (&read_fd_set);
-    FD_SET (socket_fd, &read_fd_set);
-
     socklen_t socket_size;
     while (1) {
+        FD_ZERO (&read_fd_set);
+        FD_SET (socket_fd, &read_fd_set);
+
+        fprintf(stderr, "%d", config.port); // DEBUG
+
         if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
             perror("Errore durante l'operazione di select.\n");
             return;
         }
 
+        if(config.port != port) {
+            fprintf(stderr, "porta diversa, interrompo listing");
+            break;
+        }
+
         for (int fd = 0; fd < FD_SETSIZE; fd++) {
             if (FD_ISSET (fd, &read_fd_set)) {
                 if (fd == socket_fd) {
-                    socket_size = sizeof (socket_addr);
+                    socket_size = sizeof(socket_addr);
                     int new = accept(socket_fd, (struct sockaddr *) &socket_addr, &socket_size);
                     if (new < 0) {
                         perror("Errore durante l'accept del nuovo client.\n");
                         return;
                     }
                     FD_SET (new, &read_fd_set);
-                }
-                else {
+                } else {
                     if (handle(fd, &read_fd_set) == -1) {
                         return;
                     }
-
                 }
             }
         }
     }
+    close(socket_fd);
 }
 
 
@@ -151,7 +167,6 @@ int work_with_threads(int fd, fd_set *read_fd_set) {
         return -1;
     }
 
-    fprintf(stderr, "%lo", (long) pthread_rcv);
 
     FD_CLR (fd, read_fd_set);
     return 0;
@@ -160,7 +175,9 @@ int work_with_threads(int fd, fd_set *read_fd_set) {
 
 void *pthread_receiver_routine(void *arg) {
     pthread_arg_receiver *args = (pthread_arg_receiver *) arg;
+    sleep(10);
     serve_client(args->new_socket_fd);
+
     free(arg);
     return NULL;
 }
