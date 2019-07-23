@@ -24,21 +24,32 @@ typedef struct pthread_arg_receiver {
     int new_socket_fd;
 } pthread_arg_receiver;
 
+typedef struct pthread_arg_logger {
+} pthread_arg_logger;
+
+
 
 void *pthread_receiver_routine(void *arg);
-int serve_client(int client_fd);
+void *pthread_logger_routine();
 void *pthread_listener_routine(void *arg);
+int serve_client(int client_fd);
 void handle_requests(int port, int (*handle)(int, fd_set*));
 int work_with_threads(int fd, fd_set *read_fd_set);
 void start();
 void restart();
 
 pthread_t *listner_array;
+pthread_t logger;
+pthread_t pthread;
+pthread_attr_t pthread_attr;
+
+pthread_mutex_t mutex =  PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond_var = PTHREAD_COND_INITIALIZER;
+
+int pipe_fd[2];
 int counter = 0;
 
 
-pthread_t pthread;
-pthread_attr_t pthread_attr;
 
 int main(int argc, char *argv[]) {
     load_configuration(COMPLETE);
@@ -61,10 +72,34 @@ int main(int argc, char *argv[]) {
     // andrebbe fatto dinamico
     listner_array = malloc(sizeof(pthread) * 100);
 
+    // FDS pipe
+    if (pipe(pipe_fd) == -1){
+        fprintf(stderr, "Pipe Failed" );
+        return 1;
+    }
+
+    // logger pthread
+    if (pthread_create(&logger, &pthread_attr, pthread_logger_routine, NULL) != 0) {
+        perror("Impossibile creare logger thread.\n");
+        exit(1);
+    }
+
     start();
     signal(SIGHUP, restart);
     while(1) {
         sleep(1);
+    }
+}
+
+void *pthread_logger_routine() {
+    char buffer[1024];
+    while(1) {
+        pthread_mutex_lock(&mutex);
+        pthread_cond_wait(&cond_var, &mutex);
+        bzero(buffer, sizeof buffer);
+        read(pipe_fd[0], buffer, sizeof buffer);
+        puts(buffer);
+        pthread_mutex_unlock(&mutex);
     }
 }
 
@@ -176,9 +211,13 @@ int work_with_threads(int fd, fd_set *read_fd_set) {
 
 void *pthread_receiver_routine(void *arg) {
     pthread_arg_receiver *args = (pthread_arg_receiver *) arg;
-    sleep(10);
+    //sleep(10);
     serve_client(args->new_socket_fd);
-
+    pthread_mutex_lock(&mutex);
+    char *buffer = "ciao a tutti sono un buffer";
+    write(pipe_fd[1], buffer, strlen(buffer));
+    pthread_cond_signal(&cond_var);
+    pthread_mutex_unlock(&mutex);
     free(arg);
     return NULL;
 }
