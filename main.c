@@ -58,7 +58,8 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    listner_array = malloc(sizeof(pthread) * 10);
+    // andrebbe fatto dinamico
+    listner_array = malloc(sizeof(pthread) * 100);
 
     start();
     signal(SIGHUP, restart);
@@ -199,9 +200,7 @@ int serve_client(int client_fd) {
     strcat(path, route);
 
     if (is_file(path)) {
-
-        /* da controllare grandezza file (con size 0 crasha) */
-
+        
         int file_fd = open(path, O_RDONLY);
         if (file_fd == -1) {
             char *err = "Errore nell'apertura del file.\n";

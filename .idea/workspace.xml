@@ -13,10 +13,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7f07cd6c-b336-4153-a2da-92d8df351a8d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/commons/commons.c" beforeDir="false" afterPath="$PROJECT_DIR$/commons/commons.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/commons/commons.h" beforeDir="false" afterPath="$PROJECT_DIR$/commons/commons.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/main.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/text.t.txt" beforeDir="false" afterPath="$PROJECT_DIR$/public/text.t.txt" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -55,8 +52,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3068">
-              <caret line="241" column="25" selection-start-line="241" selection-start-column="16" selection-end-line="241" selection-end-column="25" />
+            <state relative-caret-position="441">
+              <caret line="202" column="8" selection-start-line="202" selection-start-column="8" selection-end-line="202" selection-end-column="8" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -161,9 +158,9 @@
         <option value="$PROJECT_DIR$/public/folder/carlo.txt" />
         <option value="$PROJECT_DIR$/public/text.t.txt" />
         <option value="$PROJECT_DIR$/commons/commons.c" />
-        <option value="$PROJECT_DIR$/main.c" />
         <option value="$PROJECT_DIR$/config.txt" />
         <option value="$PROJECT_DIR$/commons/commons.h" />
+        <option value="$PROJECT_DIR$/main.c" />
       </list>
     </option>
   </component>
@@ -273,13 +270,13 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="126254000" />
+    <option name="totallyTimeSpent" value="126351000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="17" y="23" width="1988" height="977" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.13874614" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.13874614" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -298,7 +295,7 @@
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Database" order="3" />
-      <window_info active="true" anchor="right" id="Run" order="4" visible="true" weight="0.27595067" />
+      <window_info anchor="right" id="Run" order="4" visible="true" weight="0.27595067" />
       <window_info anchor="right" id="Messages" order="5" weight="0.30164438" />
     </layout>
   </component>
@@ -410,8 +407,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/main.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3068">
-          <caret line="241" column="25" selection-start-line="241" selection-start-column="16" selection-end-line="241" selection-end-column="25" />
+        <state relative-caret-position="441">
+          <caret line="202" column="8" selection-start-line="202" selection-start-column="8" selection-end-line="202" selection-end-column="8" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>
