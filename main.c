@@ -26,7 +26,6 @@ typedef struct pthread_arg_receiver {
 } pthread_arg_receiver;
 
 
-
 int serve_client(int client_fd, int port);
 int write_on_pipe(int size, char* name, int port);
 int work_with_threads(int fd, fd_set *read_fd_set);
@@ -37,12 +36,12 @@ void handle_requests(int port, int (*handle)(int, fd_set*));
 void start();
 void restart();
 
-pthread_t *listner_array;
+pthread_t *listener_array;
 pthread_t logger;
 pthread_t pthread;
 pthread_attr_t pthread_attr;
 
-pthread_mutex_t mutex =  PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_var = PTHREAD_COND_INITIALIZER;
 
 int pipe_fd[2];
@@ -69,7 +68,7 @@ int main(int argc, char *argv[]) {
     }
 
     // andrebbe fatto dinamico
-    listner_array = malloc(sizeof(pthread) * 100);
+    listener_array = malloc(sizeof(pthread) * 100);
 
     // FDS pipe
     if (pipe(pipe_fd) == -1){
@@ -114,7 +113,7 @@ void start() {
         pthread_arg->port = config.port;
 
         if (pthread_create(
-                &listner_array[counter],
+                &listener_array[counter],
                 &pthread_attr,
                 pthread_listener_routine,
                 (void *)pthread_arg) != 0) {
@@ -187,6 +186,7 @@ void handle_requests(int port, int (*handle)(int, fd_set*)){
     close(socket_fd);
 }
 
+// andrà in commons, qui per capire dove utilizzarlo
 char *get_client_ip(struct sockaddr_in *socket_addr){
     struct in_addr ipAddr = socket_addr->sin_addr;
     char *str = malloc(INET_ADDRSTRLEN);
@@ -226,6 +226,7 @@ void *pthread_receiver_routine(void *arg) {
 }
 
 //MANCA IP DA AGGIUNGERE NEL BUFFER
+//ANDRà IN COMMONS, QUI PER DEBUG
 int write_on_pipe(int size, char* name, int port){
     pthread_mutex_lock(&mutex);
 
