@@ -241,3 +241,10 @@ int send_file(int socket_fd, char *file, size_t file_size){
     close(socket_fd);
     return 0;
 }
+
+char *get_client_ip(struct sockaddr_in *socket_addr){
+    struct in_addr ipAddr = socket_addr->sin_addr;
+    char *str = malloc(INET_ADDRSTRLEN);
+    inet_ntop( AF_INET, &ipAddr, str, INET_ADDRSTRLEN );
+    return str;
+}
