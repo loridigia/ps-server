@@ -22,19 +22,18 @@ typedef struct pthread_arg_listener {
 
 typedef struct pthread_arg_receiver {
     int new_socket_fd;
+    int port;
 } pthread_arg_receiver;
 
-typedef struct pthread_arg_logger {
-} pthread_arg_logger;
 
 
-
+int serve_client(int client_fd, int port);
+int write_on_pipe(int size, char* name, int port);
+int work_with_threads(int fd, fd_set *read_fd_set);
 void *pthread_receiver_routine(void *arg);
 void *pthread_logger_routine();
 void *pthread_listener_routine(void *arg);
-int serve_client(int client_fd);
 void handle_requests(int port, int (*handle)(int, fd_set*));
-int work_with_threads(int fd, fd_set *read_fd_set);
 void start();
 void restart();
 
@@ -170,6 +169,8 @@ void handle_requests(int port, int (*handle)(int, fd_set*)){
                 if (fd == socket_fd) {
                     socket_size = sizeof(socket_addr);
                     int new = accept(socket_fd, (struct sockaddr *) &socket_addr, &socket_size);
+                    /*char *client_ip = get_client_ip(&socket_addr);
+                    puts(client_ip); // STA MERDA TOCCA PASSARLA AL RECEIVER NON CAPISCO COME*/
                     if (new < 0) {
                         perror("Errore durante l'accept del nuovo client.\n");
                         return;
@@ -186,6 +187,13 @@ void handle_requests(int port, int (*handle)(int, fd_set*)){
     close(socket_fd);
 }
 
+char *get_client_ip(struct sockaddr_in *socket_addr){
+    struct in_addr ipAddr = socket_addr->sin_addr;
+    char *str = malloc(INET_ADDRSTRLEN);
+    inet_ntop( AF_INET, &ipAddr, str, INET_ADDRSTRLEN );
+    return str;
+}
+
 
 int work_with_threads(int fd, fd_set *read_fd_set) {
     pthread_arg_receiver *pthread_arg = (pthread_arg_receiver *)malloc(sizeof (pthread_arg_receiver));
@@ -195,6 +203,7 @@ int work_with_threads(int fd, fd_set *read_fd_set) {
         return -1;
     }
     pthread_arg->new_socket_fd = fd;
+    pthread_arg->port = config.port;
     pthread_t pthread_rcv;
 
     if (pthread_create(&pthread_rcv, &pthread_attr, pthread_receiver_routine, (void *) pthread_arg) != 0) {
@@ -203,7 +212,6 @@ int work_with_threads(int fd, fd_set *read_fd_set) {
         return -1;
     }
 
-
     FD_CLR (fd, read_fd_set);
     return 0;
 }
@@ -211,18 +219,30 @@ int work_with_threads(int fd, fd_set *read_fd_set) {
 
 void *pthread_receiver_routine(void *arg) {
     pthread_arg_receiver *args = (pthread_arg_receiver *) arg;
-    //sleep(10);
-    serve_client(args->new_socket_fd);
-    pthread_mutex_lock(&mutex);
-    char *buffer = "ciao a tutti sono un buffer";
-    write(pipe_fd[1], buffer, strlen(buffer));
-    pthread_cond_signal(&cond_var);
-    pthread_mutex_unlock(&mutex);
+    //sleep(10); DEBUG
+    serve_client(args->new_socket_fd, args->port);
     free(arg);
     return NULL;
 }
 
-int serve_client(int client_fd) {
+//MANCA IP DA AGGIUNGERE NEL BUFFER
+int write_on_pipe(int size, char* name, int port){
+    pthread_mutex_lock(&mutex);
+
+    char *buffer = malloc(sizeof(size) + 12 + sizeof(port) + 7 + strlen(name) + 6);
+    sprintf(buffer, "name: %s\nfile_size: %d\ndimensione: %d", name, size, port);
+
+    if (write(pipe_fd[1], buffer, strlen(buffer)) == -1){
+        pthread_mutex_unlock(&mutex);
+        return -1;
+    } else {
+        pthread_cond_signal(&cond_var);
+        pthread_mutex_unlock(&mutex);
+    }
+    return 0;
+}
+
+int serve_client(int client_fd, int port) {
 
     // da cambiare
     char *client_buffer = get_client_buffer(client_fd);
@@ -252,7 +272,13 @@ int serve_client(int client_fd) {
         if (stat(path,&v) == -1) {
             perror("Errore nel prendere la grandezza del file.\n");
         }
-        if (v.st_size == 0) {
+
+        int size = v.st_size;
+        if (write_on_pipe(size, route, port) != 0) {
+            perror("Errore nello scrivere sulla pipe LOG.\n");
+        }
+
+        if (size == 0) {
             char *err = "Il file richiesto è vuoto.\n";
             perror(err);
             send_error(client_fd, err);
