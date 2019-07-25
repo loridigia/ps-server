@@ -101,7 +101,6 @@ void write_log() {
     fclose(file);
 
     puts(buffer); // DEBUG
-    sleep(3);
     exit(0);
 }
 
