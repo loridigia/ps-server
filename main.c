@@ -90,19 +90,39 @@ int main(int argc, char *argv[]) {
     }
 }
 
-void *pthread_logger_routine() {
+void write_log() {
     char buffer[1024];
+    bzero(buffer, sizeof buffer);
+
+    read(pipe_fd[0], buffer, sizeof buffer);
+    FILE *file = fopen(LOG_PATH, "a");
+
+    fprintf(file, "%s", buffer);
+    fclose(file);
+
+    puts(buffer); // DEBUG
+    sleep(3);
+    exit(0);
+}
+
+void *pthread_logger_routine() {
+    pid_t pid_child;
+
     while(1) {
         pthread_mutex_lock(&mutex);
         pthread_cond_wait(&cond_var, &mutex);
 
-        bzero(buffer, sizeof buffer);
-        read(pipe_fd[0], buffer, sizeof buffer);
-        FILE *file = fopen(LOG_PATH, "a");
-        fprintf(file, "%s", buffer);
-        fclose(file);
+        int return_status;
+        pid_child = fork();
 
-        puts(buffer); // DEBUG
+        if (pid_child < 0) {
+            perror("fork");
+            exit(0); }
+
+        if (pid_child == 0) {
+            write_log();
+        }
+        waitpid(pid_child, &return_status, 0);
 
         pthread_mutex_unlock(&mutex);
     }
