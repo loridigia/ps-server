@@ -5,6 +5,10 @@
 #define PORT_ONLY 1
 #define equals(str1, str2) strcmp(str1,str2) == 0
 
+#include <errno.h>
+
+
+
 typedef struct configuration {
     char *type;
     char *ip_address;

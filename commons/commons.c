@@ -14,7 +14,6 @@
 #include <ifaddrs.h>
 #include <sys/file.h>
 #include <sys/mman.h>
-#include <errno.h>
 #include "commons.h"
 
 #define CONFIG_PATH "../config.txt"

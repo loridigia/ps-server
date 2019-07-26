@@ -315,7 +315,7 @@ int serve_client(int client_fd, int port, char *client_ip) {
 
     } else {
         //da fare dinamico
-        char listing_buffer[8192];
+        char listing_buffer[2048];
         bzero(listing_buffer, sizeof listing_buffer);
         files = get_file_listing(route, path, listing_buffer);
         if (files == NULL) {
@@ -326,10 +326,12 @@ int serve_client(int client_fd, int port, char *client_ip) {
             }
         }
         else {
-            if (send(client_fd, files, strlen(files), 0) != 0) {
-                perror("Errore nel comunicare con la socket.\n");
-                close(client_fd);
-                return -1;
+            if (send(client_fd, listing_buffer, sizeof listing_buffer, 0) != 0) {
+                if ((errno != EAGAIN || errno != EWOULDBLOCK)) { 
+                    perror("Errore nel comunicare con la socket.\n");
+                    close(client_fd);
+                    return -1;
+                }
             }
         }
         close(client_fd);
@@ -338,27 +340,4 @@ int serve_client(int client_fd, int port, char *client_ip) {
 }
 
 
-/*
-void *pthread_sender_routine(void *arg){
-    pthread_arg_sender *args = (pthread_arg_sender *) arg;
-    int socket_fd = args->new_socket_fd;
-    char *file = args->file;
-    size_t file_size = args->file_size;
-
-    free(arg);
-
-    char *new_str = malloc(strlen(file) + 2);
-    strcpy(new_str, file);
-    strcat(new_str, "\n");
-
-    if (send(socket_fd, new_str, strlen(new_str), 0) == -1) {
-        perror("Errore nel comunicare con la socket.\n");
-    }
-    munmap(file, file_size);
-    free(new_str);
-    close(socket_fd);
-    return NULL;
-}
-
- */
 
