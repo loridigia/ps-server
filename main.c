@@ -31,15 +31,12 @@ int serve_client(int client_fd, int port, char *client_ip);
 int write_on_pipe(int size, char *name, int port, char *ip);
 int work_with_threads(int fd, fd_set *read_fd_set, char *client_ip);
 void *pthread_receiver_routine(void *arg);
-void *pthread_logger_routine();
 void *pthread_listener_routine(void *arg);
 void handle_requests(int port, int (*handle)(int, fd_set*, char*));
 void start();
 void restart();
 void write_log();
 
-pthread_t *listener_array;
-pthread_t logger;
 pthread_t pthread;
 pthread_attr_t pthread_attr;
 
@@ -67,10 +64,6 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    // andrebbe fatto dinamico
-    listener_array = malloc(sizeof(pthread) * 100);
-
-    // FDS pipe
     if (pipe(pipe_fd) == -1){
         fprintf(stderr, "Pipe Failed" );
         return 1;
@@ -80,7 +73,6 @@ int main(int argc, char *argv[]) {
     pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
     pthread_mutex_init(&mutex, &mutexAttr);
 
-/* set condition shared between processes */
     pthread_condattr_t condAttr;
     pthread_condattr_setpshared(&condAttr, PTHREAD_PROCESS_SHARED);
     pthread_cond_init(&condition, &condAttr);
@@ -96,13 +88,6 @@ int main(int argc, char *argv[]) {
         write_log();
     }
 
-    /*
-    // logger pthread
-    if (pthread_create(&logger, &pthread_attr, pthread_logger_routine, NULL) != 0) {
-        perror("Impossibile creare logger thread.\n");
-        exit(1);
-    }
-    */
     start();
     signal(SIGHUP, restart);
     while(1) {
@@ -127,30 +112,7 @@ void write_log() {
     }
 
 }
-/*
-void *pthread_logger_routine() {
-    pid_t pid_child;
 
-    while(1) {
-        pthread_mutex_lock(&mutex);
-        pthread_cond_wait(&cond_var, &mutex);
-
-        int return_status;
-        pid_child = fork();
-
-        if (pid_child < 0) {
-            perror("fork");
-            exit(0); }
-
-        if (pid_child == 0) {
-            write_log();
-        }
-        waitpid(pid_child, &return_status, 0);
-
-        pthread_mutex_unlock(&mutex);
-    }
-}
-*/
 void start() {
     if (equals(config.type, "thread")) {
         pthread_arg_listener *pthread_arg =
@@ -163,7 +125,7 @@ void start() {
         pthread_arg->port = config.port;
 
         if (pthread_create(
-                &listener_array[counter],
+                &pthread,
                 &pthread_attr,
                 pthread_listener_routine,
                 (void *)pthread_arg) != 0) {
@@ -258,7 +220,6 @@ int work_with_threads(int fd, fd_set *read_fd_set, char *client_ip) {
 
 void *pthread_receiver_routine(void *arg) {
     pthread_arg_receiver *args = (pthread_arg_receiver *) arg;
-    //sleep(10); DEBUG
     serve_client(args->new_socket_fd, args->port, args->client_ip);
     free(arg);
     return NULL;

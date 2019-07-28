@@ -30,14 +30,14 @@ Sotto Windows è possibile utilizzare l'estensione del file associandola al tipo
 L'effettivo invio del file avviene sempre da parte di un thread creato appositamente (anche nel caso di utilizzo della modalità multiprocesso)
 che accede al file mappato in memoria. -->
 
-*Ogni operazione di invio di un file deve essere registrata su un file di log da un processo
-separato che riceve l'informazione sull'operazione svolta da una pipe (di tipo semplice).
+<!--*Ogni operazione di invio di un file deve essere registrata su un file di log da un processo
+separato che riceve l'informazione sull'operazione svolta da una pipe (di tipo semplice).-->
 
-*Il processo va in lettura sulla pipe quando viene risvegliato da un evento (caso Windows) o con un meccanismo di condition variable (caso Linux).
+<!-- *Il processo va in lettura sulla pipe quando viene risvegliato da un--> evento (caso Windows) <!--o con un meccanismo di condition variable (caso Linux).
 Le informazioni da registrare sono:
 nome file
 dimensione file
-indirizzo IP e numero di porta del client che ha effettuato la richiesta
+indirizzo IP e numero di porta del client che ha effettuato la richiesta -->
 
 <!-- *La lista dei file da rendere disponibile deve essere costruita utilizzando le primitive specifiche
 della piattaforma per la lettura delle directory, senza fare uso dei comandi di sistema. -->
