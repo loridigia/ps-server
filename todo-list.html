@@ -5,13 +5,13 @@
 <!-- *La scelta sulla porta su cui rimane in attesa il server deve essere
 modificabile tramite opzione da linea comandi e/o lettura di un file di configurazione. -->
 
-*Il server deve rileggere il file di configurazione in caso di invio di un segnale (sighup) per la versione Linux o
+<!-- *Il server deve rileggere il file di configurazione in caso di invio di un segnale (sighup) per la versione Linux --> o
 di un evento di console per la versione Windows.
 
-*In caso di cambio del numero di porta, il server chiude il socket in attesa sulla porta precedente e
-riapre un nuovo socket sulla nuova porta ma eventuali connessioni attive al momento della richiesta vengono completate sulla porta precedente.
+<!-- *In caso di cambio del numero di porta, il server chiude il socket in attesa sulla porta precedente e
+riapre un nuovo socket sulla nuova porta ma eventuali connessioni attive al momento della richiesta vengono completate sulla porta precedente. -->
 
-<!-- *Per ogni richiesta deve essere creato un nuovo processo oppure un nuovo thread a seconda
+<!-- *Per ogni richiesta deve essere creato un --> nuovo processo <!--oppure un nuovo thread a seconda
 della modalità utilizzata. -->
 
 <!-- *La scelta della modalità (multi-thread o multi-processo) deve poter essere effettuata all'atto della

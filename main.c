@@ -36,19 +36,18 @@ void *pthread_listener_routine(void *arg);
 void handle_requests(int port, int (*handle)(int, fd_set*, char*));
 void start();
 void restart();
+void write_log();
 
 pthread_t *listener_array;
 pthread_t logger;
 pthread_t pthread;
 pthread_attr_t pthread_attr;
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond_var = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mutex;
+pthread_cond_t condition;
 
 int pipe_fd[2];
 int counter = 0;
-
-
 
 int main(int argc, char *argv[]) {
     load_configuration(COMPLETE);
@@ -77,12 +76,33 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    pthread_mutexattr_t mutexAttr;
+    pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
+    pthread_mutex_init(&mutex, &mutexAttr);
+
+/* set condition shared between processes */
+    pthread_condattr_t condAttr;
+    pthread_condattr_setpshared(&condAttr, PTHREAD_PROCESS_SHARED);
+    pthread_cond_init(&condition, &condAttr);
+
+    pid_t pid_child = fork();
+
+    if (pid_child < 0) {
+        perror("fork");
+        exit(0);
+    }
+
+    if (pid_child == 0) {
+        write_log();
+    }
+
+    /*
     // logger pthread
     if (pthread_create(&logger, &pthread_attr, pthread_logger_routine, NULL) != 0) {
         perror("Impossibile creare logger thread.\n");
         exit(1);
     }
-
+    */
     start();
     signal(SIGHUP, restart);
     while(1) {
@@ -91,19 +111,23 @@ int main(int argc, char *argv[]) {
 }
 
 void write_log() {
-    char buffer[1024];
-    bzero(buffer, sizeof buffer);
+    while(1) {
+        pthread_mutex_lock(&mutex);
+        pthread_cond_wait(&condition, &mutex);
+        char buffer[1024];
+        bzero(buffer, sizeof buffer);
 
-    read(pipe_fd[0], buffer, sizeof buffer);
-    FILE *file = fopen(LOG_PATH, "a");
+        read(pipe_fd[0], buffer, sizeof buffer);
+        FILE *file = fopen(LOG_PATH, "a");
 
-    fprintf(file, "%s", buffer);
-    fclose(file);
+        fprintf(file, "%s", buffer);
+        fclose(file);
 
-    puts(buffer); // DEBUG
-    exit(0);
+        pthread_mutex_unlock(&mutex);
+    }
+
 }
-
+/*
 void *pthread_logger_routine() {
     pid_t pid_child;
 
@@ -126,7 +150,7 @@ void *pthread_logger_routine() {
         pthread_mutex_unlock(&mutex);
     }
 }
-
+*/
 void start() {
     if (equals(config.type, "thread")) {
         pthread_arg_listener *pthread_arg =
@@ -175,8 +199,6 @@ void handle_requests(int port, int (*handle)(int, fd_set*, char*)){
     while (1) {
         FD_ZERO (&read_fd_set);
         FD_SET (socket_fd, &read_fd_set);
-
-        fprintf(stderr, "%d \n", config.port); // DEBUG
 
         if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
             perror("Errore durante l'operazione di select.\n");
@@ -244,15 +266,13 @@ void *pthread_receiver_routine(void *arg) {
 
 int write_on_pipe(int size, char* name, int port, char *ip){
     pthread_mutex_lock(&mutex);
-
     char *buffer = malloc(strlen(name) + 7 + sizeof(size) + 12 + strlen(ip) + 11 + sizeof(port) + 8);
     sprintf(buffer, "name: %s\nfile_size: %d\nclient_ip: %s\nport: %d\n\n", name, size, ip, port);
-
     if (write(pipe_fd[1], buffer, strlen(buffer)) == -1){
         pthread_mutex_unlock(&mutex);
         return -1;
     } else {
-        pthread_cond_signal(&cond_var);
+        pthread_cond_signal(&condition);
         pthread_mutex_unlock(&mutex);
     }
     return 0;
