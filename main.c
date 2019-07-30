@@ -18,10 +18,11 @@
 
 /*
  * Cose da controllare una volta terminata la prima parte:
- * controllo errori su TUTTE le syscall
- * controllo chiusura di TUTTE le socket
- * controllo memoria liberata dopo TUTTE le malloc
- * controllo concorrenza, deadlock, locks, mapping, mutex etc.
+     * controllo errori su TUTTE le syscall
+     * controllo chiusura di TUTTE le socket
+     * controllo memoria liberata dopo TUTTE le malloc
+     * controllo concorrenza, deadlock, locks, mapping, mutex etc.
+     * controllo che i lock vengano rilasciati il prima possibile
  */
 
 typedef struct pthread_arg_sender {
