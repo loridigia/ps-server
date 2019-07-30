@@ -1,5 +1,0 @@
-name: /text.a.txt
-file_size: 56
-client_ip: 127.0.0.1
-port: 7070
-

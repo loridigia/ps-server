@@ -16,6 +16,23 @@
 #include <sys/mman.h>
 #include "commons/commons.h"
 
+/*
+ * Cose da controllare una volta terminata la prima parte:
+ * controllo errori su TUTTE le syscall
+ * controllo chiusura di TUTTE le socket
+ * controllo memoria liberata dopo TUTTE le malloc
+ * controllo concorrenza, deadlock, locks, mapping, mutex etc.
+ */
+
+typedef struct pthread_arg_sender {
+    int size;
+    int client_fd;
+    int port;
+    char *file_in_memory;
+    char *route;
+    char *client_ip;
+} pthread_arg_sender;
+
 typedef struct pthread_arg_listener {
     int port;
 } pthread_arg_listener;
@@ -30,6 +47,7 @@ typedef struct pthread_arg_receiver {
 int serve_client(int client_fd, int port, char *client_ip);
 int write_on_pipe(int size, char *name, int port, char *ip);
 int work_with_threads(int fd, fd_set *read_fd_set, char *client_ip);
+int work_with_processes(int fd, fd_set *read_fd_set, char *client_ip);
 void *pthread_receiver_routine(void *arg);
 void *pthread_listener_routine(void *arg);
 void handle_requests(int port, int (*handle)(int, fd_set*, char*));
@@ -44,7 +62,6 @@ pthread_mutex_t mutex;
 pthread_cond_t condition;
 
 int pipe_fd[2];
-int counter = 0;
 
 int main(int argc, char *argv[]) {
     load_configuration(COMPLETE);
@@ -132,8 +149,17 @@ void start() {
             perror("Impossibile creare un nuovo thread.\n");
             free(pthread_arg);
             exit(1);
-        } else {
-            counter++;
+        }
+    } else {
+        pid_t pid_child = fork();
+
+        if (pid_child < 0) {
+            perror("fork");
+            exit(0);
+        }
+
+        if (pid_child == 0) {
+            handle_requests(config.port, work_with_processes);
         }
     }
 }
@@ -185,6 +211,7 @@ void handle_requests(int port, int (*handle)(int, fd_set*, char*)){
                 } else {
                     char *client_ip = get_client_ip(&socket_addr);
                     if (handle(fd, &read_fd_set, client_ip) == -1) {
+                        FD_CLR (fd, &read_fd_set);
                         return;
                     }
                 }
@@ -196,6 +223,9 @@ void handle_requests(int port, int (*handle)(int, fd_set*, char*)){
 
 
 int work_with_threads(int fd, fd_set *read_fd_set, char *client_ip) {
+    // NON SI PUO USARE CONFIG.PORT! VA PASSATO COME PARAMETRO ALLA FUNZIONE.
+    // SI RISCHIA CHE SE NEL FRATTEMPO E' CAMBIATA LA PORTA, NEL LOG VIENE REGISTRATO UN DATO ERRATO.
+    // read_fs_set non è più utile qui dentro.
     pthread_arg_receiver *pthread_arg = (pthread_arg_receiver *)malloc(sizeof (pthread_arg_receiver));
     if (!pthread_arg) {
         perror("Impossibile allocare memoria per gli argomenti di pthread.\n");
@@ -212,8 +242,26 @@ int work_with_threads(int fd, fd_set *read_fd_set, char *client_ip) {
         free(pthread_arg);
         return -1;
     }
+    return 0;
+}
 
-    FD_CLR (fd, read_fd_set);
+int work_with_processes(int fd, fd_set *read_fd_set, char *client_ip) {
+    // NON SI PUO USARE CONFIG.PORT! VA PASSATO COME PARAMETRO ALLA FUNZIONE.
+    // SI RISCHIA CHE SE NEL FRATTEMPO E' CAMBIATA LA PORTA, NEL LOG VIENE REGISTRATO UN DATO ERRATO.
+    // read_fs_set non è più utile qui dentro.
+
+    pid_t pid_child = fork();
+
+    if (pid_child < 0) {
+        perror("fork");
+        exit(0);
+    }
+
+    if (pid_child == 0) {
+        serve_client(fd, config.port, client_ip);
+    } else {
+        close(fd);
+    }
     return 0;
 }
 
@@ -239,6 +287,22 @@ int write_on_pipe(int size, char* name, int port, char *ip){
     return 0;
 }
 
+void *send_routine(void *arg) {
+    pthread_arg_sender *args = (pthread_arg_sender *) arg;
+
+    if (send_file(args->client_fd, args->file_in_memory, args->size) != 0){
+        perror("Impossibile creare un nuovo thread.\n");
+        return NULL;
+    }
+
+    //sse send_file va a buon fine
+    if (write_on_pipe(args->size, args->route, args->port, args->client_ip) != 0) {
+        perror("Errore nello scrivere sulla pipe LOG.\n");
+        return NULL;
+    }
+    return NULL;
+}
+
 int serve_client(int client_fd, int port, char *client_ip) {
 
     // da cambiare
@@ -256,7 +320,6 @@ int serve_client(int client_fd, int port, char *client_ip) {
     strcat(path, route);
 
     if (is_file(path)) {
-        
         int file_fd = open(path, O_RDONLY);
         if (file_fd == -1) {
             char *err = "Errore nell'apertura del file.\n";
@@ -271,9 +334,6 @@ int serve_client(int client_fd, int port, char *client_ip) {
         }
 
         int size = v.st_size;
-        if (write_on_pipe(size, route, port, client_ip) != 0) {
-            perror("Errore nello scrivere sulla pipe LOG.\n");
-        }
 
         if (size == 0) {
             char *err = "Il file richiesto è vuoto.\n";
@@ -283,15 +343,30 @@ int serve_client(int client_fd, int port, char *client_ip) {
         }
 
         flock(file_fd, LOCK_EX);
-        char *file_in_memory = mmap(NULL, v.st_size, PROT_READ, MAP_PRIVATE, file_fd, 0);
+        char *file_in_memory = mmap(NULL, size, PROT_READ, MAP_PRIVATE, file_fd, 0);
         if (file_in_memory == MAP_FAILED) {
             perror("Errore nell'operazione di mapping del file.\n");
         }
         flock(file_fd, LOCK_UN);
 
-        if (send_file(client_fd, file_in_memory, v.st_size) != 0){
-            perror("Impossibile creare un nuovo thread.\n");
-            return -1;
+        pthread_arg_sender *args =
+                (pthread_arg_sender *)malloc(sizeof (pthread_arg_sender));
+
+        args->client_ip = client_ip;
+        args->client_fd = client_fd;
+        args->port = port;
+        args->file_in_memory = file_in_memory;
+        args->route = route;
+        args->size = size;
+
+        if (equals(config.type, "thread")) {
+            send_routine(args);
+        } else if (equals(config.type, "process")) {
+            if (pthread_create(&pthread, &pthread_attr, send_routine, (void *) args) != 0) {
+                perror("Impossibile creare un nuovo thread.\n");
+                free(args);
+                return -1;
+            }
         }
 
     } else {
