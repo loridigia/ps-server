@@ -27,14 +27,14 @@ void load_arguments(int argc, char *argv[]) {
         input = argv[i];
         char *endptr;
         if (strncmp(input, PORT_FLAG, strlen(PORT_FLAG)) == 0) {
-            config.port = strtol(input + strlen(PORT_FLAG), &endptr, 10);
-            if (config.port < 1024 || *endptr != '\0' || endptr == (input + strlen(PORT_FLAG))) {
+            config->port = strtol(input + strlen(PORT_FLAG), &endptr, 10);
+            if (config->port < 1024 || *endptr != '\0' || endptr == (input + strlen(PORT_FLAG))) {
                 perror("Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
                 exit(1);
             }
         } else if (strncmp(input, TYPE_FLAG, strlen(TYPE_FLAG)) == 0) {
-            config.type = input + strlen(TYPE_FLAG);
-            if (!(equals(config.type, "thread") || equals(config.type, "process"))) {
+            config->type = input + strlen(TYPE_FLAG);
+            if (!(equals(config->type, "thread") || equals(config->type, "process"))) {
                 perror("Seleziona una modalità corretta di avvio (thread o process)\n");
                 exit(1);
             }
@@ -59,8 +59,8 @@ int load_configuration(int mode) {
 
     char *port_param = get_parameter(line,stream);
     char *endptr;
-    config.port = strtol(port_param, &endptr, 10);
-    if (config.port < 1024 || *endptr != '\0' || endptr == port_param) {
+    config->port = strtol(port_param, &endptr, 10);
+    if (config->port < 1024 || *endptr != '\0' || endptr == port_param) {
         perror("Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
         fclose(stream);
         return -1;
@@ -70,16 +70,16 @@ int load_configuration(int mode) {
         return 0;
     }
     char *type_param = get_parameter(line,stream);
-    config.type = type_param;
-    if (!(equals(config.type, "thread") || equals(config.type, "process"))) {
+    config->type = type_param;
+    if (!(equals(config->type, "thread") || equals(config->type, "process"))) {
         perror("Seleziona una modalità corretta di avvio (thread o process)\n");
         fclose(stream);
         return -1;
     }
 
 
-    config.ip_address = get_ip();
-    if (config.ip_address == NULL) {
+    config->ip_address = get_ip();
+    if (config->ip_address == NULL) {
         perror("Impossibile ottenere l'ip del server.");
         fclose(stream);
         return -1;
@@ -204,10 +204,10 @@ char *get_file_listing(char *route, char *path, char *buffer) {
                 strcat(buffer, "/");
             }
             strcat(buffer,"\t");
-            strcat(buffer,config.ip_address);
+            strcat(buffer,config->ip_address);
             strcat(buffer,"\t");
             char port[6];
-            sprintf(port,"%d",config.port);
+            sprintf(port,"%d",config->port);
             strcat(buffer,port);
             strcat(buffer, "\n");
         }

@@ -15,7 +15,7 @@ typedef struct configuration {
     unsigned int port;
 } configuration;
 
-configuration config;
+configuration *config;
 
 void load_arguments(int argc, char *argv[]);
 int load_configuration(int first_start);

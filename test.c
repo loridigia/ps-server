@@ -58,7 +58,7 @@ int main(void)
     init_string(&s);
 
     // TEST_3: Verificare che venga correttamente restituito un file .txt
-    curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/text.a.txt");
+    curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/testo.txt");
     res = curl_easy_perform(curl);
     printf("%s\n", s.ptr);
     init_string(&s);

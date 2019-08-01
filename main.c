@@ -67,6 +67,9 @@ pthread_cond_t condition;
 int pipe_fd[2];
 
 int main(int argc, char *argv[]) {
+    config = mmap(NULL, sizeof config, PROT_READ | PROT_WRITE,
+                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
     load_configuration(COMPLETE);
     load_arguments(argc, argv);
 
@@ -134,7 +137,7 @@ void write_log() {
 }
 
 void start() {
-    if (equals(config.type, "thread")) {
+    if (equals(config->type, "thread")) {
         pthread_arg_listener *pthread_arg =
                 (pthread_arg_listener *)malloc(sizeof (pthread_arg_listener));
         if (!pthread_arg) {
@@ -142,7 +145,7 @@ void start() {
             free(pthread_arg);
             exit(1);
         }
-        pthread_arg->port = config.port;
+        pthread_arg->port = config->port;
 
         if (pthread_create(
                 &pthread,
@@ -162,7 +165,8 @@ void start() {
         }
 
         if (pid_child == 0) {
-            handle_requests(config.port, work_with_processes);
+            handle_requests(config->port, work_with_processes);
+            exit(0);
         }
     }
 }
@@ -196,7 +200,7 @@ void handle_requests(int port, int (*handle)(int, fd_set*, char*)){
             return;
         }
 
-        if(config.port != port) {
+        if(config->port != port) {
             fprintf(stderr, "porta diversa, interrompo listing \n");
             break;
         }
@@ -226,7 +230,7 @@ void handle_requests(int port, int (*handle)(int, fd_set*, char*)){
 
 
 int work_with_threads(int fd, fd_set *read_fd_set, char *client_ip) {
-    // NON SI PUO USARE CONFIG.PORT! VA PASSATO COME PARAMETRO ALLA FUNZIONE.
+    // NON SI PUO USARE config->PORT! VA PASSATO COME PARAMETRO ALLA FUNZIONE.
     // SI RISCHIA CHE SE NEL FRATTEMPO E' CAMBIATA LA PORTA, NEL LOG VIENE REGISTRATO UN DATO ERRATO.
     // read_fs_set non è più utile qui dentro.
     pthread_arg_receiver *pthread_arg = (pthread_arg_receiver *)malloc(sizeof (pthread_arg_receiver));
@@ -236,7 +240,7 @@ int work_with_threads(int fd, fd_set *read_fd_set, char *client_ip) {
         return -1;
     }
     pthread_arg->new_socket_fd = fd;
-    pthread_arg->port = config.port;
+    pthread_arg->port = config->port;
     pthread_arg->client_ip = client_ip;
     pthread_t pthread_rcv;
 
@@ -249,7 +253,7 @@ int work_with_threads(int fd, fd_set *read_fd_set, char *client_ip) {
 }
 
 int work_with_processes(int fd, fd_set *read_fd_set, char *client_ip) {
-    // NON SI PUO USARE CONFIG.PORT! VA PASSATO COME PARAMETRO ALLA FUNZIONE.
+    // NON SI PUO USARE config->PORT! VA PASSATO COME PARAMETRO ALLA FUNZIONE.
     // SI RISCHIA CHE SE NEL FRATTEMPO E' CAMBIATA LA PORTA, NEL LOG VIENE REGISTRATO UN DATO ERRATO.
     // read_fs_set non è più utile qui dentro.
 
@@ -261,7 +265,8 @@ int work_with_processes(int fd, fd_set *read_fd_set, char *client_ip) {
     }
 
     if (pid_child == 0) {
-        serve_client(fd, config.port, client_ip);
+        serve_client(fd, config->port, client_ip);
+        exit(0);
     } else {
         close(fd);
     }
@@ -362,9 +367,9 @@ int serve_client(int client_fd, int port, char *client_ip) {
         args->route = route;
         args->size = size;
 
-        if (equals(config.type, "thread")) {
+        if (equals(config->type, "thread")) {
             send_routine(args);
-        } else if (equals(config.type, "process")) {
+        } else if (equals(config->type, "process")) {
             if (pthread_create(&pthread, &pthread_attr, send_routine, (void *) args) != 0) {
                 perror("Impossibile creare un nuovo thread.\n");
                 free(args);
