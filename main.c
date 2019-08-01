@@ -268,7 +268,7 @@ int work_with_processes(int fd, fd_set *read_fd_set, char *client_ip) {
 
     if (pid_child == 0) {
         serve_client(fd, config->port, client_ip);
-        exit(0);
+        //exit(0);
     } else {
         close(fd);
     }
@@ -309,6 +309,9 @@ void *send_routine(void *arg) {
     if (write_on_pipe(args->size, args->route, args->port, args->client_ip) != 0) {
         perror("Errore nello scrivere sulla pipe LOG.\n");
         return NULL;
+    }
+    if (equals(config->type,"process")) {
+        exit(0);
     }
     return NULL;
 }
