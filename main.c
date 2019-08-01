@@ -349,10 +349,7 @@ int serve_client(int client_fd, int port, char *client_ip) {
         int size = v.st_size;
 
         if (size == 0) {
-            char *err = "Il file richiesto è vuoto.\n";
-            perror(err);
-            send_error(client_fd, err);
-            return -1;
+            truncate(path, 4);
         }
 
         flock(file_fd, LOCK_EX);
