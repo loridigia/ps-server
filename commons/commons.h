@@ -7,8 +7,6 @@
 
 #include <errno.h>
 
-
-
 typedef struct configuration {
     char *type;
     char *ip_address;
