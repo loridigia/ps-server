@@ -41,8 +41,6 @@ typedef struct pthread_arg_listener {
 typedef struct pthread_arg_receiver {
     int new_socket_fd;
     int port;
-
-
     char *client_ip;
 } pthread_arg_receiver;
 
@@ -189,15 +187,19 @@ void handle_requests(int port, int (*handle)(int, fd_set*, char*)){
         return;
     }
 
+    struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+
     fd_set read_fd_set;
     socklen_t socket_size;
     while (1) {
         FD_ZERO (&read_fd_set);
         FD_SET (socket_fd, &read_fd_set);
 
-        if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
+        if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, &timeout) < 0) {
             perror("Errore durante l'operazione di select.\n");
-            return;
+            break;
         }
 
         if(config->port != port) {
