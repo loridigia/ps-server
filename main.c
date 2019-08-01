@@ -41,6 +41,8 @@ typedef struct pthread_arg_listener {
 typedef struct pthread_arg_receiver {
     int new_socket_fd;
     int port;
+
+
     char *client_ip;
 } pthread_arg_receiver;
 
