@@ -20,6 +20,8 @@
 #define PORT_FLAG "--port="
 #define TYPE_FLAG "--type="
 #define HELP_FLAG "--help"
+#define MIN_PORT 1024
+#define MAX_PORT 65535
 
 void load_arguments(int argc, char *argv[]) {
     char *input;
@@ -28,21 +30,24 @@ void load_arguments(int argc, char *argv[]) {
         char *endptr;
         if (strncmp(input, PORT_FLAG, strlen(PORT_FLAG)) == 0) {
             config->port = strtol(input + strlen(PORT_FLAG), &endptr, 10);
-            if (config->port < 1024 || *endptr != '\0' || endptr == (input + strlen(PORT_FLAG))) {
-                perror("Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
+            if (config->port < MIN_PORT || config->port > MAX_PORT || *endptr != '\0' || endptr == (input + strlen(PORT_FLAG))) {
+                fprintf(stderr,"Controllare che la porta sia scritta correttamente o che non sia well-known (< 1024). \n");
                 exit(1);
             }
         } else if (strncmp(input, TYPE_FLAG, strlen(TYPE_FLAG)) == 0) {
             config->type = input + strlen(TYPE_FLAG);
             if (!(equals(config->type, "thread") || equals(config->type, "process"))) {
-                perror("Seleziona una modalità corretta di avvio (thread o process)\n");
+                fprintf(stderr,"Seleziona una modalità corretta di avvio (thread o process)\n");
                 exit(1);
             }
         } else if (strncmp(input, HELP_FLAG, strlen(HELP_FLAG)) == 0) {
-            puts("Il server viene lanciato di default sulla porta 7070 in modalità multi-thread.\n\n"
+            puts("Il server viene lanciato di default sulla porta 7070 in modalità multi-thread.\n"
                  "--port=<numero_porta> per specificare la porta su cui ascoltare all'avvio.\n"
                  "--type=<thread/process> per specificare la modalità di avvio del server.\n");
             exit(0);
+        } else {
+            fprintf(stderr,"Parametro %s sconosciuto. --help per conocescere i parametri permessi", input);
+            exit(1);
         }
     }
 }
@@ -52,7 +57,7 @@ int load_configuration(int mode) {
     char *line = NULL;
     stream = fopen(CONFIG_PATH, "r");
     if (stream == NULL) {
-        perror("Impossibile aprire il file di configurazione.\n");
+        fprintf(stderr,"Impossibile aprire il file di configurazione.\n");
         fclose(stream);
         return -1;
     }
@@ -60,8 +65,8 @@ int load_configuration(int mode) {
     char *port_param = get_parameter(line,stream);
     char *endptr;
     config->port = strtol(port_param, &endptr, 10);
-    if (config->port < 1024 || *endptr != '\0' || endptr == port_param) {
-        perror("Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
+    if (config->port < 1024 || config->port > MAX_PORT || *endptr != '\0' || endptr == port_param) {
+        fprintf(stderr,"Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
         fclose(stream);
         return -1;
     }
@@ -72,15 +77,13 @@ int load_configuration(int mode) {
     char *type_param = get_parameter(line,stream);
     config->type = type_param;
     if (!(equals(config->type, "thread") || equals(config->type, "process"))) {
-        perror("Seleziona una modalità corretta di avvio (thread o process)\n");
+        fprintf(stderr,"Seleziona una modalità corretta di avvio (thread o process).\n");
         fclose(stream);
         return -1;
     }
-
-
     config->ip_address = get_ip();
     if (config->ip_address == NULL) {
-        perror("Impossibile ottenere l'ip del server.");
+        fprintf(stderr,"Impossibile ottenere l'ip del server.\n");
         fclose(stream);
         return -1;
     }
@@ -99,7 +102,7 @@ char *get_parameter(char *line, FILE *stream) {
     return NULL;
 }
 
-char * get_client_buffer(int client_fd){
+char *get_client_buffer(int client_fd){
     char *client_buffer = (char*)calloc(sizeof(char),10);
     char *receiver_buffer = (char*)calloc(sizeof(char),10);
 
@@ -120,8 +123,8 @@ char * get_client_buffer(int client_fd){
     }
 
     if (n_data == -1 && (errno != EAGAIN || errno != EWOULDBLOCK)){
-        char *err = "\"Errore nel ricevere i dati.\n";
-        perror(err);
+        char *err = "Errore nel ricevere i dati.\n";
+        fprintf(stderr,"%s",err);
         send_error(client_fd, err);
     }
     return client_buffer;
@@ -142,10 +145,8 @@ char *get_ip() {
     return NULL;
 }
 
-int send_error(int socket_fd, char *err) { // return 0 on successful and != 0 on fail
-    int sended = send(socket_fd, err, strlen(err), 0);
-    int closed = close(socket_fd);
-    return sended + closed;
+int send_error(int socket_fd, char *err) {
+    return send(socket_fd, err, strlen(err), 0);
 }
 
 int is_file(char *path) {

@@ -13,13 +13,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7f07cd6c-b336-4153-a2da-92d8df351a8d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/commons/commons.h" beforeDir="false" afterPath="$PROJECT_DIR$/commons/commons.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/commons/commons.c" beforeDir="false" afterPath="$PROJECT_DIR$/commons/commons.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/log.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/folder/vuoto.txt" beforeDir="false" afterPath="$PROJECT_DIR$/public/folder/vuoto.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/image.jpeg" beforeDir="false" afterPath="$PROJECT_DIR$/public/image.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/text.t.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.c" beforeDir="false" afterPath="$PROJECT_DIR$/test.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/main.c" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -34,16 +30,42 @@
   <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/main.c">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/commons/commons.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="199">
-              <caret line="351" column="20" selection-start-line="351" selection-start-column="12" selection-end-line="351" selection-end-column="20" />
+            <state relative-caret-position="54">
+              <caret line="106" column="40" selection-start-line="106" selection-start-column="40" selection-end-line="106" selection-end-column="40" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
             </state>
           </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/commons/commons.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="482">
+              <caret line="31" column="44" selection-start-line="31" selection-start-column="44" selection-end-line="31" selection-end-column="44" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/main.c">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="240">
+              <caret line="322" lean-forward="true" selection-start-line="322" selection-end-line="322" />
+              <folding>
+                <element signature="e#0#23#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/config.txt">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
     </leaf>
@@ -58,10 +80,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>serv</find>
-      <find>sockadd</find>
-      <find>socket_addr</find>
-      <find>PATH</find>
       <find>get_ip</find>
       <find>write_on</find>
       <find>send_file</find>
@@ -88,6 +106,10 @@
       <find>select</find>
       <find>handle_req</find>
       <find>timeval</find>
+      <find>get_client_buf</find>
+      <find>send_error</find>
+      <find>get_client_buffer</find>
+      <find>client_buffer</find>
     </findStrings>
     <replaceStrings>
       <replace>&amp;</replace>
@@ -126,13 +148,13 @@
         <option value="$PROJECT_DIR$/.gitignore" />
         <option value="$PROJECT_DIR$/log.txt" />
         <option value="$PROJECT_DIR$/todo-list.html" />
-        <option value="$PROJECT_DIR$/config.txt" />
-        <option value="$PROJECT_DIR$/commons/commons.c" />
-        <option value="$PROJECT_DIR$/main.c" />
         <option value="$PROJECT_DIR$/CMakeLists.txt" />
         <option value="$PROJECT_DIR$/test.c" />
-        <option value="$PROJECT_DIR$/commons/commons.h" />
         <option value="$PROJECT_DIR$/public/testo.txt" />
+        <option value="$PROJECT_DIR$/config.txt" />
+        <option value="$PROJECT_DIR$/commons/commons.c" />
+        <option value="$PROJECT_DIR$/commons/commons.h" />
+        <option value="$PROJECT_DIR$/main.c" />
       </list>
     </option>
   </component>
@@ -159,17 +181,6 @@
               <item name="PS" type="b2602c69:ProjectViewProjectNode" />
               <item name="ps-server" type="462c0819:PsiDirectoryNode" />
               <item name="commons" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PS" type="b2602c69:ProjectViewProjectNode" />
-              <item name="ps-server" type="462c0819:PsiDirectoryNode" />
-              <item name="public" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PS" type="b2602c69:ProjectViewProjectNode" />
-              <item name="ps-server" type="462c0819:PsiDirectoryNode" />
-              <item name="public" type="462c0819:PsiDirectoryNode" />
-              <item name="folder" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -209,7 +220,7 @@
     </option>
   </component>
   <component name="RunManager">
-    <configuration name="PS" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="--type=thread --port=7070" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ps_server" TARGET_NAME="ps_server" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="ps_server" RUN_TARGET_NAME="ps_server">
+    <configuration name="PS" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ps_server" TARGET_NAME="ps_server" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="ps_server" RUN_TARGET_NAME="ps_server">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -258,11 +269,12 @@
       <workItem from="1564504155133" duration="1628000" />
       <workItem from="1564679969068" duration="44000" />
       <workItem from="1564679398763" duration="3460000" />
+      <workItem from="1564771342701" duration="2776000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="173373000" />
+    <option name="totallyTimeSpent" value="176038000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -275,8 +287,9 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1920" height="977" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49905837" visible="true" weight="0.15867944" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49905837" visible="true" weight="0.09904154" />
       <window_info id="Structure" order="1" sideWeight="0.50094163" side_tool="true" weight="0.15388711" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -295,8 +308,8 @@
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Database" order="3" />
-      <window_info anchor="right" id="Run" order="4" visible="true" weight="0.23588924" />
-      <window_info anchor="right" id="Messages" order="5" weight="0.5228967" />
+      <window_info anchor="right" id="Run" order="4" visible="true" weight="0.25559106" />
+      <window_info anchor="right" id="Messages" order="5" weight="0.3370607" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -309,6 +322,11 @@
           <url>file://$PROJECT_DIR$/main.c</url>
           <line>111</line>
           <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/commons/commons.c</url>
+          <line>151</line>
+          <option name="timeStamp" value="4" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
@@ -388,13 +406,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/config.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="9" selection-start-column="9" selection-end-column="9" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file:///usr/include/sys/_types/_timeval.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="384">
@@ -407,9 +418,7 @@
         <state relative-caret-position="-3217" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/public/text.t.txt">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/public/text.t.txt" />
     <entry file="file://$PROJECT_DIR$/public/anim.gif">
       <provider selected="true" editor-type-id="images" />
     </entry>
@@ -433,23 +442,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/commons/commons.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="338">
-          <caret line="23" column="38" lean-forward="true" selection-start-line="23" selection-start-column="38" selection-end-line="23" selection-end-column="38" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/commons/commons.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="110">
-          <caret line="24" selection-start-line="24" selection-end-line="46" selection-end-column="5" />
-          <folding>
-            <element signature="e#0#23#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/test.c">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="216">
@@ -460,10 +452,30 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/config.txt">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/commons/commons.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="54">
+          <caret line="106" column="40" selection-start-line="106" selection-start-column="40" selection-end-line="106" selection-end-column="40" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/commons/commons.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="482">
+          <caret line="31" column="44" selection-start-line="31" selection-start-column="44" selection-end-line="31" selection-end-column="44" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/main.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="199">
-          <caret line="351" column="20" selection-start-line="351" selection-start-column="12" selection-end-line="351" selection-end-column="20" />
+        <state relative-caret-position="240">
+          <caret line="322" lean-forward="true" selection-start-line="322" selection-end-line="322" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>

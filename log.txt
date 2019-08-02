@@ -173,3 +173,28 @@ file_size: 4
 client_ip: 127.0.0.1
 port: 7070
 
+name: /testo.txt
+file_size: 56
+client_ip: 127.0.0.1
+port: 7070
+
+name: /testo.txt
+file_size: 56
+client_ip: 127.0.0.1
+port: 7070
+
+name: /testo.txt
+file_size: 56
+client_ip: 127.0.0.1
+port: 7070
+
+name: /folder/vuoto.txt
+file_size: 4
+client_ip: 127.0.0.1
+port: 7070
+
+name: /testo.txt
+file_size: 56
+client_ip: 127.0.0.1
+port: 7071
+

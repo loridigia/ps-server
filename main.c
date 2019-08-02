@@ -318,7 +318,6 @@ void *send_routine(void *arg) {
 
 int serve_client(int client_fd, int port, char *client_ip) {
 
-    // da cambiare
     char *client_buffer = get_client_buffer(client_fd);
     int end = index_of(client_buffer, '\r');
 
@@ -335,9 +334,10 @@ int serve_client(int client_fd, int port, char *client_ip) {
     if (is_file(path)) {
         int file_fd = open(path, O_RDONLY);
         if (file_fd == -1) {
-            char *err = "Errore nell'apertura del file.\n";
-            perror(err);
+            char *err = "Errore nell'apertura del file. \n";
+            fprintf(stderr,"%s%s",err,path);
             send_error(client_fd, err);
+            close(client_fd);
             return -1;
         }
 
@@ -385,8 +385,9 @@ int serve_client(int client_fd, int port, char *client_ip) {
         bzero(listing_buffer, sizeof listing_buffer);
         files = get_file_listing(route, path, listing_buffer);
         if (files == NULL) {
-            if (send_error(client_fd, "File o directory non esistente.\n") != 0) {
-                perror("Errore nel comunicare con la socket.\n");
+            char *err = "File o directory non esistente.\n";
+            if (send_error(client_fd, err) != 0) {
+                fprintf(stderr,"%s",err);
                 close(client_fd);
                 return -1;
             }
@@ -404,6 +405,3 @@ int serve_client(int client_fd, int port, char *client_ip) {
     }
     return 0;
 }
-
-
-
