@@ -3,10 +3,13 @@
 #include <string.h>
 #include <curl/curl.h>
 #include <unistd.h>
-#define HALF_SECOND 5 * 100000
+#include <signal.h>
+
+#define equals(str1, str2) strcmp(str1,str2) == 0
+#define CONFIG_PATH "config.txt"
+#define TIMEOUT 7 * 100000
 #define PID_FLAG "--pid="
 #define HELP_FLAG "--help"
-#define equals(str1, str2) strcmp(str1,str2) == 0
 
 #define ROOT_LISTING "\
 g anim.gif\t/\t127.0.0.1\t7070\n\
@@ -22,6 +25,14 @@ I image.jpg\t/\t127.0.0.1\t7070\n\
 #define SIMPLE_TEXT "Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n"
 
 #define EMPTY_STRING "\n"
+
+#define CONFIG_CONTENT_BACK "\
+port:7070\n\
+type:thread"
+
+#define CONFIG_CONTENT_NEW "\
+port:7071\n\
+type:thread"
 
 struct string {
   char *ptr;
@@ -89,49 +100,102 @@ int main(int argc, char *argv[]) {
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
 
 
-  // TEST_1: Verifica che venga fatto correttamente il listing delle cartella root
+/*#----------------------------------  // TEST_1  ---------------------------------------#*/
+  char *desc = "Verifica che venga fatto correttamente il listing delle cartella root";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/");
   res = curl_easy_perform(curl);
-  if (equals(s.ptr, ROOT_LISTING)) passed++;
+  if (equals(s.ptr, ROOT_LISTING)) {
+    passed++;
+    fprintf(stdout, "#PASSED: %s\n", desc);
+  }
   else {
     failed++;
-    fprintf(stderr, "%s\n", "#FAIL: 'Verifica che venga fatto correttamente il listing delle cartella root'");
+    fprintf(stdout, "#FAILED: %s\n", desc);
   }
   init_string(&s);
-  usleep(HALF_SECOND);
+  usleep(TIMEOUT);
 
-  // TEST_2: Verifica che venga fatto correttamente il listing di una sottocartella
+/*#----------------------------------  // TEST_2  ---------------------------------------#*/
+  desc = "Verifica che venga fatto correttamente il listing di una sottocartella";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/folder");
   res = curl_easy_perform(curl);
-  if (equals(s.ptr, SUBFOLDER_LISTING)) passed++;
+  if (equals(s.ptr, SUBFOLDER_LISTING)) {
+    passed++;
+    fprintf(stdout, "#PASSED: %s\n", desc);
+  }
   else {
     failed++;
-    fprintf(stderr, "%s\n", "#FAIL: 'Verifica che venga fatto correttamente il listing di una sottocartella'");
+    fprintf(stdout, "#FAILED: %s\n", desc);
   }
   init_string(&s);
-  usleep(HALF_SECOND);
+  usleep(TIMEOUT);
 
-  // TEST_3: Verifica che venga correttamente restituito un file .txt
+/*#----------------------------------  // TEST_3  ---------------------------------------#*/
+  desc = "Verifica che venga correttamente restituito un file .txt";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/testo.txt");
   res = curl_easy_perform(curl);
-  if (equals(s.ptr, SIMPLE_TEXT)) passed++;
+  if (equals(s.ptr, SIMPLE_TEXT)) {
+    passed++;
+    fprintf(stdout, "#PASSED: %s\n", desc);
+  }
   else {
     failed++;
-    fprintf(stderr, "%s\n", "#FAIL: 'Verifica che venga correttamente restituito un file .txt'");
+    fprintf(stdout, "#FAILED: %s\n", desc);
   }
   init_string(&s);
-  usleep(HALF_SECOND);
+  usleep(TIMEOUT);
 
-  // TEST_4: Verifica che venga correttamente restituito un file vuoto .txt
+/*#----------------------------------  // TEST_4  ---------------------------------------#*/
+  desc = "Verifica che venga correttamente restituito un file vuoto .txt";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/folder/vuoto.txt");
   res = curl_easy_perform(curl);
-  if (equals(s.ptr, EMPTY_STRING)) passed++;
+  if (equals(s.ptr, EMPTY_STRING)) {
+    passed++;
+    fprintf(stdout, "#PASSED: %s\n", desc);
+  }
   else {
     failed++;
-    fprintf(stderr, "%s\n", "#FAIL: 'Verifica che venga correttamente restituito un file vuoto .txt'");
+    fprintf(stdout, "#FAILED: %s\n", desc);
   }
   init_string(&s);
-  //usleep(HALF_SECOND);
+  usleep(TIMEOUT);
+
+/*#----------------------------------  // TEST_5  ---------------------------------------#*/
+  desc = "Verifica che il server cambi porta con SIGHUP";
+  FILE *file = fopen(CONFIG_PATH, "wb");
+  fprintf(file, "%s", CONFIG_CONTENT_NEW);
+  fclose(file);
+  kill(pid, SIGHUP);
+
+  curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7071/1/testo.txt");
+  res = curl_easy_perform(curl);
+  if (equals(s.ptr, SIMPLE_TEXT)) {
+    passed++;
+    fprintf(stdout, "#PASSED: %s\n", desc);
+  }
+  else {
+    failed++;
+    fprintf(stdout, "#FAILED: %s\n", desc);
+  }
+  init_string(&s);
+  file = fopen(CONFIG_PATH, "wb");
+  fprintf(file, "%s", CONFIG_CONTENT_BACK);
+  usleep(TIMEOUT);
+
+/*#----------------------------------  // TEST_6  ---------------------------------------#*/
+  desc = "Verifica che il server non ascolti più sulla porta precedente";
+  curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/testo.txt");
+  res = curl_easy_perform(curl);
+  if (res != 0) {
+    passed++;
+    fprintf(stdout, "#PASSED: %s\n", desc);
+  }
+  else {
+    failed++;
+    fprintf(stdout, "#FAILED: %s\n", desc);
+  }
+  init_string(&s);
+  usleep(TIMEOUT);
 
   int total = passed + failed;
 
