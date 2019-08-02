@@ -152,11 +152,15 @@ int is_file(char *path) {
 
 char *get_extension_code(const char *filename){
     const char *ext = strrchr(filename, '.');
-    if (ext == NULL) return "1 ";
-    else if (equals(ext, ".txt")) return "0 ";
-    else if (equals(ext, ".gif")) return "g ";
-    else if (equals(ext, ".jpeg") || equals(ext, ".jpg")) return "I ";
-    else return "3";
+    if (ext == NULL) {
+        return "1 ";
+    } else if (equals(ext, ".txt")) {
+        return "0 ";
+    } else if (equals(ext, ".gif")) {
+        return "g ";
+    } else if (equals(ext, ".jpeg") || equals(ext, ".jpg")) {
+        return "I ";
+    } return "3";
 }
 
 int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
@@ -168,18 +172,13 @@ int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
     if ((*socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("Errore durante la creazione della socket.\n");
         return -1;
-    }
-
-    if (bind(*socket_fd, (struct sockaddr *)socket_addr, sizeof *socket_addr) == -1) {
+    } if (bind(*socket_fd, (struct sockaddr *)socket_addr, sizeof *socket_addr) == -1) {
         perror("Errore durante il binding tra socket_fd e socket_address\n");
         return -1;
-    }
-
-    if (listen(*socket_fd, BACKLOG) == -1) {
+    } if (listen(*socket_fd, BACKLOG) == -1) {
         perror("Errore nel provare ad ascoltare sulla porta data in input.\n");
         return -1;
     }
-
     return 0;
 }
 

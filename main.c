@@ -317,12 +317,12 @@ void *send_routine(void *arg) {
 }
 
 int serve_client(int client_fd, int port, char *client_ip) {
-    int err = 0;
-    char *client_buffer = get_client_buffer(client_fd, &err);
-    if (err == -1) {
-        char *str = "Errore nel ricevere i dati.\n";
-        fprintf(stderr,"%s",str);
-        send_error(client_fd, str);
+    int res = 0;
+    char *client_buffer = get_client_buffer(client_fd, &res);
+    if (res == -1) {
+        char *err = "Errore nel ricevere i dati.\n";
+        fprintf(stderr,"%s",err);
+        send_error(client_fd, err);
         close(client_fd);
         return -1;
     }
