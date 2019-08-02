@@ -299,21 +299,17 @@ int write_on_pipe(int size, char* name, int port, char *ip){
 
 void *send_routine(void *arg) {
     pthread_arg_sender *args = (pthread_arg_sender *) arg;
-
-    if (send_file(args->client_fd, args->file_in_memory, args->size) != 0){
-        perror("Impossibile creare un nuovo thread.\n");
-        return NULL;
-    }
-
-    //sse send_file va a buon fine
-    if (write_on_pipe(args->size, args->route, args->port, args->client_ip) != 0) {
-        perror("Errore nello scrivere sulla pipe LOG.\n");
-        return NULL;
-    }
-    if (equals(config->type,"process")) {
+    int send = send_file(args->client_fd, args->file_in_memory, args->size);
+    if (send == -1){
+        fprintf(stderr, "Errore nel comunicare con la socket.\n");
+    } else {
+        if (write_on_pipe(args->size, args->route, args->port, args->client_ip) != 0) {
+            perror("Errore nello scrivere sulla pipe LOG.\n");
+            return NULL;
+        }
+    } if (equals(config->type,"process")) {
         exit(0);
-    }
-    return NULL;
+    } return NULL;
 }
 
 int serve_client(int client_fd, int port, char *client_ip) {
@@ -354,10 +350,7 @@ int serve_client(int client_fd, int port, char *client_ip) {
         }
 
         int size = v.st_size;
-
-        if (size == 0) {
-            truncate(path, 4);
-        }
+        if (size == 0) truncate(path, 4);
 
         flock(file_fd, LOCK_EX);
         char *file_in_memory = mmap(NULL, size, PROT_READ, MAP_PRIVATE, file_fd, 0);
@@ -387,7 +380,6 @@ int serve_client(int client_fd, int port, char *client_ip) {
         }
 
     } else {
-        //da fare dinamico
         char listing_buffer[2048];
         bzero(listing_buffer, sizeof listing_buffer);
         files = get_file_listing(route, path, listing_buffer);

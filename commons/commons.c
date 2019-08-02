@@ -182,6 +182,9 @@ int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
     return 0;
 }
 
+/*
+ * da rendere allocazione dinamica
+ */
 char *get_file_listing(char *route, char *path, char *buffer) {
     DIR *d;
     struct dirent *dir;
@@ -225,15 +228,14 @@ int send_file(int socket_fd, char *file, size_t file_size){
     char *new_str = malloc(strlen(file) + 2);
     strcpy(new_str, file);
     strcat(new_str, "\n");
-
+    int res = 0;
     if (send(socket_fd, new_str, strlen(new_str), 0) == -1) {
-        perror("Errore nel comunicare con la socket.\n");
-        return 1;
+        res = -1;
     }
     munmap(file, file_size);
     free(new_str);
     close(socket_fd);
-    return 0;
+    return res;
 }
 
 char *get_client_ip(struct sockaddr_in *socket_addr){
