@@ -317,10 +317,17 @@ void *send_routine(void *arg) {
 }
 
 int serve_client(int client_fd, int port, char *client_ip) {
+    int err = 0;
+    char *client_buffer = get_client_buffer(client_fd, &err);
+    if (err == -1) {
+        char *str = "Errore nel ricevere i dati.\n";
+        fprintf(stderr,"%s",str);
+        send_error(client_fd, str);
+        close(client_fd);
+        return -1;
+    }
 
-    char *client_buffer = get_client_buffer(client_fd);
     int end = index_of(client_buffer, '\r');
-
     char *files;
 
     char route[end+1];

@@ -27,7 +27,7 @@ int send_file(int socket_fd, char *file, size_t file_size);
 char *get_parameter(char *line, FILE *stream);
 char *get_ip();
 char *get_client_ip(struct sockaddr_in *socket_addr);
-char *get_client_buffer(int client_fd);
+char *get_client_buffer(int client_fd, int *err);
 char *get_extension_code(const char *filename);
 char *get_file_listing(char *route, char *path, char *buffer);
 

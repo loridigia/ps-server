@@ -102,13 +102,10 @@ char *get_parameter(char *line, FILE *stream) {
     return NULL;
 }
 
-char *get_client_buffer(int client_fd){
+char *get_client_buffer(int client_fd, int *err){
     char *client_buffer = (char*)calloc(sizeof(char),10);
     char *receiver_buffer = (char*)calloc(sizeof(char),10);
-
-    int n_data;
-    int i = 0;
-    int pointer;
+    int n_data,pointer,i=0;
 
     while ((n_data = recv(client_fd, receiver_buffer, 10, MSG_DONTWAIT)) > 0 ){
         if (i > 0){
@@ -123,9 +120,7 @@ char *get_client_buffer(int client_fd){
     }
 
     if (n_data == -1 && (errno != EAGAIN || errno != EWOULDBLOCK)){
-        char *err = "Errore nel ricevere i dati.\n";
-        fprintf(stderr,"%s",err);
-        send_error(client_fd, err);
+        *err = -1;
     }
     return client_buffer;
 }
