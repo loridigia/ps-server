@@ -179,7 +179,7 @@ int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
 /*
  * da rendere allocazione dinamica
  */
-char *get_file_listing(char *route, char *path, char *buffer) {
+int get_file_listing(char *route, char *path, char *buffer) {
     DIR *d;
     struct dirent *dir;
     int len = 0;
@@ -201,9 +201,9 @@ char *get_file_listing(char *route, char *path, char *buffer) {
         closedir (d);
     }
     else {
-        return NULL;
+        return -1;
     }
-    return buffer;
+    return 0;
 }
 
 int index_of(char *values, char find) {

@@ -11,11 +11,7 @@
 
 /*
  * Cose da controllare una volta terminata la prima parte:
-     * controllo errori su TUTTE le syscall
-     * controllo chiusura di TUTTE le socket
      * controllo memoria liberata dopo TUTTE le malloc
-     * controllo concorrenza, deadlock, locks, mapping, mutex etc.
-     * controllo che i lock vengano rilasciati il prima possibile
  */
 
 typedef struct pthread_arg_sender {
@@ -295,9 +291,10 @@ void *send_routine(void *arg) {
 
 int serve_client(int client_fd, char *client_ip, int port) {
     int res = 0;
+    char *err;
     char *client_buffer = get_client_buffer(client_fd, &res);
     if (res == -1) {
-        char *err = "Errore nel ricevere i dati.\n";
+        err = "Errore nel ricevere i dati.\n";
         fprintf(stderr,"%s",err);
         send_error(client_fd, err);
         close(client_fd);
@@ -305,8 +302,13 @@ int serve_client(int client_fd, char *client_ip, int port) {
     }
 
     int end = index_of(client_buffer, '\r');
-    char *files;
-
+    if (end == -1) {
+        err = "Impossibile reperire informazioni dal client.\n";
+        fprintf(stderr,"%s",err);
+        send_error(client_fd, err);
+        close(client_fd);
+        return -1;
+    }
     char route[end+1];
     strncpy(route, client_buffer, sizeof route-1);
     route[sizeof route-1] = '\0';
@@ -318,7 +320,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
     if (is_file(path)) {
         int file_fd = open(path, O_RDONLY);
         if (file_fd == -1) {
-            char *err = "Errore nell'apertura del file. \n";
+            err = "Errore nell'apertura del file. \n";
             fprintf(stderr,"%s%s",err,path);
             send_error(client_fd, err);
             close(client_fd);
@@ -328,6 +330,8 @@ int serve_client(int client_fd, char *client_ip, int port) {
         struct stat v;
         if (stat(path,&v) == -1) {
             perror("Errore nel prendere la grandezza del file.\n");
+            close(client_fd);
+            return -1;
         }
 
         int size = v.st_size;
@@ -335,10 +339,12 @@ int serve_client(int client_fd, char *client_ip, int port) {
 
         flock(file_fd, LOCK_EX);
         char *file_in_memory = mmap(NULL, size, PROT_READ, MAP_PRIVATE, file_fd, 0);
+        flock(file_fd, LOCK_UN);
         if (file_in_memory == MAP_FAILED) {
             perror("Errore nell'operazione di mapping del file.\n");
+            close(client_fd);
+            return -1;
         }
-        flock(file_fd, LOCK_UN);
 
         pthread_arg_sender *args =
                 (pthread_arg_sender *)malloc(sizeof (pthread_arg_sender));
@@ -369,14 +375,12 @@ int serve_client(int client_fd, char *client_ip, int port) {
     } else {
         char listing_buffer[4096];
         bzero(listing_buffer, sizeof listing_buffer);
-        files = get_file_listing(route, path, listing_buffer);
-        if (files == NULL) {
-            char *err = "File o directory non esistente.\n";
-            if (send_error(client_fd, err) != 0) {
-                fprintf(stderr,"%s",err);
-                close(client_fd);
-                return -1;
-            }
+        if (get_file_listing(route, path, listing_buffer) < 0) {
+            err = "File o directory non esistente.\n";
+            fprintf(stderr,"%s",err);
+            send_error(client_fd, err);
+            close(client_fd);
+            return -1;
         }
         else {
             if (send(client_fd, listing_buffer, sizeof listing_buffer, 0) != 0) {
