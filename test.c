@@ -7,7 +7,7 @@
 
 #define equals(str1, str2) strcmp(str1,str2) == 0
 #define CONFIG_PATH "config.txt"
-#define TIMEOUT 7 * 100000
+#define TIMEOUT 1000000
 #define PID_FLAG "--pid="
 #define HELP_FLAG "--help"
 
@@ -19,7 +19,7 @@ I image.jpg\t/\t127.0.0.1\t7070\n\
 .\n"
 
 #define SUBFOLDER_LISTING "\
-0 vuoto.txt\t/folder/\t127.0.0.1\t7070\n\
+0 vuoto.txt\t/folder\t127.0.0.1\t7070\n\
 .\n"
 
 #define SIMPLE_TEXT "Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n"
@@ -119,6 +119,7 @@ int main(int argc, char *argv[]) {
   desc = "Verifica che venga fatto correttamente il listing di una sottocartella";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/folder");
   res = curl_easy_perform(curl);
+
   if (equals(s.ptr, SUBFOLDER_LISTING)) {
     passed++;
     fprintf(stdout, "#PASSED: %s\n", desc);
@@ -203,6 +204,6 @@ int main(int argc, char *argv[]) {
 
   free(s.ptr);
   curl_easy_cleanup(curl);
-
+  system("pkill -f ps_server");
   return 0;
 }

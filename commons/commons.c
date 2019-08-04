@@ -16,7 +16,7 @@
 #define MIN_PORT 1024
 #define MAX_PORT 65535
 
-void load_arguments(int argc, char *argv[]) {
+int load_arguments(int argc, char *argv[]) {
     char *input;
     for (int i = 1; i < argc; i++) {
         input = argv[i];
@@ -25,13 +25,13 @@ void load_arguments(int argc, char *argv[]) {
             config->port = strtol(input + strlen(PORT_FLAG), &endptr, 10);
             if (config->port < MIN_PORT || config->port > MAX_PORT || *endptr != '\0' || endptr == (input + strlen(PORT_FLAG))) {
                 fprintf(stderr,"Controllare che la porta sia scritta correttamente o che non sia well-known (< 1024). \n");
-                exit(1);
+                return -1;
             }
         } else if (strncmp(input, TYPE_FLAG, strlen(TYPE_FLAG)) == 0) {
             config->type = input + strlen(TYPE_FLAG);
             if (!(equals(config->type, "thread") || equals(config->type, "process"))) {
                 fprintf(stderr,"Seleziona una modalità corretta di avvio (thread o process)\n");
-                exit(1);
+                return -1;
             }
         } else if (strncmp(input, HELP_FLAG, strlen(HELP_FLAG)) == 0) {
             puts("Il server viene lanciato di default sulla porta 7070 in modalità multi-thread.\n"
@@ -40,9 +40,10 @@ void load_arguments(int argc, char *argv[]) {
             exit(0);
         } else {
             fprintf(stderr,"Parametro %s sconosciuto. --help per conocescere i parametri permessi", input);
-            exit(1);
+            return -1;
         }
     }
+    return 0;
 }
 
 int load_configuration(int mode) {
@@ -50,7 +51,7 @@ int load_configuration(int mode) {
     char *line = NULL;
     stream = fopen(CONFIG_PATH, "r");
     if (stream == NULL) {
-        fprintf(stderr,"Impossibile aprire il file di configurazione.\n");
+        perror("Impossibile aprire il file di configurazione.\n");
         fclose(stream);
         return -1;
     }
@@ -76,7 +77,7 @@ int load_configuration(int mode) {
     }
     config->ip_address = get_ip();
     if (config->ip_address == NULL) {
-        fprintf(stderr,"Impossibile ottenere l'ip del server.\n");
+        perror("Impossibile ottenere l'ip del server.\n");
         fclose(stream);
         return -1;
     }
@@ -181,28 +182,21 @@ int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
 char *get_file_listing(char *route, char *path, char *buffer) {
     DIR *d;
     struct dirent *dir;
-
+    int len = 0;
     if ((d = opendir (path)) != NULL) {
         while ((dir = readdir (d)) != NULL) {
             if (equals(dir->d_name, ".") || equals(dir->d_name, "..")) {
                 continue;
             }
-            strcat(buffer, get_extension_code(dir->d_name));
-            strcat(buffer, dir->d_name);
-            strcat(buffer, "\t");
-            strcat(buffer, route);
-            if (path[strlen(path)-1] != '/') {
-                strcat(buffer, "/");
-            }
-            strcat(buffer,"\t");
-            strcat(buffer,config->ip_address);
-            strcat(buffer,"\t");
-            char port[6];
-            sprintf(port,"%d",config->port);
-            strcat(buffer,port);
-            strcat(buffer, "\n");
+            len += sprintf(buffer + len,
+                    "%s%s\t%s\t%s\t%d\n",
+                    get_extension_code(dir->d_name),
+                    dir->d_name,
+                    route,
+                    config->ip_address,
+                    config->port);
         }
-        strcat(buffer, ".\n");
+        strcat(buffer + len, ".\n");
         rewinddir(d);
         closedir (d);
     }
