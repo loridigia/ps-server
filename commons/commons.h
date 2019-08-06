@@ -4,6 +4,9 @@
 #define LOG_MIN_SIZE 38
 #define COMPLETE 0
 #define PORT_ONLY 1
+#define MAX_EXT_LENGTH 3
+#define MAX_PORT_LENGTH 5
+#define MAX_NAME_LENGTH 256
 #define equals(str1, str2) strcmp(str1,str2) == 0
 
 #include <errno.h>
@@ -24,7 +27,7 @@ int send_error(int socket_fd, char *err);
 int is_file(char *path);
 int index_of(char *values, char find);
 int send_file(int socket_fd, char *file, size_t file_size);
-int get_file_listing(char *route, char *path, char *buffer);
+char *get_file_listing(char *route, char *path, int *size);
 
 char *get_parameter(char *line, FILE *stream);
 char *get_ip();

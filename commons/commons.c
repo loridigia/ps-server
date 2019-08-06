@@ -176,13 +176,13 @@ int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
     return 0;
 }
 
-/*
- * da rendere allocazione dinamica
- */
-int get_file_listing(char *route, char *path, char *buffer) {
+char *get_file_listing(char *route, char *path, int *size) {
     DIR *d;
     struct dirent *dir;
     int len = 0;
+    int row_size = MAX_EXT_LENGTH + MAX_NAME_LENGTH + strlen(route) + strlen(config->ip_address) + MAX_PORT_LENGTH + 20;
+    *size = row_size;
+    char *buffer = (char*)calloc(sizeof(char), row_size);
     if ((d = opendir (path)) != NULL) {
         while ((dir = readdir (d)) != NULL) {
             if (equals(dir->d_name, ".") || equals(dir->d_name, "..")) {
@@ -195,15 +195,19 @@ int get_file_listing(char *route, char *path, char *buffer) {
                     route,
                     config->ip_address,
                     config->port);
+            if (*size - len < row_size) {
+                *size *= 2;
+                buffer = (char *)realloc(buffer, *size);
+            }
         }
         strcat(buffer + len, ".\n");
         rewinddir(d);
         closedir (d);
     }
     else {
-        return -1;
+        return NULL;
     }
-    return 0;
+    return buffer;
 }
 
 int index_of(char *values, char find) {
