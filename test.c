@@ -7,7 +7,7 @@
 
 #define equals(str1, str2) strcmp(str1,str2) == 0
 #define CONFIG_PATH "config.txt"
-#define TIMEOUT 5000
+#define TIMEOUT 50000
 #define PID_FLAG "--pid="
 #define HELP_FLAG "--help"
 
@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
 
 /*#----------------------------------  // TEST_2  ---------------------------------------#*/
   desc = "Verifica che venga fatto correttamente il listing di una sottocartella";
-  for (int i = 0; i < 1; i++) {
+  for (int i = 0; i < 2000; i++) {
       curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/folder");
       res = curl_easy_perform(curl);
       if (equals(s.ptr, SUBFOLDER_LISTING)) {
