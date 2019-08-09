@@ -175,8 +175,8 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
     }
 
     struct timeval timeout;
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 100000;
 
     fd_set read_fd_set;
     socklen_t socket_size;
