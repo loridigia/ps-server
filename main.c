@@ -174,6 +174,12 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
         return;
     }
 
+    int status = fcntl(socket_fd, F_SETFL, fcntl(socket_fd, F_GETFL, 0) | O_NONBLOCK);
+
+    if (status == -1){
+        perror("calling fcntl");
+    }
+
     struct timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec = 100000;
@@ -304,7 +310,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
     int end = index_of(client_buffer, '\r');
     if (end == -1) {
         err = "Impossibile reperire informazioni dal client.\n";
-        fprintf(stderr,"%s",err);
+        fprintf(stderr, "%s", err);
         send_error(client_fd, err);
         close(client_fd);
         return -1;
@@ -384,7 +390,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
         }
         else {
             if (send(client_fd, listing_buffer, size, 0) != 0) {
-                if ((errno != EAGAIN || errno != EWOULDBLOCK)) { 
+                if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
                     perror("Errore nel comunicare con la socket.\n");
                     close(client_fd);
                     return -1;
