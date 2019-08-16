@@ -174,12 +174,6 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
         return;
     }
 
-    int status = fcntl(socket_fd, F_SETFL, fcntl(socket_fd, F_GETFL, 0) | O_NONBLOCK);
-
-    if (status == -1){
-        perror("calling fcntl");
-    }
-
     struct timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec = 100000;
@@ -306,7 +300,6 @@ int serve_client(int client_fd, char *client_ip, int port) {
         close(client_fd);
         return -1;
     }
-
     int end = index_of(client_buffer, '\r');
     if (end == -1) {
         err = "Impossibile reperire informazioni dal client.\n";
