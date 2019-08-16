@@ -97,25 +97,22 @@ char *get_parameter(char *line, FILE *stream) {
 }
 
 char *get_client_buffer(int client_fd, int *err){
-    char *client_buffer = (char*)calloc(sizeof(char),10);
-    char *receiver_buffer = (char*)calloc(sizeof(char),10);
-    int n_data,pointer,i=0;
+    int size = 10, chunk = 10;
+    char *client_buffer = (char*)calloc(sizeof(char), size);
+    int len = 0, n = 0;
 
-    while ((n_data = recv(client_fd, receiver_buffer, 10, MSG_DONTWAIT)) > 0 ){
-        if (i > 0){
-            pointer = strlen(client_buffer);
-            client_buffer = (char *)realloc(client_buffer,((10 * i) + n_data));
-            memcpy(&client_buffer[pointer], receiver_buffer, n_data);
-        } else {
-            memcpy(client_buffer, receiver_buffer, n_data);
+    while ((n = recv(client_fd, client_buffer + len, chunk, MSG_DONTWAIT)) > 0 ) {
+        len += n;
+        if (len + chunk >= size) {
+            size *= 2;
+            client_buffer = (char*)realloc(client_buffer, size);
         }
-        i++;
-        memset(receiver_buffer, 0, strlen(receiver_buffer));
     }
 
-    if (n_data == -1 && (errno != EAGAIN || errno != EWOULDBLOCK)){
+    if (n == -1 && (errno != EAGAIN || errno != EWOULDBLOCK)){
         *err = -1;
     }
+
     return client_buffer;
 }
 
