@@ -293,6 +293,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
     int res = 0;
     char *err;
     char *client_buffer = get_client_buffer(client_fd, &res);
+
     if (res == -1) {
         err = "Errore nel ricevere i dati.\n";
         fprintf(stderr,"%s",err);
@@ -300,17 +301,15 @@ int serve_client(int client_fd, char *client_ip, int port) {
         close(client_fd);
         return -1;
     }
+
     int end = index_of(client_buffer, '\r');
     if (end == -1) {
-        err = "Impossibile reperire informazioni dal client.\n";
-        fprintf(stderr, "%s", err);
-        send_error(client_fd, err);
-        close(client_fd);
-        return -1;
+        end = strlen(client_buffer);
     }
-    char route[end+1];
-    strncpy(route, client_buffer, sizeof route-1);
-    route[sizeof route-1] = '\0';
+
+    char route[end + 1];
+    strcpy(route, client_buffer);
+    route[sizeof route - 1] = '\0';
 
     char path[sizeof(PUBLIC_PATH) + strlen(route)];
     strcpy(path, PUBLIC_PATH);
