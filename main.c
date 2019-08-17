@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 
     pid_t process_id = 0;
     pid_t sid = 0;
-    process_id = fork();
+    // process_id = fork();
 
     if (process_id < 0) {
         printf("fork failed!\n");
@@ -65,13 +65,13 @@ int main(int argc, char *argv[]) {
     } else if (process_id == 0) {
         int pid = getpid(); //debugging purpose
         fprintf(stdout,"Server running...\n PID -> %d\n",pid);
-        sid = setsid();
+       /* sid = setsid();
         if(sid < 0) {
             exit(1);
         }
         close(STDIN_FILENO);
         close(STDOUT_FILENO);
-        close(STDERR_FILENO);
+        close(STDERR_FILENO); */
 
         config = mmap(NULL, sizeof config, PROT_READ | PROT_WRITE,
                       MAP_SHARED | MAP_ANONYMOUS, -1, 0);
@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
  * buffer non allocato dinamicamente
  */
 void write_log() {
-    char buffer[1024];
+    char buffer[2048];
     while(1) {
         bzero(buffer, sizeof buffer);
         pthread_cond_wait(&condition, &mutex);
@@ -311,7 +311,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
     char *err;
     char *client_buffer = get_client_buffer(client_fd, &res);
 
-    if (res == -1) {
+    if (res == -1 || strlen(client_buffer) == 0) {
         err = "Errore nel ricevere i dati.\n";
         fprintf(stderr,"%s",err);
         send_error(client_fd, err);

@@ -109,7 +109,7 @@ char *get_client_buffer(int client_fd, int *err){
         }
     }
 
-    if (n == -1 && (errno != EAGAIN || errno != EWOULDBLOCK)){
+    if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK){
         *err = -1;
     }
 
