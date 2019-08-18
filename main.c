@@ -1,32 +1,8 @@
 #if defined(__linux__) || defined(__APPLE__)
-    #include "linux/linux.h"
+    #include "unix/unix.h"
 #elif defined(_WIN32)
     #include "win/win.h"
 #endif
-
-/*
- * Cose da controllare una volta terminata la prima parte:
-     * controllo memoria liberata dopo TUTTE le malloc
- */
-
-typedef struct pthread_arg_sender {
-    int size;
-    int client_fd;
-    int port;
-    char *file_in_memory;
-    char *route;
-    char *client_ip;
-} pthread_arg_sender;
-
-typedef struct pthread_arg_listener {
-    int port;
-} pthread_arg_listener;
-
-typedef struct pthread_arg_receiver {
-    int new_socket_fd;
-    int port;
-    char *client_ip;
-} pthread_arg_receiver;
 
 int serve_client(int client_fd, char *client_ip, int port);
 int write_on_pipe(int size, char *name, int port, char *ip);
@@ -38,24 +14,6 @@ void handle_requests(int port, int (*handle)(int fd, char* client_ip, int port))
 
 int main(int argc, char *argv[]) {
     init(argc, argv);
-}
-
-/*
- * buffer non allocato dinamicamente
- */
-void write_log() {
-    char buffer[8192];
-    while(1) {
-        bzero(buffer, sizeof buffer);
-        pthread_cond_wait(&condition, &mutex);
-        pthread_mutex_lock(&mutex);
-        read(pipe_fd[0], buffer, sizeof buffer);
-        pthread_mutex_unlock(&mutex);
-        FILE *file = fopen(LOG_PATH, "a");
-        fprintf(file, "%s", buffer);
-        fclose(file);
-    }
-
 }
 
 void start() {
@@ -197,7 +155,7 @@ void *pthread_receiver_routine(void *arg) {
 
 int write_on_pipe(int size, char* name, int port, char *client_ip){
     char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + LOG_MIN_SIZE);
-    sprintf(buffer, "name: %s\nfile_size: %d\nclient_ip: %s\nport: %d\n\n", name, size, client_ip, port);
+    sprintf(buffer, "name: %s | size: %d | ip: %s | port: %d\n", name, size, client_ip, port);
     pthread_mutex_lock(&mutex);
     if (write(pipe_fd[1], buffer, strlen(buffer)) < 0) {
         pthread_mutex_unlock(&mutex);

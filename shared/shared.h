@@ -14,6 +14,12 @@
 #define MAX_NAME_LENGTH 256
 #define equals(str1, str2) strcmp(str1,str2) == 0
 
+#if defined(__linux__) || defined(__APPLE__)
+    #define UNIX_OS 1
+#elif defined(_WIN32)
+    #define UNIX_OS 0
+#endif
+
 #include <errno.h>
 
 typedef struct configuration {

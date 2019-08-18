@@ -36,11 +36,9 @@ int load_arguments(int argc, char *argv[]) {
         } else if (strncmp(input, HELP_FLAG, strlen(HELP_FLAG)) == 0) {
             puts("Il server viene lanciato di default sulla porta 7070 in modalità multi-thread.\n"
                  "--port=<numero_porta> per specificare la porta su cui ascoltare all'avvio.\n"
-                 "--type=<thread/process> per specificare la modalità di avvio del server.\n");
+                 "--type=<thread/process> per specificare la modalità di avvio del server.\n"
+                 "--daemon per lanciare il server in modalità daemon.\n");
             exit(0);
-        } else {
-            fprintf(stderr,"Parametro %s sconosciuto. --help per conocescere i parametri permessi", input);
-            return -1;
         }
     }
     return 0;

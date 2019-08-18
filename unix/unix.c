@@ -1,41 +1,27 @@
-#include "linux.h"
+#include "unix.h"
 
 void daemon_skeleton() {
-    /* Our process ID and Session ID */
-    pid_t pid, sid;
-
-    /* Fork off the parent process */
+    pid_t pid;
     pid = fork();
     if (pid < 0) {
         exit(1);
-    }
-    /* If we got a good PID, then
-       we can exit the parent process. */
-    if (pid > 0) {
+    } else if (pid > 0) {
         exit(0);
     }
-
-    /* Change the file mode mask */
     umask(0);
-
-    /* Create a new SID for the child process */
-    sid = setsid();
-    if (sid < 0) {
-        /* Log the failure */
+    if (setsid() < 0) {
         exit(1);
     }
 
-    int my_pid = getpid(); //debugging purpose
-    fprintf(stdout,"Server running...\n PID -> %d\n",my_pid);
-
-    /* Close out the standard file descriptors */
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
 }
 
 void init(int argc, char *argv[]) {
-    daemon_skeleton();
+    if (is_daemon()) {
+        daemon_skeleton();
+    }
     config = mmap(NULL, sizeof config, PROT_READ | PROT_WRITE,
                   MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
@@ -79,4 +65,20 @@ void init(int argc, char *argv[]) {
     start();
     signal(SIGHUP, restart);
     while(1) sleep(1);
+}
+
+int is_daemon(int argc, char *argv[]) {
+    const char *flag = "--daemon";
+    char *input;
+    for (int i = 1; i < argc; i++) {
+        input = argv[i];
+        if (strncmp(input, flag, strlen(flag)) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void write_log() {
+
 }
