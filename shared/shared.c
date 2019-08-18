@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <sys/mman.h>
-#include "commons.h"
+#include "shared.h"
 
 #define CONFIG_PATH "../config.txt"
 #define PORT_FLAG "--port="
