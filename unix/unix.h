@@ -4,6 +4,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <dirent.h>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <sys/mman.h>
 #include "../shared/shared.h"
 
 pthread_t pthread;

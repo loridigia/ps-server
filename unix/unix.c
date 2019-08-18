@@ -92,3 +92,133 @@ void write_log() {
         fclose(file);
     }
 }
+
+char *get_client_ip(struct sockaddr_in *socket_addr){
+    struct in_addr ipAddr = socket_addr->sin_addr;
+    char *str = malloc(INET_ADDRSTRLEN);
+    inet_ntop( AF_INET, &ipAddr, str, INET_ADDRSTRLEN );
+    return str;
+}
+
+int send_file(int socket_fd, char *file, size_t file_size){
+    char *new_str = malloc(strlen(file) + 2);
+    strcpy(new_str, file);
+    strcat(new_str, "\n");
+    int res = 0;
+    if (send(socket_fd, new_str, strlen(new_str), 0) == -1) {
+        res = -1;
+    }
+    munmap(file, file_size);
+    free(new_str);
+    close(socket_fd);
+    return res;
+}
+
+char *get_file_listing(char *route, char *path, int *size) {
+    DIR *d;
+    struct dirent *dir;
+    int len = 0;
+    int row_size = MAX_EXT_LENGTH + MAX_NAME_LENGTH + strlen(route) + strlen(config->ip_address) + MAX_PORT_LENGTH + 20;
+    *size = row_size;
+    char *buffer = (char*)calloc(sizeof(char), row_size);
+    if ((d = opendir (path)) != NULL) {
+        while ((dir = readdir (d)) != NULL) {
+            if (equals(dir->d_name, ".") || equals(dir->d_name, "..")) {
+                continue;
+            }
+            len += sprintf(buffer + len,
+                           "%s%s\t%s\t%s\t%d\n",
+                           get_extension_code(dir->d_name),
+                           dir->d_name,
+                           route,
+                           config->ip_address,
+                           config->port);
+            if (*size - len < row_size) {
+                *size *= 2;
+                buffer = (char *)realloc(buffer, *size);
+            }
+        }
+        strcat(buffer + len, ".\n");
+        rewinddir(d);
+        closedir (d);
+    }
+    else {
+        return NULL;
+    }
+    return buffer;
+}
+
+int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
+    bzero(socket_addr, sizeof *socket_addr);
+    socket_addr->sin_family = AF_INET;
+    socket_addr->sin_port = htons(port);
+    socket_addr->sin_addr.s_addr = INADDR_ANY;
+
+    if ((*socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("Errore durante la creazione della socket.\n");
+        return -1;
+    } if (bind(*socket_fd, (struct sockaddr *)socket_addr, sizeof *socket_addr) == -1) {
+        perror("Errore durante il binding tra socket_fd e socket_address\n");
+        return -1;
+    } if (listen(*socket_fd, BACKLOG) == -1) {
+        perror("Errore nel provare ad ascoltare sulla porta data in input.\n");
+        return -1;
+    }
+    return 0;
+}
+
+char *get_client_buffer(int client_fd, int *err){
+    int size = 10, chunk = 10;
+    char *client_buffer = (char*)calloc(sizeof(char), size);
+    int len = 0, n = 0;
+
+    while ((n = recv(client_fd, client_buffer + len, chunk, MSG_DONTWAIT)) > 0 ) {
+        len += n;
+        if (len + chunk >= size) {
+            size *= 2;
+            client_buffer = (char*)realloc(client_buffer, size);
+        }
+    }
+
+    if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK){
+        *err = -1;
+    }
+
+    return client_buffer;
+}
+
+char *get_ip() {
+    struct ifaddrs *addrs;
+    getifaddrs(&addrs);
+    struct ifaddrs *tmp = addrs;
+
+    while (tmp) {
+        if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET) {
+            struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
+            return inet_ntoa(pAddr->sin_addr);
+        } tmp = tmp->ifa_next;
+    }
+    //freeifaddrs(addrs);
+    return NULL;
+}
+
+int send_error(int socket_fd, char *err) {
+    return send(socket_fd, err, strlen(err), 0);
+}
+
+char *get_parameter(char *line, FILE *stream) {
+    size_t len;
+    char *ptr;
+    if (getline(&line, &len, stream) != -1) {
+        strtok(line, ":");
+        ptr = strtok(NULL, "\n");
+        return ptr;
+    }
+    return NULL;
+}
+
+int is_file(char *path) {
+    struct stat path_stat;
+    stat(path, &path_stat);
+    return S_ISREG(path_stat.st_mode);
+}
