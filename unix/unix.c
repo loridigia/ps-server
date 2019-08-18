@@ -80,5 +80,15 @@ int is_daemon(int argc, char *argv[]) {
 }
 
 void write_log() {
-
+    char buffer[8192];
+    while(1) {
+        bzero(buffer, sizeof buffer);
+        pthread_cond_wait(&condition, &mutex);
+        pthread_mutex_lock(&mutex);
+        read(pipe_fd[0], buffer, sizeof buffer);
+        pthread_mutex_unlock(&mutex);
+        FILE *file = fopen(LOG_PATH, "a");
+        fprintf(file, "%s", buffer);
+        fclose(file);
+    }
 }
