@@ -1,8 +1,10 @@
+#include <stdio.h>
+
 /* ---------------------------- UNIX ----------------------------- */
-int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr);
+//int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr);
 int send_error(int socket_fd, char *err);
 int send_file(int socket_fd, char *file, size_t file_size);
-char *get_client_ip(struct sockaddr_in *socket_addr);
+//char *get_client_ip(struct sockaddr_in *socket_addr);
 char *get_client_buffer(int client_fd, int *err);
 int serve_client(int client_fd, char *client_ip, int port);
 int work_with_threads(int fd, char *client_ip, int port);

@@ -1,5 +1,25 @@
 #include "win.h"
 
+void start(){
+
+}
+
+void log_routine() {
+
+}
+
+void init(int argc, char *argv[]) {
+
+    if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
+        exit(1);
+    }
+    printf("%d", config->server_port);
+}
+
+char *get_server_ip(){
+
+}
+
 /* This code is public domain -- Will Hartung 4/9/09 */
 size_t getline(char **lineptr, size_t *n, FILE *stream) {
     char *bufptr = NULL;
@@ -51,12 +71,4 @@ size_t getline(char **lineptr, size_t *n, FILE *stream) {
     *n = size;
 
     return p - bufptr - 1;
-}
-
-void init(int argc, char *argv[]) {
-
-}
-
-void log_routine() {
-
 }

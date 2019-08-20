@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <errno.h>
+#include <sys/stat.h>
 #include <sys/file.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -32,11 +32,7 @@ typedef struct configuration {
     unsigned int server_port;
 } configuration;
 
-configuration *config;
-pthread_t pthread;
-pthread_attr_t pthread_attr;
-pthread_mutex_t mutex;
-pthread_cond_t condition;
+configuration *config; //non va bene
 
 int load_arguments(int argc, char *argv[]);
 int load_configuration(int first_start);

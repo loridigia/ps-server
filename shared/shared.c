@@ -11,6 +11,7 @@
 #define MIN_PORT 1024
 #define MAX_PORT 65535
 
+
 int load_arguments(int argc, char *argv[]) {
     char *input;
     for (int i = 1; i < argc; i++) {
