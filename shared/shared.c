@@ -112,3 +112,14 @@ void _log(char *buffer) {
     fprintf(file, "%s", buffer);
     fclose(file);
 }
+
+char *get_parameter(char *line, FILE *stream) {
+    size_t len;
+    char *ptr;
+    if (getline(&line, &len, stream) != -1) {
+        strtok(line, ":");
+        ptr = strtok(NULL, "\n");
+        return ptr;
+    }
+    return NULL;
+}

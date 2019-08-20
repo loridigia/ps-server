@@ -204,17 +204,6 @@ int send_error(int socket_fd, char *err) {
     return send(socket_fd, err, strlen(err), 0);
 }
 
-char *get_parameter(char *line, FILE *stream) {
-    size_t len;
-    char *ptr;
-    if (getline(&line, &len, stream) != -1) {
-        strtok(line, ":");
-        ptr = strtok(NULL, "\n");
-        return ptr;
-    }
-    return NULL;
-}
-
 int is_file(char *path) {
     struct stat path_stat;
     stat(path, &path_stat);

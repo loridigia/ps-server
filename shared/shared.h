@@ -34,7 +34,6 @@ int load_configuration(int first_start);
 int index_of(char *values, char find);
 char *get_extension_code(const char *filename);
 char *get_client_buffer(int client_fd, int *err);
+char *get_parameter(char *line, FILE *stream);
 void restart();
 void _log();
-
-char *get_parameter(char *line, FILE *stream);
