@@ -87,9 +87,7 @@ void write_log() {
         pthread_mutex_lock(&mutex);
         read(pipe_fd[0], buffer, sizeof buffer);
         pthread_mutex_unlock(&mutex);
-        FILE *file = fopen(LOG_PATH, "a");
-        fprintf(file, "%s", buffer);
-        fclose(file);
+        _log(buffer);
     }
 }
 
@@ -118,7 +116,7 @@ char *get_file_listing(char *route, char *path, int *size) {
     DIR *d;
     struct dirent *dir;
     int len = 0;
-    int row_size = MAX_EXT_LENGTH + MAX_NAME_LENGTH + strlen(route) + strlen(config->ip_address) + MAX_PORT_LENGTH + 20;
+    int row_size = MAX_EXT_LENGTH + MAX_NAME_LENGTH + strlen(route) + strlen(config->server_ip) + MAX_PORT_LENGTH + 20;
     *size = row_size;
     char *buffer = (char*)calloc(sizeof(char), row_size);
     if ((d = opendir (path)) != NULL) {
@@ -131,8 +129,8 @@ char *get_file_listing(char *route, char *path, int *size) {
                            get_extension_code(dir->d_name),
                            dir->d_name,
                            route,
-                           config->ip_address,
-                           config->port);
+                           config->server_ip,
+                           config->server_port);
             if (*size - len < row_size) {
                 *size *= 2;
                 buffer = (char *)realloc(buffer, *size);
@@ -187,7 +185,7 @@ char *get_client_buffer(int client_fd, int *err){
     return client_buffer;
 }
 
-char *get_ip() {
+char *get_server_ip() {
     struct ifaddrs *addrs;
     getifaddrs(&addrs);
     struct ifaddrs *tmp = addrs;

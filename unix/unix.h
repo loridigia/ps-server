@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <sys/mman.h>
+#include "../core/core.h"
 #include "../shared/shared.h"
 
 pthread_t pthread;

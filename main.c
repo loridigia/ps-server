@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
 }
 
 void start() {
-    if (equals(config->type, "thread")) {
+    if (equals(config->server_type, "thread")) {
         pthread_arg_listener *args =
                 (pthread_arg_listener *)malloc(sizeof (pthread_arg_listener));
         if (args < 0) {
@@ -25,7 +25,7 @@ void start() {
             free(args);
             exit(1);
         }
-        args->port = config->port;
+        args->port = config->server_port;
         if (pthread_create(
                 &pthread,
                 &pthread_attr,
@@ -41,7 +41,7 @@ void start() {
             perror("Errore durante la fork.\n");
             exit(1);
         } else if (pid_child == 0) {
-            handle_requests(config->port, work_with_processes);
+            handle_requests(config->server_port, work_with_processes);
             exit(0);
         }
     }
@@ -77,7 +77,7 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
             continue;
         }
 
-        if(config->port != port) {
+        if(config->server_port != port) {
             printf("Chiusura socket su porta %d. \n", port);
             break;
         }
@@ -149,7 +149,7 @@ void *pthread_receiver_routine(void *arg) {
 
 int write_on_pipe(int size, char* name, int port, char *client_ip){
     char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + LOG_MIN_SIZE);
-    sprintf(buffer, "name: %s | size: %d | ip: %s | port: %d\n", name, size, client_ip, port);
+    sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
     pthread_mutex_lock(&mutex);
     if (write(pipe_fd[1], buffer, strlen(buffer)) < 0) {
         pthread_mutex_unlock(&mutex);
@@ -172,7 +172,7 @@ void *send_routine(void *arg) {
             fprintf(stderr, "Errore nello scrivere sulla pipe LOG.\n");
             return NULL;
         }
-    } if (equals(config->type,"process")) {
+    } if (equals(config->server_type,"process")) {
         exit(0);
     }
     return NULL;
@@ -249,9 +249,9 @@ int serve_client(int client_fd, char *client_ip, int port) {
         args->route = route;
         args->size = size;
 
-        if (equals(config->type, "thread")) {
+        if (equals(config->server_type, "thread")) {
             send_routine(args);
-        } else if (equals(config->type, "process")) {
+        } else if (equals(config->server_type, "process")) {
             if (pthread_create(&pthread, &pthread_attr, send_routine, (void *) args) != 0) {
                 perror("Impossibile creare un nuovo thread di tipo 'sender'.\n");
                 free(args);

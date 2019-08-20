@@ -1,2 +1,2 @@
-port:7070
-type:thread
+server_port:7070
+server_type:thread
