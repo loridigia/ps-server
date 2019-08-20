@@ -4,6 +4,8 @@
     #include "win/win.h"
 #endif
 
+//#include "core/debug.c"
+
 int serve_client(int client_fd, char *client_ip, int port);
 int write_on_pipe(int size, char *name, int port, char *ip);
 int work_with_threads(int fd, char *client_ip, int port);

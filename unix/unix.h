@@ -1,20 +1,9 @@
 #include <arpa/inet.h>
-#include <sys/file.h>
 #include <sys/mman.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <dirent.h>
-#include <arpa/inet.h>
 #include <ifaddrs.h>
-#include <sys/mman.h>
 #include "../core/core.h"
 #include "../shared/shared.h"
 
-pthread_t pthread;
-pthread_attr_t pthread_attr;
-pthread_mutex_t mutex;
-pthread_cond_t condition;
 int pipe_fd[2];
 
 typedef struct pthread_arg_sender {

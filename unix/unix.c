@@ -19,16 +19,12 @@ void daemon_skeleton() {
 }
 
 void init(int argc, char *argv[]) {
+    //daemon
     if (is_daemon()) {
         daemon_skeleton();
     }
-    config = mmap(NULL, sizeof config, PROT_READ | PROT_WRITE,
-                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
-    if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
-        exit(1);
-    }
-
+    //tread
     if (pthread_attr_init(&pthread_attr) != 0) {
         perror("Errore nell'inizializzazione degli attributi del thread.\n");
         exit(1);
@@ -39,11 +35,21 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
+    //pipe
     if (pipe(pipe_fd) == -1) {
         perror("Errore nel creare la pipe.\n");
         exit(1);
     }
 
+    // configure
+    config = mmap(NULL, sizeof config, PROT_READ | PROT_WRITE,
+                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+    if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
+        exit(1);
+    }
+
+    //mutex, conditions
     pthread_mutexattr_t mutexAttr;
     pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
     pthread_mutex_init(&mutex, &mutexAttr);
@@ -52,16 +58,18 @@ void init(int argc, char *argv[]) {
     pthread_condattr_setpshared(&condAttr, PTHREAD_PROCESS_SHARED);
     pthread_cond_init(&condition, &condAttr);
 
+    //listener
     pid_t pid_child = fork();
 
     if (pid_child < 0) {
         perror("Errore durante la fork.\n");
         exit(0);
     } else if (pid_child == 0) {
-        write_log();
+        log_routine(); //diventa routine
         exit(0);
     }
 
+    //start
     start();
     signal(SIGHUP, restart);
     while(1) sleep(1);
@@ -79,7 +87,7 @@ int is_daemon(int argc, char *argv[]) {
     return 0;
 }
 
-void write_log() {
+void log_routine() {
     char buffer[8192];
     while(1) {
         bzero(buffer, sizeof buffer);
@@ -110,40 +118,6 @@ int send_file(int socket_fd, char *file, size_t file_size){
     free(new_str);
     close(socket_fd);
     return res;
-}
-
-char *get_file_listing(char *route, char *path, int *size) {
-    DIR *d;
-    struct dirent *dir;
-    int len = 0;
-    int row_size = MAX_EXT_LENGTH + MAX_NAME_LENGTH + strlen(route) + strlen(config->server_ip) + MAX_PORT_LENGTH + 20;
-    *size = row_size;
-    char *buffer = (char*)calloc(sizeof(char), row_size);
-    if ((d = opendir (path)) != NULL) {
-        while ((dir = readdir (d)) != NULL) {
-            if (equals(dir->d_name, ".") || equals(dir->d_name, "..")) {
-                continue;
-            }
-            len += sprintf(buffer + len,
-                           "%s%s\t%s\t%s\t%d\n",
-                           get_extension_code(dir->d_name),
-                           dir->d_name,
-                           route,
-                           config->server_ip,
-                           config->server_port);
-            if (*size - len < row_size) {
-                *size *= 2;
-                buffer = (char *)realloc(buffer, *size);
-            }
-        }
-        strcat(buffer + len, ".\n");
-        rewinddir(d);
-        closedir (d);
-    }
-    else {
-        return NULL;
-    }
-    return buffer;
 }
 
 int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
@@ -202,10 +176,4 @@ char *get_server_ip() {
 
 int send_error(int socket_fd, char *err) {
     return send(socket_fd, err, strlen(err), 0);
-}
-
-int is_file(char *path) {
-    struct stat path_stat;
-    stat(path, &path_stat);
-    return S_ISREG(path_stat.st_mode);
 }

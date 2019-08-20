@@ -3,6 +3,11 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <sys/file.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <dirent.h>
 #include "../core/core.h"
 
 #define PUBLIC_PATH "../public"
@@ -27,13 +32,20 @@ typedef struct configuration {
     char *server_ip;
     unsigned int server_port;
 } configuration;
+
 configuration *config;
+pthread_t pthread;
+pthread_attr_t pthread_attr;
+pthread_mutex_t mutex;
+pthread_cond_t condition;
 
 int load_arguments(int argc, char *argv[]);
 int load_configuration(int first_start);
 int index_of(char *values, char find);
+int is_file(char *path);
 char *get_extension_code(const char *filename);
 char *get_client_buffer(int client_fd, int *err);
 char *get_parameter(char *line, FILE *stream);
+char *get_file_listing(char *route, char *path, int *size);
 void restart();
 void _log();

@@ -123,3 +123,43 @@ char *get_parameter(char *line, FILE *stream) {
     }
     return NULL;
 }
+
+char *get_file_listing(char *route, char *path, int *size) {
+    DIR *d;
+    struct dirent *dir;
+    int len = 0;
+    int row_size = MAX_EXT_LENGTH + MAX_NAME_LENGTH + strlen(route) + strlen(config->server_ip) + MAX_PORT_LENGTH + 20;
+    *size = row_size;
+    char *buffer = (char*)calloc(sizeof(char), row_size);
+    if ((d = opendir (path)) != NULL) {
+        while ((dir = readdir (d)) != NULL) {
+            if (equals(dir->d_name, ".") || equals(dir->d_name, "..")) {
+                continue;
+            }
+            len += sprintf(buffer + len,
+                           "%s%s\t%s\t%s\t%d\n",
+                           get_extension_code(dir->d_name),
+                           dir->d_name,
+                           route,
+                           config->server_ip,
+                           config->server_port);
+            if (*size - len < row_size) {
+                *size *= 2;
+                buffer = (char *)realloc(buffer, *size);
+            }
+        }
+        strcat(buffer + len, ".\n");
+        rewinddir(d);
+        closedir (d);
+    }
+    else {
+        return NULL;
+    }
+    return buffer;
+}
+
+int is_file(char *path) {
+    struct stat path_stat;
+    stat(path, &path_stat);
+    return S_ISREG(path_stat.st_mode);
+}

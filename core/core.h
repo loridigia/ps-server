@@ -13,9 +13,7 @@ char *get_client_ip();
 char *get_client_buffer();
 
 /* --------------------------- COMMONS --------------------------- */
-int is_file(char *path);
-char *get_file_listing(char *route, char *path, int *size);
 char *get_server_ip();
 void start();
-void write_log();
+void log_routine();
 void init(int argc, char *argv[]);

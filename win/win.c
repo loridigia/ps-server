@@ -57,6 +57,6 @@ void init(int argc, char *argv[]) {
 
 }
 
-void write_log() {
+void log_routine() {
 
 }
