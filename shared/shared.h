@@ -6,7 +6,6 @@
 #include <sys/file.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <dirent.h>
 #include "../core/core.h"
 

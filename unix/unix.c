@@ -24,6 +24,16 @@ void init(int argc, char *argv[]) {
         daemon_skeleton();
     }
 
+    //pipe
+    if (pipe(pipe_fd) == -1) {
+        perror("Errore nel creare la pipe.\n");
+        exit(1);
+    }
+
+    // configure
+    config = mmap(NULL, sizeof config, PROT_READ | PROT_WRITE,
+                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
     //tread
     if (pthread_attr_init(&pthread_attr) != 0) {
         perror("Errore nell'inizializzazione degli attributi del thread.\n");
@@ -34,16 +44,6 @@ void init(int argc, char *argv[]) {
         perror("Errore nel settare DETACHED_STATE al thread.\n");
         exit(1);
     }
-
-    //pipe
-    if (pipe(pipe_fd) == -1) {
-        perror("Errore nel creare la pipe.\n");
-        exit(1);
-    }
-
-    // configure
-    config = mmap(NULL, sizeof config, PROT_READ | PROT_WRITE,
-                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
         exit(1);
