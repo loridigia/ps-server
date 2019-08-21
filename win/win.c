@@ -11,15 +11,28 @@ void log_routine() {
 }
 
 void init(int argc, char *argv[]) {
-
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
         exit(1);
     }
-    printf("%d", config->server_port);
+    
 }
 
 char *get_server_ip(){
-
+    WORD wVersionRequested;
+    WSADATA wsaData;
+    char name[255];
+    char *ip = NULL;
+    PHOSTENT hostinfo;
+    wVersionRequested = MAKEWORD( 2, 0 );
+    if ( WSAStartup( wVersionRequested, &wsaData ) == 0 ){
+        if( gethostname ( name, sizeof(name)) == 0){
+            if((hostinfo = gethostbyname(name)) != NULL){
+                ip = inet_ntoa (*(struct in_addr *)*hostinfo->h_addr_list);
+            }
+        }
+        WSACleanup( );
+    }
+    return ip;
 }
 
 /* This code is public domain -- Will Hartung 4/9/09 */

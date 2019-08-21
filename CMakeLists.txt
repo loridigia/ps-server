@@ -8,5 +8,6 @@ if (UNIX)
 endif (UNIX)
 
 if (WIN32)
+    link_libraries(ws2_32 wsock32)
     add_executable(ps_server main.c shared/shared.h shared/shared.c win/win.h win/win.c core/core.h)
 endif (WIN32)
