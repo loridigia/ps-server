@@ -1,5 +1,7 @@
 #include "unix.h"
 
+extern configuration *config;
+
 void daemon_skeleton() {
     pid_t pid;
     pid = fork();

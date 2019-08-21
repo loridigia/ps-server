@@ -32,7 +32,9 @@ typedef struct configuration {
     unsigned int server_port;
 } configuration;
 
-configuration *config; //non va bene
+configuration conf;
+
+
 
 int load_arguments(int argc, char *argv[]);
 int load_configuration(int first_start);

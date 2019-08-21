@@ -1,4 +1,6 @@
 #include "win.h"
+extern configuration *config;
+
 
 void start(){
 
