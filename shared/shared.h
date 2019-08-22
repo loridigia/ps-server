@@ -40,6 +40,7 @@ int load_arguments(int argc, char *argv[]);
 int load_configuration(int first_start);
 int index_of(char *values, char find);
 int is_file(char *path);
+int is_daemon(int argc, char *argv[]);
 char *get_extension_code(const char *filename);
 char *get_client_buffer(int client_fd, int *err);
 char *get_parameter(char *line, FILE *stream);

@@ -23,9 +23,18 @@ void log_routine() {
 }
 
 void init(int argc, char *argv[]) {
+
+    if (is_daemon(argc, argv)) {
+        perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
+        exit(1);
+    }
+
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
         exit(1);
     }
+
+    puts(config->server_ip);
+
     start();
 }
 

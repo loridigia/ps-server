@@ -165,3 +165,15 @@ int is_file(char *path) {
     stat(path, &path_stat);
     return S_ISREG(path_stat.st_mode);
 }
+
+int is_daemon(int argc, char *argv[]) {
+    const char *flag = "--daemon";
+    char *input;
+    for (int i = 1; i < argc; i++) {
+        input = argv[i];
+        if (strncmp(input, flag, strlen(flag)) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}

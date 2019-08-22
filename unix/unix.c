@@ -73,18 +73,6 @@ void init(int argc, char *argv[]) {
     while(1) sleep(1);
 }
 
-int is_daemon(int argc, char *argv[]) {
-    const char *flag = "--daemon";
-    char *input;
-    for (int i = 1; i < argc; i++) {
-        input = argv[i];
-        if (strncmp(input, flag, strlen(flag)) == 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 void log_routine() {
     char buffer[8192];
     while(1) {
