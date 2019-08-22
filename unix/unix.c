@@ -205,6 +205,7 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
     int socket_fd;
     struct sockaddr_in socket_addr;
     if (listen_on(port, &socket_fd, &socket_addr) != 0) {
+        fprintf(stderr, "Impossibile creare la socket su porta: %d", port);
         return;
     }
 

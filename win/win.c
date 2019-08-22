@@ -15,8 +15,70 @@ void start(){
 
 DWORD WINAPI listener_routine(LPVOID param) {
     int port = *((int*)param);
-    fprintf(stdout, "%d", port);
-    //handle request
+    handle_requests(port, work_with_threads);
+}
+
+void handle_requests(int port, int (*handle)(int, char*, int)) {
+    SOCKET sock = INVALID_SOCKET;
+    if (listen_on(port, &sock)) {
+        fprintf(stderr, "Impossibile creare la socket su porta: %d", port);
+        return;
+    }
+
+}
+
+int listen_on(int port, SOCKET *sock) {
+    WSADATA wsa;
+    struct addrinfo *result = NULL, hints;
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+        perror("Errore con WSAStartup");
+        return -1;
+    }
+
+    ZeroMemory(&hints, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_flags = AI_PASSIVE;
+
+    char str_port[6];
+    sprintf(str_port, "%d", port);
+    if (getaddrinfo(NULL, str_port, &hints, &result) != 0 ) {
+        perror("Errore con getaddrinfo");
+        WSACleanup();
+        return -1;
+    }
+
+    *sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    if (*sock == INVALID_SOCKET) {
+        printf("Errore durante la creazione della socket: %d\n", WSAGetLastError());
+        freeaddrinfo(result);
+        WSACleanup();
+        return -1;
+    }
+
+    if (bind(*sock, result->ai_addr, (int)result->ai_addrlen)) {
+        printf("Errore durante l'operazione di binding: %d\n", WSAGetLastError());
+        freeaddrinfo(result);
+        closesocket(*sock);
+        WSACleanup();
+        return -1;
+    }
+
+    freeaddrinfo(result);
+
+    if (listen(*sock, BACKLOG) == SOCKET_ERROR) {
+        printf("listen failed with error: %d\n", WSAGetLastError());
+        closesocket(*sock);
+        WSACleanup();
+        return -1;
+    }
+    return 0;
+}
+
+int work_with_threads(int fd, char *client_ip, int port) {
+
 }
 
 void log_routine() {
