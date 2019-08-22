@@ -19,22 +19,18 @@ void daemon_skeleton() {
 }
 
 void init(int argc, char *argv[]) {
-    //daemon
-    if (is_daemon()) {
+    if (is_daemon(argc, argv)) {
         daemon_skeleton();
     }
 
-    //pipe
     if (pipe(pipe_fd) == -1) {
         perror("Errore nel creare la pipe.\n");
         exit(1);
     }
 
-    // configure
     config = mmap(NULL, sizeof config, PROT_READ | PROT_WRITE,
                   MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
-    //tread
     if (pthread_attr_init(&pthread_attr) != 0) {
         perror("Errore nell'inizializzazione degli attributi del thread.\n");
         exit(1);
@@ -65,7 +61,7 @@ void init(int argc, char *argv[]) {
         perror("Errore durante la fork.\n");
         exit(0);
     } else if (pid_child == 0) {
-        log_routine(); //diventa routine
+        log_routine();
         exit(0);
     }
 
