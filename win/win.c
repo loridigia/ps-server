@@ -91,7 +91,39 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
+    //logger process
+    STARTUPINFO info = {sizeof(info)};
+    PROCESS_INFORMATION processInfo;
+    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, 0, NULL, NULL, &info, &processInfo) == 0){
+        // error handler
+    } else {
+        /*
+        // distruggi il processo e il suo main thread
+        CloseHandle(processInfo.hProcess);
+        CloseHandle(processInfo.hThread);
+         */
+    }
+
     //pipe
+    HANDLE hPipe;
+    DWORD dwWritten;
+
+    hPipe = CreateFile(TEXT("\\\\.\\pipe\\Pipe"),
+                       GENERIC_READ | GENERIC_WRITE,
+                       0,
+                       NULL,
+                       OPEN_EXISTING,
+                       0,
+                       NULL);
+    if (hPipe != INVALID_HANDLE_VALUE){
+        WriteFile(hPipe,
+                  "Hello Pipe\n",
+                  12,   // = length of string + terminating '\0' !!!
+                  &dwWritten,
+                  NULL);
+
+        CloseHandle(hPipe);
+    }
 
     //mapping del config per renderlo globale
 
