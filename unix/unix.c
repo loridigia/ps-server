@@ -189,8 +189,8 @@ void start() {
         if (pthread_create(
                 &pthread,
                 &pthread_attr,
-                pthread_listener_routine,
-                (void *)args) != 0) {
+                listener_routine,
+                (void *) args) != 0) {
             perror("Impossibile creare un nuovo thread.\n");
             free(args);
             exit(1);
@@ -208,7 +208,7 @@ void start() {
 }
 
 
-void *pthread_listener_routine(void *arg) {
+void *listener_routine(void *arg) {
     pthread_arg_listener *args = (pthread_arg_listener *) arg;
     int port = args->port;
     free(args);
@@ -280,7 +280,7 @@ int work_with_threads(int fd, char *client_ip, int port) {
     args->port = port;
     args->client_ip = client_ip;
 
-    if (pthread_create(&pthread, &pthread_attr, pthread_receiver_routine, (void *) args) != 0) {
+    if (pthread_create(&pthread, &pthread_attr, receiver_routine, (void *) args) != 0) {
         perror("Impossibile creare un nuovo thread di tipo 'receiver'.\n");
         free(args);
         return -1;
@@ -301,7 +301,7 @@ int work_with_processes(int fd, char *client_ip, int port) {
     return 0;
 }
 
-void *pthread_receiver_routine(void *arg) {
+void *receiver_routine(void *arg) {
     pthread_arg_receiver *args = (pthread_arg_receiver *) arg;
     serve_client(args->new_socket_fd, args->client_ip, args->port);
     free(arg);

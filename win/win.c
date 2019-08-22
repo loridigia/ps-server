@@ -3,7 +3,7 @@ extern configuration *config;
 
 void start(){
     if (equals(config->server_type, "thread")) {
-        HANDLE thread = CreateThread(NULL, 0, winthread_listener_routine, NULL, 0, NULL);
+        HANDLE thread = CreateThread(NULL, 0, listener_routine, NULL, 0, NULL);
         if (thread == NULL) {
             //handle error
         }
@@ -12,7 +12,7 @@ void start(){
     }
 }
 
-DWORD WINAPI winthread_listener_routine(void *arg) {
+DWORD WINAPI listener_routine(void *arg) {
     int port;
     memcpy(&port, &config->server_port, sizeof(config->server_port));
     fprintf(stdout, "%d", port);

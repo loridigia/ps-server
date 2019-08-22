@@ -33,3 +33,6 @@ typedef struct pthread_arg_receiver {
 
 void daemon_skeleton();
 int is_daemon(int argc, char *argv[]);
+
+void *listener_routine(void *arg);
+void *receiver_routine(void *arg);
