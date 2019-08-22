@@ -1,9 +1,10 @@
 #include "win.h"
+
 extern configuration *config;
 
 void start(){
     if (equals(config->server_type, "thread")) {
-        HANDLE thread = CreateThread(NULL, 0, listener_routine, NULL, 0, NULL);
+        HANDLE thread = CreateThread(NULL, 0, listener_routine, &config->server_port, 0, NULL);
         if (thread == NULL) {
             //handle error
         }
@@ -12,9 +13,8 @@ void start(){
     }
 }
 
-DWORD WINAPI listener_routine(void *arg) {
-    int port;
-    memcpy(&port, &config->server_port, sizeof(config->server_port));
+DWORD WINAPI listener_routine(LPVOID param) {
+    int port = *((int*)param);
     fprintf(stdout, "%d", port);
     //handle request
 }
@@ -23,19 +23,32 @@ void log_routine() {
 }
 
 void init(int argc, char *argv[]) {
-
+    //daemon check
     if (is_daemon(argc, argv)) {
         perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
         exit(1);
     }
 
+    //pipe
+
+    //mapping del config per renderlo globale
+
+    //loading configuration
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
         exit(1);
     }
 
-    puts(config->server_ip);
+    //mutex / condition variables
 
+    //creazione processo per log routine
+
+    //inizio
     start();
+
+    //attesa di evento per restart
+
+    //while(1) Sleep(1000);
+    Sleep(3000);
 }
 
 char *get_server_ip(){

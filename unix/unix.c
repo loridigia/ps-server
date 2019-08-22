@@ -47,7 +47,6 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
-    //mutex, conditions
     pthread_mutexattr_t mutexAttr;
     pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
     pthread_mutex_init(&mutex, &mutexAttr);
@@ -56,7 +55,6 @@ void init(int argc, char *argv[]) {
     pthread_condattr_setpshared(&condAttr, PTHREAD_PROCESS_SHARED);
     pthread_cond_init(&condition, &condAttr);
 
-    //listener
     pid_t pid_child = fork();
 
     if (pid_child < 0) {
@@ -67,7 +65,6 @@ void init(int argc, char *argv[]) {
         exit(0);
     }
 
-    //start
     start();
     signal(SIGHUP, restart);
     while(1) sleep(1);
