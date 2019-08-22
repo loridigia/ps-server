@@ -1,20 +1,32 @@
 #include "win.h"
 extern configuration *config;
 
-
 void start(){
+    if (equals(config->server_type, "thread")) {
+        HANDLE thread = CreateThread(NULL, 0, winthread_listener_routine, NULL, 0, NULL);
+        if (thread == NULL) {
+            //handle error
+        }
+    } else {
+        // processes
+    }
+}
 
+DWORD WINAPI winthread_listener_routine(void *arg) {
+    int port;
+    memcpy(&port, &config->server_port, sizeof(config->server_port));
+    fprintf(stdout, "%d", port);
+    //handle request
 }
 
 void log_routine() {
-
 }
 
 void init(int argc, char *argv[]) {
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
         exit(1);
     }
-    
+    start();
 }
 
 char *get_server_ip(){
@@ -30,7 +42,7 @@ char *get_server_ip(){
                 ip = inet_ntoa (*(struct in_addr *)*hostinfo->h_addr_list);
             }
         }
-        WSACleanup( );
+        WSACleanup();
     }
     return ip;
 }

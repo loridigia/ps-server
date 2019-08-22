@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <windows.h>
 
 /* ---------------------------- UNIX ----------------------------- */
 //int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr);
@@ -9,9 +10,10 @@ char *get_client_buffer(int client_fd, int *err);
 int serve_client(int client_fd, char *client_ip, int port);
 int work_with_threads(int fd, char *client_ip, int port);
 int work_with_processes(int fd, char *client_ip, int port);
-void handle_requests(int port, int (*handle)(int fd, char* client_ip, int port));
+void *pthread_listener_routine(void *arg);
 
 /* --------------------------- WINDOWS --------------------------- */
+DWORD WINAPI winthread_listener_routine(void *arg);
 int listen_on();
 int send_error();
 int send_file();
@@ -28,5 +30,5 @@ void start();
 void log_routine();
 void init(int argc, char *argv[]);
 void *pthread_receiver_routine(void *arg);
-void *pthread_listener_routine(void *arg);
+void handle_requests(int port, int (*handle)(int fd, char* client_ip, int port));
 int write_on_pipe(int size, char *name, int port, char *ip);
