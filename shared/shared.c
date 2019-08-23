@@ -107,7 +107,7 @@ void restart() {
 char *get_parameter(char *line, FILE *stream) {
     size_t len;
     char *ptr;
-    if (getline(&line, &len, stream) != -1) {
+    if (_getline(&line, &len, stream) != -1) {
         strtok(line, ":");
         ptr = strtok(NULL, "\n");
         return ptr;

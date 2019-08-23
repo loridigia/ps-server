@@ -440,3 +440,7 @@ void _log(char *buffer) {
     fprintf(file, "%s", buffer);
     fclose(file);
 }
+
+size_t _getline(char **lineptr, size_t *n, FILE *stream) {
+    return getline(lineptr, n, stream);
+}

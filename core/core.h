@@ -17,3 +17,4 @@ void start();
 void log_routine();
 void init();
 void handle_requests();
+size_t _getline(char **lineptr, size_t *n, FILE *stream);

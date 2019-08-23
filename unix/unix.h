@@ -2,6 +2,7 @@
 #include <sys/mman.h>
 #include <ifaddrs.h>
 #include <pthread.h>
+#include <stdio.h>
 #include "../core/core.h"
 #include "../shared/shared.h"
 
