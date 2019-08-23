@@ -19,61 +19,110 @@ DWORD WINAPI listener_routine(LPVOID param) {
 }
 
 void handle_requests(int port, int (*handle)(int, char*, int)) {
-    SOCKET sock = INVALID_SOCKET;
-    if (listen_on(port, &sock)) {
+    SOCKET sock, client_socket[BACKLOG];
+    struct sockaddr_in server;
+    int addrlen;
+
+    if (listen_on(port, &server, &addrlen, &sock)) {
         fprintf(stderr, "Impossibile creare la socket su porta: %d", port);
         return;
     }
 
+    for(int i = 0 ; i < BACKLOG;i++) {
+        client_socket[i] = 0;
+    }
+
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 100000;
+
+    fd_set read_fd_set;
+    while(TRUE) {
+        FD_ZERO(&read_fd_set);
+        FD_SET(sock, &read_fd_set);
+
+        for (int i = 0 ; i < BACKLOG ; i++) {
+            SOCKET s = client_socket[i];
+            if(s > 0) FD_SET(s, &read_fd_set);
+        }
+
+        if (select(0 , &read_fd_set , NULL , NULL , &timeout) == SOCKET_ERROR) {
+            printf("select call failed with error code : %d" , WSAGetLastError());
+            exit(EXIT_FAILURE);
+        }
+
+        if(config->server_port != port) {
+            printf("Chiusura socket su porta %d. \n", port);
+            break;
+        }
+
+        struct sockaddr_in address;
+        SOCKET new_socket;
+        if (FD_ISSET(sock , &read_fd_set)) {
+            if ((new_socket = accept(sock , (struct sockaddr *)&address, (int *)&addrlen)) < 0) {
+                perror("accept");
+                exit(EXIT_FAILURE);
+            }
+
+            for (int i = 0; i < BACKLOG; i++) {
+                if (client_socket[i] == 0) {
+                    client_socket[i] = new_socket;
+                    break;
+                }
+            }
+        }
+
+        for (int i = 0; i < BACKLOG; i++) {
+            SOCKET s = client_socket[i];
+            if (FD_ISSET(s, &read_fd_set)) {
+                getpeername(s , (struct sockaddr*)&address , (int*)&addrlen);
+                char *client_ip = inet_ntoa(address.sin_addr);
+                char buffer[1024];
+                int valread = recv( s , buffer, sizeof(buffer), 0);
+
+                if (valread == SOCKET_ERROR) {
+                    if(WSAGetLastError() == WSAECONNRESET) {
+                        fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", s, client_ip);
+                        closesocket( s );
+                        client_socket[i] = 0;
+                    }
+                } else if (valread == 0) {
+                    closesocket(s);
+                    client_socket[i] = 0;
+                } else {
+                    printf("%s: %s \n" , client_ip, buffer);
+                    closesocket(s);
+                    client_socket[i] = 0;
+                }
+            }
+        }
+    }
+    WSACleanup();
 }
 
-int listen_on(int port, SOCKET *sock) {
+int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) {
     WSADATA wsa;
-    struct addrinfo *result = NULL, hints;
-
-    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
-        perror("Errore con WSAStartup");
+    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
+        printf("Failed. Error Code : %d",WSAGetLastError());
         return -1;
     }
 
-    ZeroMemory(&hints, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags = AI_PASSIVE;
-
-    char str_port[6];
-    sprintf(str_port, "%d", port);
-    if (getaddrinfo(NULL, str_port, &hints, &result) != 0 ) {
-        perror("Errore con getaddrinfo");
-        WSACleanup();
+    if ((*sock = socket(AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET) {
+        printf("Could not create socket : %d" , WSAGetLastError());
         return -1;
     }
 
-    *sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-    if (*sock == INVALID_SOCKET) {
-        printf("Errore durante la creazione della socket: %d\n", WSAGetLastError());
-        freeaddrinfo(result);
-        WSACleanup();
+    server->sin_family = AF_INET;
+    server->sin_addr.s_addr = INADDR_ANY;
+    server->sin_port = htons( port );
+
+    if (bind(*sock , (struct sockaddr *)server , sizeof(*server)) == SOCKET_ERROR) {
+        printf("Bind failed with error code : %d" , WSAGetLastError());
         return -1;
     }
 
-    if (bind(*sock, result->ai_addr, (int)result->ai_addrlen)) {
-        printf("Errore durante l'operazione di binding: %d\n", WSAGetLastError());
-        freeaddrinfo(result);
-        closesocket(*sock);
-        WSACleanup();
-        return -1;
-    }
-
-    freeaddrinfo(result);
-
-    if (listen(*sock, BACKLOG) == SOCKET_ERROR) {
-        printf("listen failed with error: %d\n", WSAGetLastError());
-        closesocket(*sock);
-        WSACleanup();
-        return -1;
-    }
+    listen(*sock , BACKLOG);
+    *addrlen = sizeof(struct sockaddr_in);
     return 0;
 }
 
@@ -127,8 +176,8 @@ void init(int argc, char *argv[]) {
 
     //attesa di evento per restart
 
-    //while(1) Sleep(1000);
-    Sleep(3000);
+    while(1) Sleep(1000);
+    //Sleep(3000);
 }
 
 char *get_server_ip(){
