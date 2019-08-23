@@ -82,6 +82,7 @@ int work_with_threads(int fd, char *client_ip, int port) {
 }
 
 void log_routine() {
+
 }
 
 void init(int argc, char *argv[]) {
@@ -91,10 +92,19 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
+    //pipe
+    HANDLE pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    if (pipe == INVALID_HANDLE_VALUE){
+        printf("Errore: %d", GetLastError());
+    }
+    char message [] = "Hi";
+    DWORD numWritten;
+    WriteFile(pipe, message, 3, &numWritten, NULL);
+
     //logger process
     STARTUPINFO info = {sizeof(info)};
     PROCESS_INFORMATION processInfo;
-    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, 0, NULL, NULL, &info, &processInfo) == 0){
+    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &processInfo) == 0){
         // error handler
     } else {
         /*
@@ -104,26 +114,6 @@ void init(int argc, char *argv[]) {
          */
     }
 
-    //pipe
-    HANDLE hPipe;
-    DWORD dwWritten;
-
-    hPipe = CreateFile(TEXT("\\\\.\\pipe\\Pipe"),
-                       GENERIC_READ | GENERIC_WRITE,
-                       0,
-                       NULL,
-                       OPEN_EXISTING,
-                       0,
-                       NULL);
-    if (hPipe != INVALID_HANDLE_VALUE){
-        WriteFile(hPipe,
-                  "Hello Pipe\n",
-                  12,   // = length of string + terminating '\0' !!!
-                  &dwWritten,
-                  NULL);
-
-        CloseHandle(hPipe);
-    }
 
     //mapping del config per renderlo globale
 
