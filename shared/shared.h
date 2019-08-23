@@ -34,8 +34,6 @@ typedef struct configuration {
 
 configuration conf;
 
-
-
 int load_arguments(int argc, char *argv[]);
 int load_configuration(int first_start);
 int index_of(char *values, char find);
@@ -46,4 +44,3 @@ char *get_client_buffer(int client_fd, int *err);
 char *get_parameter(char *line, FILE *stream);
 char *get_file_listing(char *route, char *path, int *size);
 void restart();
-void _log(char *buffer);

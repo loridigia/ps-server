@@ -31,7 +31,7 @@ typedef struct pthread_arg_receiver {
     char *client_ip;
 } pthread_arg_receiver;
 
+void _log(char *buffer);
 void daemon_skeleton();
-
 void *listener_routine(void *arg);
 void *receiver_routine(void *arg);

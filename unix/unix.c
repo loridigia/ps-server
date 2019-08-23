@@ -82,6 +82,17 @@ void log_routine() {
     }
 }
 
+void _log(char *buffer) {
+    FILE *file = fopen(LOG_PATH, "a");
+    if (file == NULL) {
+        perror("Errore nell'operazione di scrittura sul log.\n");
+        fclose(file);
+        return;
+    }
+    fprintf(file, "%s", buffer);
+    fclose(file);
+}
+
 char *get_client_ip(struct sockaddr_in *socket_addr){
     struct in_addr ipAddr = socket_addr->sin_addr;
     char *str = malloc(INET_ADDRSTRLEN);
@@ -428,4 +439,15 @@ int serve_client(int client_fd, char *client_ip, int port) {
         close(client_fd);
     }
     return 0;
+}
+
+void _log(char *buffer) {
+    FILE *file = fopen(LOG_PATH, "a");
+    if (file == NULL) {
+        perror("Errore nell'operazione di scrittura sul log.\n");
+        fclose(file);
+        return;
+    }
+    fprintf(file, "%s", buffer);
+    fclose(file);
 }

@@ -19,10 +19,19 @@ DWORD WINAPI listener_routine(void *args) {
 }
 
 DWORD WINAPI receiver_routine(void *args) {
-
+    thread_arg_receiver *params = (thread_arg_receiver*)args;
+    char buffer[1024];
+    int valread = recv(params->socket, buffer, sizeof(buffer), 0);
+    buffer[valread] = '\0';
+    if (valread == SOCKET_ERROR) {
+        fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", params->socket, params->client_ip);
+    } else {
+        printf("%s: %s \n" , params->client_ip, buffer);
+    }
+    closesocket(params->socket);
 }
 
-void handle_requests(int port, int (*handle)(SOCKET, char*, int, SOCKET*)) {
+void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
     SOCKET sock, client_socket[BACKLOG];
     struct sockaddr_in server;
     int addrlen;
@@ -81,11 +90,11 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int, SOCKET*)) {
             if (FD_ISSET(s, &read_fd_set)) {
                 getpeername(s , (struct sockaddr*)&address , (int*)&addrlen);
                 char *client_ip = inet_ntoa(address.sin_addr);
-                if (handle(s, client_ip, port, &client_socket[i]) < 0) {
+                if (handle(s, client_ip, port) < 0) {
                     fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", s, client_ip);
                     closesocket(s);
-                    client_socket[i] = 0;
                 }
+                client_socket[i] = 0;
             }
         }
     }
@@ -106,7 +115,7 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
 
     server->sin_family = AF_INET;
     server->sin_addr.s_addr = INADDR_ANY;
-    server->sin_port = htons( port );
+    server->sin_port = htons(port);
 
     if (bind(*sock , (struct sockaddr *)server , sizeof(*server)) == SOCKET_ERROR) {
         printf("Bind failed with error code : %d" , WSAGetLastError());
@@ -118,23 +127,24 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
     return 0;
 }
 
-int work_with_threads(SOCKET socket, char *client_ip, int port, SOCKET *client_id) {
-    char buffer[1024];
-    int valread = recv(socket, buffer, sizeof(buffer), 0);
-    buffer[valread] = '\0';
-    if (valread == SOCKET_ERROR) {
-        fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", socket, client_ip);
-    } else {
-        printf("%s: %s \n" , client_ip, buffer);
+int work_with_threads(SOCKET socket, char *client_ip, int port) {
+    thread_arg_receiver *args =
+            (thread_arg_receiver *)malloc(sizeof(thread_arg_receiver));
+    args->socket = socket;
+    args->port = port;
+    args->client_ip = client_ip;
+    if (CreateThread(NULL, 0, receiver_routine, (HANDLE*)args, 0, NULL) == NULL) {
+        perror("Impossibile creare un nuovo thread di tipo 'receiver'.\n");
+        free(args);
+        return -1;
     }
-    closesocket(socket);
-    *client_id = 0;
+    return 0;
 }
 
 int write_on_pipe(char *buffer) {
-    if (hPipe != INVALID_HANDLE_VALUE){
-        WriteFile(hPipe, buffer, 12, &dwWritten, NULL);
-        CloseHandle(hPipe);
+    if (h_pipe != INVALID_HANDLE_VALUE){
+        WriteFile(h_pipe, buffer, 12, &dw_written, NULL);
+        CloseHandle(h_pipe);
     }
 }
 
@@ -146,19 +156,19 @@ void init(int argc, char *argv[]) {
     }
 
     //logger process
-    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &processInfo) == 0){
+    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &process_info) == 0){
         perror("Errore nell'eseguire il processo logger");
         exit(1);
     } else {
         /*
         // distruggi il processo e il suo main thread
-        CloseHandle(processInfo.hProcess);
-        CloseHandle(processInfo.hThread);
+        CloseHandle(process_info.hProcess);
+        CloseHandle(process_info.hThread);
          */
     }
 
     //create pipe
-    hPipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     write_on_pipe("pippo");
     //mapping del config per renderlo globale
 

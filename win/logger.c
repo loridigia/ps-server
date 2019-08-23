@@ -1,38 +1,40 @@
 #include <stdio.h>
 #include <windows.h>
 #include <tchar.h>
-#include "../shared/shared.h"
 #define pipename "\\\\.\\pipe\\LogPipe"
+#define LOG_PATH "../log.txt"
+
+void _log(char *buffer);
+
+void _log(char *buffer);
 
 int main(int argc, _TCHAR *argv[]) {
-    printf("logger process starts");
-
-    HANDLE hPipe;
+    HANDLE h_pipe;
     char buffer[1024];
-    DWORD dwRead;
+    DWORD dw_read;
 
-    hPipe = CreateNamedPipe(pipename,
-                            PIPE_ACCESS_DUPLEX,
+    h_pipe = CreateNamedPipe(pipename,
+                             PIPE_ACCESS_DUPLEX,
                             PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
-                            1,
+                             1,
                             1024 * 16,
                             1024 * 16,
-                            NMPWAIT_USE_DEFAULT_WAIT,
-                            NULL);
-    while (hPipe != INVALID_HANDLE_VALUE){
-        if (ConnectNamedPipe(hPipe, NULL) != FALSE)   // wait here for someone to connect to the pipe
+                             NMPWAIT_USE_DEFAULT_WAIT,
+                             NULL);
+    while (h_pipe != INVALID_HANDLE_VALUE){
+        if (ConnectNamedPipe(h_pipe, NULL) != FALSE)   // wait here for someone to connect to the pipe
         {
-            while (ReadFile(hPipe, buffer, sizeof(buffer) - 1, &dwRead, NULL) != FALSE){
+            while (ReadFile(h_pipe, buffer, sizeof(buffer) - 1, &dw_read, NULL) != FALSE){
 
                 /* add terminating zero */
-                buffer[dwRead] = '\0';
+                buffer[dw_read] = '\0';
 
                 /* write on file */
                 _log(buffer);
             }
         }
 
-        DisconnectNamedPipe(hPipe);
+        DisconnectNamedPipe(h_pipe);
     }
 }
 

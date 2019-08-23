@@ -11,21 +11,16 @@
 
 typedef struct thread_arg_receiver {
     SOCKET socket;
-    SOCKET *client_id;
     int port;
     char *client_ip;
 } thread_arg_receiver;
 
+STARTUPINFO info;
+PROCESS_INFORMATION process_info;
+HANDLE h_pipe;
+DWORD dw_written;
+
+int write_on_pipe(char *buffer);
 DWORD WINAPI listener_routine(void *args);
 DWORD WINAPI receiver_routine(void *args);
 size_t getline(char **lineptr, size_t *n, FILE *stream);
-
-STARTUPINFO info;
-PROCESS_INFORMATION processInfo;
-
-HANDLE hPipe;
-DWORD dwWritten;
-
-DWORD WINAPI listener_routine(void *arg);
-size_t getline(char **lineptr, size_t *n, FILE *stream);
-int write_on_pipe(char *buffer);
