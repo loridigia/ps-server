@@ -9,6 +9,17 @@
 #pragma comment(lib,"ws2_32.lib")
 #define pipename "\\\\.\\pipe\\LogPipe"
 
+typedef struct thread_arg_receiver {
+    SOCKET socket;
+    SOCKET *client_id;
+    int port;
+    char *client_ip;
+} thread_arg_receiver;
+
+DWORD WINAPI listener_routine(void *args);
+DWORD WINAPI receiver_routine(void *args);
+size_t getline(char **lineptr, size_t *n, FILE *stream);
+
 STARTUPINFO info;
 PROCESS_INFORMATION process_info;
 
