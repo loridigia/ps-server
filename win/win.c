@@ -131,9 +131,9 @@ int work_with_threads(int fd, char *client_ip, int port) {
 }
 
 int write_on_pipe(char *buffer) {
-    if (hPipe != INVALID_HANDLE_VALUE){
-        WriteFile(hPipe, buffer, 12, &dwWritten, NULL);
-        CloseHandle(hPipe);
+    if (h_pipe != INVALID_HANDLE_VALUE){
+        WriteFile(h_pipe, buffer, 12, &dw_written, NULL);
+        CloseHandle(h_pipe);
     }
 }
 
@@ -145,19 +145,19 @@ void init(int argc, char *argv[]) {
     }
 
     //logger process
-    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &processInfo) == 0){
+    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &process_info) == 0){
         perror("Errore nell'eseguire il processo logger");
         exit(1);
     } else {
         /*
         // distruggi il processo e il suo main thread
-        CloseHandle(processInfo.hProcess);
-        CloseHandle(processInfo.hThread);
+        CloseHandle(process_info.hProcess);
+        CloseHandle(process_info.hThread);
          */
     }
 
     //create pipe
-    hPipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     write_on_pipe("pippo");
     //mapping del config per renderlo globale
 

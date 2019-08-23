@@ -10,10 +10,10 @@
 #define pipename "\\\\.\\pipe\\LogPipe"
 
 STARTUPINFO info;
-PROCESS_INFORMATION processInfo;
+PROCESS_INFORMATION process_info;
 
-HANDLE hPipe;
-DWORD dwWritten;
+HANDLE h_pipe;
+DWORD dw_written;
 
 DWORD WINAPI listener_routine(void *arg);
 size_t getline(char **lineptr, size_t *n, FILE *stream);
