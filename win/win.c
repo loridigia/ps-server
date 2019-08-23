@@ -261,3 +261,7 @@ size_t _getline(char **lineptr, size_t *n, FILE *stream) {
 
     return p - bufptr - 1;
 }
+
+int send_error(SOCKET socket, char *err) {
+    return send(socket, err, strlen(err), 0);
+}
