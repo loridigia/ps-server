@@ -8,6 +8,7 @@
 #include "../shared/shared.h"
 #pragma comment(lib,"ws2_32.lib")
 #define pipename "\\\\.\\pipe\\LogPipe"
+#define MAX_CLIENTS 128
 
 DWORD WINAPI listener_routine(void *arg);
 size_t getline(char **lineptr, size_t *n, FILE *stream);
