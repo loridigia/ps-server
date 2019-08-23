@@ -11,7 +11,7 @@
 
 #define PUBLIC_PATH "../public"
 #define LOG_PATH "../log.txt"
-#define BACKLOG 32
+#define BACKLOG 128
 #define LOG_MIN_SIZE 38
 #define COMPLETE 0
 #define PORT_ONLY 1
