@@ -9,5 +9,12 @@
 #pragma comment(lib,"ws2_32.lib")
 #define pipename "\\\\.\\pipe\\LogPipe"
 
+STARTUPINFO info;
+PROCESS_INFORMATION processInfo;
+
+HANDLE hPipe;
+DWORD dwWritten;
+
 DWORD WINAPI listener_routine(void *arg);
 size_t getline(char **lineptr, size_t *n, FILE *stream);
+int write_on_pipe(char *buffer);

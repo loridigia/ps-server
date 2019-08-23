@@ -81,8 +81,11 @@ int work_with_threads(int fd, char *client_ip, int port) {
 
 }
 
-void log_routine() {
-
+int write_on_pipe(char *buffer) {
+    if (hPipe != INVALID_HANDLE_VALUE){
+        WriteFile(hPipe, buffer, 12, &dwWritten, NULL);
+        CloseHandle(hPipe);
+    }
 }
 
 void init(int argc, char *argv[]) {
@@ -92,20 +95,10 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
-    //pipe
-    HANDLE pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-    if (pipe == INVALID_HANDLE_VALUE){
-        printf("Errore: %d", GetLastError());
-    }
-    char message [] = "Hi";
-    DWORD numWritten;
-    WriteFile(pipe, message, 3, &numWritten, NULL);
-
     //logger process
-    STARTUPINFO info = {sizeof(info)};
-    PROCESS_INFORMATION processInfo;
     if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &processInfo) == 0){
-        // error handler
+        perror("Errore nell'eseguire il processo logger");
+        exit(1);
     } else {
         /*
         // distruggi il processo e il suo main thread
@@ -114,11 +107,14 @@ void init(int argc, char *argv[]) {
          */
     }
 
-
+    //create pipe
+    hPipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    write_on_pipe("pippo");
     //mapping del config per renderlo globale
 
     //loading configuration
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
+        perror("Errore nel caricare la configurazione");
         exit(1);
     }
 
