@@ -20,3 +20,12 @@ DWORD WINAPI listener_routine(void *args);
 DWORD WINAPI receiver_routine(void *args);
 size_t getline(char **lineptr, size_t *n, FILE *stream);
 
+STARTUPINFO info;
+PROCESS_INFORMATION processInfo;
+
+HANDLE hPipe;
+DWORD dwWritten;
+
+DWORD WINAPI listener_routine(void *arg);
+size_t getline(char **lineptr, size_t *n, FILE *stream);
+int write_on_pipe(char *buffer);

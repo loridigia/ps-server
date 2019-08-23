@@ -46,4 +46,4 @@ char *get_client_buffer(int client_fd, int *err);
 char *get_parameter(char *line, FILE *stream);
 char *get_file_listing(char *route, char *path, int *size);
 void restart();
-void _log();
+void _log(char *buffer);
