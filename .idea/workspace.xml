@@ -14,7 +14,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7f07cd6c-b336-4153-a2da-92d8df351a8d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/log.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shared/shared.c" beforeDir="false" afterPath="$PROJECT_DIR$/shared/shared.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shared/shared.h" beforeDir="false" afterPath="$PROJECT_DIR$/shared/shared.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/unix/unix.c" beforeDir="false" afterPath="$PROJECT_DIR$/unix/unix.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/unix/unix.h" beforeDir="false" afterPath="$PROJECT_DIR$/unix/unix.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/logger.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/logger.c" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />

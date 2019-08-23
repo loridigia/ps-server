@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <windows.h>
 #include <tchar.h>
-#include "../shared/shared.h"
 #define pipename "\\\\.\\pipe\\LogPipe"
+#define LOG_PATH "../log.txt"
+
+void _log(char *buffer);
 
 int main(int argc, _TCHAR *argv[]) {
     printf("logger process starts");

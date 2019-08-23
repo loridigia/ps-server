@@ -35,3 +35,4 @@ void daemon_skeleton();
 
 void *listener_routine(void *arg);
 void *receiver_routine(void *arg);
+void _log(char *buffer);
