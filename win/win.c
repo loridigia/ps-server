@@ -19,160 +19,95 @@ DWORD WINAPI listener_routine(LPVOID param) {
 }
 
 void handle_requests(int port, int (*handle)(int, char*, int)) {
-    SOCKET sock;
+    SOCKET sock, client_socket[BACKLOG];
     struct sockaddr_in server;
     int addrlen;
+
     if (listen_on(port, &server, &addrlen, &sock)) {
         fprintf(stderr, "Impossibile creare la socket su porta: %d", port);
         return;
     }
 
-    SOCKET new_socket , client_socket[30] , s;
-    struct sockaddr_in address;
-    int max_clients = 30 , activity, i, valread;
-    char *message = "it works! :D";
-
-    //size of our receive buffer, this is string length.
-    int MAXRECV = 1024;
-    //set of socket descriptors
-    fd_set readfds;
-    //1 extra for null character, string termination
-    char *buffer;
-    buffer =  (char*) malloc((MAXRECV + 1) * sizeof(char));
-
-    for(i = 0 ; i < 30;i++)
-    {
+    for(int i = 0 ; i < BACKLOG;i++) {
         client_socket[i] = 0;
     }
 
-    while(TRUE)
-    {
-        //clear the socket fd set
-        FD_ZERO(&readfds);
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 100000;
 
-        //add master socket to fd set
-        FD_SET(sock, &readfds);
+    fd_set read_fd_set;
+    while(TRUE) {
+        FD_ZERO(&read_fd_set);
+        FD_SET(sock, &read_fd_set);
 
-        //add child sockets to fd set
-        for (  i = 0 ; i < max_clients ; i++)
-        {
-            s = client_socket[i];
-            if(s > 0)
-            {
-                FD_SET( s , &readfds);
-            }
+        for (int i = 0 ; i < BACKLOG ; i++) {
+            SOCKET s = client_socket[i];
+            if(s > 0) FD_SET(s, &read_fd_set);
         }
 
-        //wait for an activity on any of the sockets, timeout is NULL , so wait indefinitely
-        activity = select( 0 , &readfds , NULL , NULL , NULL);
-
-        if ( activity == SOCKET_ERROR )
-        {
+        if (select(0 , &read_fd_set , NULL , NULL , &timeout) == SOCKET_ERROR) {
             printf("select call failed with error code : %d" , WSAGetLastError());
             exit(EXIT_FAILURE);
         }
 
-        //If something happened on the master socket , then its an incoming connection
-        if (FD_ISSET(sock , &readfds))
-        {
-            if ((new_socket = accept(sock , (struct sockaddr *)&address, (int *)&addrlen)) < 0)
-            {
+        if(config->server_port != port) {
+            printf("Chiusura socket su porta %d. \n", port);
+            break;
+        }
+
+        struct sockaddr_in address;
+        SOCKET new_socket;
+        if (FD_ISSET(sock , &read_fd_set)) {
+            if ((new_socket = accept(sock , (struct sockaddr *)&address, (int *)&addrlen)) < 0) {
                 perror("accept");
                 exit(EXIT_FAILURE);
             }
 
-            //inform user of socket number - used in send and receive commands
-            printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
-
-            //send new connection greeting message
-            if( send(new_socket, message, strlen(message), 0) != strlen(message) )
-            {
-                perror("send failed");
-            }
-
-            puts("Welcome message sent successfully");
-
-            //add new socket to array of sockets
-            for (i = 0; i < max_clients; i++)
-            {
-                if (client_socket[i] == 0)
-                {
+            for (int i = 0; i < BACKLOG; i++) {
+                if (client_socket[i] == 0) {
                     client_socket[i] = new_socket;
-                    printf("Adding to list of sockets at index %d \n" , i);
                     break;
                 }
             }
         }
 
-        //else its some IO operation on some other socket :)
-        for (i = 0; i < max_clients; i++)
-        {
-            s = client_socket[i];
-            //if client presend in read sockets
-            if (FD_ISSET( s , &readfds))
-            {
-                //get details of the client
+        for (int i = 0; i < BACKLOG; i++) {
+            SOCKET s = client_socket[i];
+            if (FD_ISSET(s, &read_fd_set)) {
                 getpeername(s , (struct sockaddr*)&address , (int*)&addrlen);
+                char *client_ip = inet_ntoa(address.sin_addr);
+                char buffer[1024];
+                int valread = recv( s , buffer, sizeof(buffer), 0);
 
-                //Check if it was for closing , and also read the incoming message
-                //recv does not place a null terminator at the end of the string (whilst printf %s assumes there is one).
-                valread = recv( s , buffer, MAXRECV, 0);
-
-                if( valread == SOCKET_ERROR)
-                {
-                    int error_code = WSAGetLastError();
-                    if(error_code == WSAECONNRESET)
-                    {
-                        //Somebody disconnected , get his details and print
-                        printf("Host disconnected unexpectedly , ip %s , port %d \n" , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
-
-                        //Close the socket and mark as 0 in list for reuse
+                if (valread == SOCKET_ERROR) {
+                    if(WSAGetLastError() == WSAECONNRESET) {
+                        fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", s, client_ip);
                         closesocket( s );
                         client_socket[i] = 0;
                     }
-                    else
-                    {
-                        printf("recv failed with error code : %d" , error_code);
-                    }
-                }
-                if ( valread == 0)
-                {
-                    //Somebody disconnected , get his details and print
-                    printf("Host disconnected , ip %s , port %d \n" , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
-
-                    //Close the socket and mark as 0 in list for reuse
-                    closesocket( s );
+                } else if (valread == 0) {
+                    closesocket(s);
                     client_socket[i] = 0;
-                }
-
-                    //Echo back the message that came in
-                else
-                {
-                    //add null character, if you want to use with printf/puts or other string handling functions
-                    buffer[valread] = '\0';
-                    printf("%s:%d - %s \n" , inet_ntoa(address.sin_addr) , ntohs(address.sin_port), buffer);
-                    send( s , buffer , valread , 0 );
-                    closesocket( s );
+                } else {
+                    printf("%s: %s \n" , client_ip, buffer);
+                    closesocket(s);
                     client_socket[i] = 0;
                 }
             }
         }
     }
-
-    closesocket(s);
     WSACleanup();
 }
 
 int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) {
     WSADATA wsa;
-    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0)
-    {
+    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
         printf("Failed. Error Code : %d",WSAGetLastError());
         return -1;
     }
 
-    if((*sock = socket(AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET)
-    {
+    if ((*sock = socket(AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET) {
         printf("Could not create socket : %d" , WSAGetLastError());
         return -1;
     }
@@ -181,8 +116,7 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
     server->sin_addr.s_addr = INADDR_ANY;
     server->sin_port = htons( port );
 
-    if(bind(*sock , (struct sockaddr *)server , sizeof(*server)) == SOCKET_ERROR)
-    {
+    if (bind(*sock , (struct sockaddr *)server , sizeof(*server)) == SOCKET_ERROR) {
         printf("Bind failed with error code : %d" , WSAGetLastError());
         return -1;
     }
