@@ -13,12 +13,16 @@ void start(){
     }
 }
 
-DWORD WINAPI listener_routine(LPVOID param) {
-    int port = *((int*)param);
+DWORD WINAPI listener_routine(void *args) {
+    int port = *((int*)args);
     handle_requests(port, work_with_threads);
 }
 
-void handle_requests(int port, int (*handle)(int, char*, int)) {
+DWORD WINAPI receiver_routine(void *args) {
+
+}
+
+void handle_requests(int port, int (*handle)(SOCKET, char*, int, SOCKET*)) {
     SOCKET sock, client_socket[BACKLOG];
     struct sockaddr_in server;
     int addrlen;
@@ -47,7 +51,7 @@ void handle_requests(int port, int (*handle)(int, char*, int)) {
         }
 
         if (select(0 , &read_fd_set , NULL , NULL , &timeout) == SOCKET_ERROR) {
-            printf("select call failed with error code : %d" , WSAGetLastError());
+            perror("Errore durante l'operazione di select.\n");
             exit(EXIT_FAILURE);
         }
 
@@ -60,7 +64,7 @@ void handle_requests(int port, int (*handle)(int, char*, int)) {
         SOCKET new_socket;
         if (FD_ISSET(sock , &read_fd_set)) {
             if ((new_socket = accept(sock , (struct sockaddr *)&address, (int *)&addrlen)) < 0) {
-                perror("accept");
+                perror("Errore nell'accettare la richiesta del client\n");
                 exit(EXIT_FAILURE);
             }
 
@@ -77,20 +81,8 @@ void handle_requests(int port, int (*handle)(int, char*, int)) {
             if (FD_ISSET(s, &read_fd_set)) {
                 getpeername(s , (struct sockaddr*)&address , (int*)&addrlen);
                 char *client_ip = inet_ntoa(address.sin_addr);
-                char buffer[1024];
-                int valread = recv( s , buffer, sizeof(buffer), 0);
-
-                if (valread == SOCKET_ERROR) {
-                    if(WSAGetLastError() == WSAECONNRESET) {
-                        fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", s, client_ip);
-                        closesocket( s );
-                        client_socket[i] = 0;
-                    }
-                } else if (valread == 0) {
-                    closesocket(s);
-                    client_socket[i] = 0;
-                } else {
-                    printf("%s: %s \n" , client_ip, buffer);
+                if (handle(s, client_ip, port, &client_socket[i]) < 0) {
+                    fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", s, client_ip);
                     closesocket(s);
                     client_socket[i] = 0;
                 }
@@ -126,8 +118,17 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
     return 0;
 }
 
-int work_with_threads(int fd, char *client_ip, int port) {
-
+int work_with_threads(SOCKET socket, char *client_ip, int port, SOCKET *client_id) {
+    char buffer[1024];
+    int valread = recv(socket, buffer, sizeof(buffer), 0);
+    buffer[valread] = '\0';
+    if (valread == SOCKET_ERROR) {
+        fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", socket, client_ip);
+    } else {
+        printf("%s: %s \n" , client_ip, buffer);
+    }
+    closesocket(socket);
+    *client_id = 0;
 }
 
 void log_routine() {
