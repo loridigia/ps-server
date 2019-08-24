@@ -6,8 +6,6 @@
 
 void _log(char *buffer);
 
-void _log(char *buffer);
-
 int main(int argc, _TCHAR *argv[]) {
     HANDLE h_pipe;
     char buffer[1024];
@@ -24,7 +22,7 @@ int main(int argc, _TCHAR *argv[]) {
     while (h_pipe != INVALID_HANDLE_VALUE){
         if (ConnectNamedPipe(h_pipe, NULL) != FALSE)   // wait here for someone to connect to the pipe
         {
-            while (ReadFile(h_pipe, buffer, sizeof(buffer) - 1, &dw_read, NULL) != FALSE){
+            while (ReadFile(h_pipe, buffer, sizeof(buffer), &dw_read, NULL) != FALSE){
 
                 /* add terminating zero */
                 buffer[dw_read] = '\0';

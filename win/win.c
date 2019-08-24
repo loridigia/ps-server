@@ -2,6 +2,54 @@
 
 extern configuration *config;
 
+void init(int argc, char *argv[]) {
+    //daemon check
+    if (is_daemon(argc, argv)) {
+        perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
+        exit(1);
+    }
+
+    //logger process
+    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &process_info) == 0){
+        perror("Errore nell'eseguire il processo logger");
+        exit(1);
+    }
+
+    // il supporto tecnico se ne sta occupando, non esistono primitive per capire quando un processo generato è ready,
+    // questo ovviamente da problema con la pipe che è condivisa
+    sleep(4);
+
+
+    //create pipe
+    h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY){
+        perror("Errore nella creazione della pipe");
+        exit(1);
+    }
+
+    write_on_pipe("caio giulio cesare \n");
+
+    //mapping del config per renderlo globale
+
+    //loading configuration
+    if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
+        perror("Errore nel caricare la configurazione");
+        exit(1);
+    }
+
+    //mutex / condition variables
+
+    //creazione processo per log routine
+
+    //inizio
+    start();
+
+    //attesa di evento per restart
+
+    while(1) Sleep(1000);
+    //Sleep(3000);
+}
+
 void start(){
     if (equals(config->server_type, "thread")) {
         HANDLE thread = CreateThread(NULL, 0, listener_routine, &config->server_port, 0, NULL);
@@ -143,53 +191,11 @@ int work_with_threads(SOCKET socket, char *client_ip, int port) {
 
 int write_on_pipe(char *buffer) {
     if (h_pipe != INVALID_HANDLE_VALUE){
-        WriteFile(h_pipe, buffer, 12, &dw_written, NULL);
+        WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL);
         CloseHandle(h_pipe);
     }
 }
 
-void init(int argc, char *argv[]) {
-    //daemon check
-    if (is_daemon(argc, argv)) {
-        perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
-        exit(1);
-    }
-
-    //logger process
-    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &process_info) == 0){
-        perror("Errore nell'eseguire il processo logger");
-        exit(1);
-    } else {
-        /*
-        // distruggi il processo e il suo main thread
-        CloseHandle(process_info.hProcess);
-        CloseHandle(process_info.hThread);
-         */
-    }
-
-    //create pipe
-    h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-    write_on_pipe("pippo");
-    //mapping del config per renderlo globale
-
-    //loading configuration
-    if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
-        perror("Errore nel caricare la configurazione");
-        exit(1);
-    }
-
-    //mutex / condition variables
-
-    //creazione processo per log routine
-
-    //inizio
-    start();
-
-    //attesa di evento per restart
-
-    while(1) Sleep(1000);
-    //Sleep(3000);
-}
 
 char *get_server_ip(){
     WORD wVersionRequested;

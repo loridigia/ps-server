@@ -15,7 +15,8 @@
   <component name="ChangeListManager">
     <list default="true" id="7f07cd6c-b336-4153-a2da-92d8df351a8d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/core.h" beforeDir="false" afterPath="$PROJECT_DIR$/core/core.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/log.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/win/logger.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/logger.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/win.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.c" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -174,6 +175,8 @@
       <workItem from="1566570135024" duration="578000" />
       <workItem from="1566570746323" duration="175000" />
       <workItem from="1566570952195" duration="705000" />
+      <workItem from="1566642419428" duration="1191000" />
+      <workItem from="1566647792645" duration="1038000" />
     </task>
     <servers />
   </component>
@@ -206,5 +209,16 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/win/logger.c</url>
+          <line>24</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
