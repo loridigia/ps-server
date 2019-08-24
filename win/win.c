@@ -117,6 +117,8 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
             break;
         }
 
+        /* soluzione timeout da aggiungere */
+
         struct sockaddr_in address;
         SOCKET new_socket;
         if (FD_ISSET(sock , &read_fd_set)) {

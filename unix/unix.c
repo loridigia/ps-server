@@ -210,8 +210,8 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
     }
 
     struct timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 100000;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
 
     fd_set read_fd_set;
     socklen_t socket_size;
@@ -219,15 +219,19 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
         FD_ZERO (&read_fd_set);
         FD_SET (socket_fd, &read_fd_set);
 
-        if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, &timeout) < 0) {
+        int selected;
+        if ((selected = select (FD_SETSIZE, &read_fd_set, NULL, NULL, &timeout)) < 0) {
             perror("Errore durante l'operazione di select.\n");
             continue;
         }
 
         if(config->server_port != port) {
             printf("Chiusura socket su porta %d. \n", port);
-            break;
+            close(socket_fd);
+            return;
         }
+
+        if (selected == 0) continue;
 
         for (int fd = 0; fd < FD_SETSIZE; fd++) {
             if (FD_ISSET (fd, &read_fd_set)) {
