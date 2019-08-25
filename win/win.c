@@ -72,12 +72,36 @@ DWORD WINAPI receiver_routine(void *args) {
     free(args);
 }
 
+char *get_client_buffer(SOCKET client_fd, int *err) {
+    int size = 10, chunk = 10;
+    char *client_buffer = (char*)calloc(size, sizeof(char));
+    int len = 0, n = 0;
+
+    while ((n = recv(client_fd, client_buffer + len, chunk, 0)) > 0 ) {
+        puts(client_buffer);
+        len += n;
+        if (len + chunk >= size) {
+            size *= 2;
+            client_buffer = (char*)realloc(client_buffer, size);
+        }
+    }
+
+    if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK){
+        *err = -1;
+    }
+
+    return client_buffer;
+}
+
 int serve_client(SOCKET socket, char *client_ip, int port) {
     int res = 0;
     char *err;
-
-    char *client_buffer = get_client_buffer(socket, &res, 0);
-
+    u_long iMode = 0;
+    ioctlsocket(socket, FIONBIO, &iMode);
+    char *client_buffer = (char*)calloc(1024,sizeof(char));
+    recv(socket, client_buffer, 10, 0);
+    recv(socket, client_buffer+10, 10, 0);
+    /*
     if (res == -1) {
         err = "Errore nel ricevere i dati.\n";
         fprintf(stderr,"%s",err);
@@ -85,10 +109,11 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
         closesocket(socket);
         return -1;
     }
-
+    */
     char *route = trim(client_buffer);
 
     puts(route);
+    free(client_buffer);
     closesocket(socket);
 }
 
@@ -185,7 +210,10 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
         return -1;
     }
 
-    listen(*sock , BACKLOG);
+    if (listen(*sock, BACKLOG) == -1) {
+        perror("Errore nel provare ad ascoltare sulla porta data in input.\n");
+        return -1;
+    }
     *addrlen = sizeof(struct sockaddr_in);
     return 0;
 }
@@ -285,8 +313,4 @@ size_t _getline(char **lineptr, size_t *n, FILE *stream) {
 
 int send_error(SOCKET socket, char *err) {
     return send(socket, err, strlen(err), 0);
-}
-
-int _recv(int s,char *buf,int len,int flags) {
-    return recv(s,buf,len,flags);
 }
