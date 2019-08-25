@@ -316,7 +316,7 @@ void *send_routine(void *arg) {
 int serve_client(int client_fd, char *client_ip, int port) {
     int res = 0;
     char *err;
-    char *client_buffer = get_client_buffer(client_fd, &res);
+    char *client_buffer = get_client_buffer(client_fd, &res, MSG_DONTWAIT);
 
     if (res == -1) {
         err = "Errore nel ricevere i dati.\n";
@@ -426,22 +426,6 @@ size_t _getline(char **lineptr, size_t *n, FILE *stream) {
     return getline(lineptr, n, stream);
 }
 
-char *get_client_buffer(int client_fd, int *err) {
-    int size = 10, chunk = 10;
-    char *client_buffer = (char*)calloc(size, sizeof(char));
-    int len = 0, n = 0;
-
-    while ((n = recv(client_fd, client_buffer + len, chunk, MSG_DONTWAIT)) > 0 ) {
-        len += n;
-        if (len + chunk >= size) {
-            size *= 2;
-            client_buffer = (char*)realloc(client_buffer, size);
-        }
-    }
-
-    if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK){
-        *err = -1;
-    }
-
-    return client_buffer;
+int _recv(int s,char *buf,int len,int flags) {
+    return recv(s,buf,len,flags);
 }

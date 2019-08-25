@@ -2,8 +2,8 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
     <generated>
-      <config projectName="ps_server" targetName="PS" />
       <config projectName="ps_server" targetName="logger" />
+      <config projectName="ps_server" targetName="PS" />
       <config projectName="ps_server" targetName="ps_server" />
     </generated>
   </component>
@@ -61,11 +61,6 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="OCFindUsagesOptions" text="false" ivars="false" properties="false" derivedClasses="false" />
-  <component name="ProjectFrameBounds">
-    <option name="y" value="23" />
-    <option name="width" value="1920" />
-    <option name="height" value="985" />
-  </component>
   <component name="ProjectId" id="1Pb8JcV29ixucEVKEldALQqVxWS" />
   <component name="PropertiesComponent">
     <property name="DefaultHtmlFileTemplate" value="HTML File" />
@@ -175,7 +170,6 @@
       <workItem from="1566570746323" duration="175000" />
       <workItem from="1566570952195" duration="705000" />
       <workItem from="1566645353505" duration="2653000" />
-      <workItem from="1566752449931" duration="982000" />
     </task>
     <servers />
   </component>
