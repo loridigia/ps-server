@@ -316,6 +316,7 @@ void *send_routine(void *arg) {
 int serve_client(int client_fd, char *client_ip, int port) {
     int res = 0;
     char *err;
+
     char *client_buffer = get_client_buffer(client_fd, &res, MSG_DONTWAIT);
 
     if (res == -1) {
@@ -326,11 +327,16 @@ int serve_client(int client_fd, char *client_ip, int port) {
         return -1;
     }
 
-    char *route = trim(client_buffer);
+    unsigned int end = index_of(client_buffer, '\r');
+    if (end == -1) {
+        puts("-1");
+        end = strlen(client_buffer);
+    }
+    client_buffer[end] = '\0';
 
-    char path[sizeof(PUBLIC_PATH) + strlen(route)];
+    char path[sizeof(PUBLIC_PATH) + strlen(client_buffer)];
     strcpy(path, PUBLIC_PATH);
-    strcat(path, route);
+    strcat(path, client_buffer);
 
     if (is_file(path)) {
         int file_fd = open(path, O_RDONLY);
@@ -374,7 +380,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
         args->client_fd = client_fd;
         args->port = port;
         args->file_in_memory = file_in_memory;
-        args->route = route;
+        args->route = client_buffer;
         args->size = size;
 
         if (equals(config->server_type, "thread")) {
@@ -390,7 +396,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
     } else {
         char *listing_buffer;
         int size;
-        if ((listing_buffer = get_file_listing(route, path, &size)) == NULL) {
+        if ((listing_buffer = get_file_listing(client_buffer, path, &size)) == NULL) {
             err = "File o directory non esistente.\n";
             fprintf(stderr,"%s",err);
             send_error(client_fd, err);

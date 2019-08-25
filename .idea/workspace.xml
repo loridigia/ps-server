@@ -2,8 +2,8 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
     <generated>
-      <config projectName="ps_server" targetName="logger" />
       <config projectName="ps_server" targetName="PS" />
+      <config projectName="ps_server" targetName="logger" />
       <config projectName="ps_server" targetName="ps_server" />
     </generated>
   </component>
@@ -15,10 +15,10 @@
   <component name="ChangeListManager">
     <list default="true" id="7f07cd6c-b336-4153-a2da-92d8df351a8d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/core.h" beforeDir="false" afterPath="$PROJECT_DIR$/core/core.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/log.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shared/shared.c" beforeDir="false" afterPath="$PROJECT_DIR$/shared/shared.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shared/shared.h" beforeDir="false" afterPath="$PROJECT_DIR$/shared/shared.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test" beforeDir="false" afterPath="$PROJECT_DIR$/test" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unix/unix.c" beforeDir="false" afterPath="$PROJECT_DIR$/unix/unix.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/win.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.c" afterDir="false" />
     </list>
@@ -170,6 +170,8 @@
       <workItem from="1566570746323" duration="175000" />
       <workItem from="1566570952195" duration="705000" />
       <workItem from="1566645353505" duration="2653000" />
+      <workItem from="1566752449931" duration="982000" />
+      <workItem from="1566768189207" duration="5401000" />
     </task>
     <servers />
   </component>

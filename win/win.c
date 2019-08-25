@@ -72,11 +72,39 @@ DWORD WINAPI receiver_routine(void *args) {
     free(args);
 }
 
+char *get_client_buffera(SOCKET client_fd, int *err, int flag) {
+    int size = 100, chunk = 10;
+    char *client_buffer = (char*)calloc(size, sizeof(char));
+
+    int len = 0, n;
+
+    while ((n = recv(client_fd, client_buffer + len, chunk, flag)) > 0 ) {
+        len += n;
+        if (len + chunk >= size) {
+            size *= 2;
+            client_buffer = (char*)realloc(client_buffer, size);
+        }
+    }
+
+    if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK){
+        *err = -1;
+    }
+
+    return client_buffer;
+}
+
 int serve_client(SOCKET socket, char *client_ip, int port) {
     int res = 0;
     char *err;
+    u_long iMode = 1;
+    ioctlsocket(socket, FIONBIO, &iMode);
+    int n, len = 0;
+    char *client_buffer = (char*)calloc(100,sizeof(char));
+    while ((n = (recv(socket, client_buffer + len, 2, 0))) > 0) {
+        len += n;
+    }
 
-    char *client_buffer = get_client_buffer(socket, &res, 0);
+    //char *client_buffer = get_client_buffera(socket,&res, 0);
 
     if (res == -1) {
         err = "Errore nel ricevere i dati.\n";
@@ -86,9 +114,18 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
         return -1;
     }
 
-    char *route = trim(client_buffer);
+    unsigned int end = index_of(client_buffer, '\r');
+    if (end == -1) {
+        end = strlen(client_buffer);
+    }
+    client_buffer[end] = '\0';
 
-    puts(route);
+    char path[sizeof(PUBLIC_PATH) + strlen(client_buffer)];
+    strcpy(path, PUBLIC_PATH);
+    strcat(path, client_buffer);
+
+    puts(client_buffer);
+
     closesocket(socket);
 }
 

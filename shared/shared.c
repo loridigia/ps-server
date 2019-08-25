@@ -170,8 +170,7 @@ int is_daemon(int argc, char *argv[]) {
 char *get_client_buffer(int client_fd, int *err, int flag) {
     int size = 10, chunk = 10;
     char *client_buffer = (char*)calloc(sizeof(char), size);
-    int len = 0, n = 0;
-
+    int len = 0, n;
     while ((n = _recv(client_fd, client_buffer + len, chunk, flag)) > 0 ) {
         len += n;
         if (len + chunk >= size) {
@@ -185,16 +184,4 @@ char *get_client_buffer(int client_fd, int *err, int flag) {
     }
 
     return client_buffer;
-}
-
-char *trim(char *client_buffer) {
-    unsigned int end = index_of(client_buffer, '\r');
-    if (end == -1) {
-        puts("-1");
-        end = strlen(client_buffer);
-    }
-    char *route = (char*)malloc(end+1);
-    strcpy(route, client_buffer);
-    route[end] = '\0';
-    return route;
 }
