@@ -28,12 +28,12 @@ I image.jpg\t/\t127.0.0.1\t7070\n\
 #define EMPTY_STRING "\n"
 
 #define CONFIG_CONTENT_BACK "\
-port:7070\n\
-type:thread"
+server_port:7070\n\
+server_type:thread"
 
 #define CONFIG_CONTENT_NEW "\
-port:7071\n\
-type:thread"
+server_port:7071\n\
+server_type:thread"
 
 struct string {
   char *ptr;
@@ -118,20 +118,18 @@ int main(int argc, char *argv[]) {
 
 /*#----------------------------------  // TEST_2  ---------------------------------------#*/
   desc = "Verifica che venga fatto correttamente il listing di una sottocartella";
-  for (int i = 0; i < 250; i++) {
-      curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/folder");
-      res = curl_easy_perform(curl);
-      if (equals(s.ptr, SUBFOLDER_LISTING)) {
-          passed++;
-          fprintf(stdout, "#PASSED: %s\n", desc);
-      }
-      else {
-          failed++;
-          fprintf(stdout, "#FAILED: %s\n", desc);
-      }
-      init_string(&s);
-      usleep(TIMEOUT);
+  curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/folder");
+  res = curl_easy_perform(curl);
+  if (equals(s.ptr, SUBFOLDER_LISTING)) {
+      passed++;
+      fprintf(stdout, "#PASSED: %s\n", desc);
   }
+  else {
+      failed++;
+      fprintf(stdout, "#FAILED: %s\n", desc);
+  }
+  init_string(&s);
+  usleep(TIMEOUT);
 
 /*#----------------------------------  // TEST_3  ---------------------------------------#*/
   desc = "Verifica che venga correttamente restituito un file .txt";
@@ -200,9 +198,36 @@ int main(int argc, char *argv[]) {
   init_string(&s);
   usleep(TIMEOUT);
 
-  int total = passed + failed;
+/*#----------------------------------  // TEST_BOMB  ---------------------------------------#*/
 
-  fprintf(stdout, "\n%s%d%s%d\n", "Numero di test passati: ", passed, "/", total);
+  desc = "Verifica che il server riesca a gestire multiple richieste consecutive";
+  int lower = 1000;
+  int upper = 5000;
+  int bomb = 1;
+  puts("#TEST_BOMB: Please wait");
+  for (int i = 0; i < 5000; i++) {
+      if (i % 500 == 0) {
+          printf(".");
+          fflush(stdout);
+      }
+      curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7071/0/testo.txt");
+      res = curl_easy_perform(curl);
+      if (!(equals(s.ptr, SIMPLE_TEXT))) {
+          bomb = 0;
+          break;
+      }
+      init_string(&s);
+      int timeout = (rand() % (upper - lower + 1)) + lower;
+      usleep(timeout);
+  }
+  if (bomb == 1) {
+      fprintf(stdout, "\n#PASSED: %s\n", desc);
+  } else {
+      fprintf(stdout, "\n#FAILED: %s\n", desc);
+  }
+  int total = passed + failed + 1;
+
+  fprintf(stdout, "\n%s%d%s%d\n", "Numero di test passati: ", passed + bomb, "/", total);
 
   free(s.ptr);
   curl_easy_cleanup(curl);

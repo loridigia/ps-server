@@ -202,9 +202,12 @@ void *listener_routine(void *arg) {
 }
 
 void handle_requests(int port, int (*handle)(int, char*, int)){
-    int socket_fd;
-    struct sockaddr_in socket_addr;
-    if (listen_on(port, &socket_fd, &socket_addr) != 0) {
+    int server_socket;
+    fd_set active_fd_set, read_fd_set;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t size;
+
+    if (listen_on(port, &server_socket, &server_addr) != 0) {
         fprintf(stderr, "Impossibile creare la socket su porta: %d", port);
         return;
     }
@@ -213,48 +216,48 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
 
-    fd_set read_fd_set;
-    socklen_t socket_size;
+    FD_ZERO (&active_fd_set);
+    FD_SET (server_socket, &active_fd_set);
+
     while (1) {
-        FD_ZERO (&read_fd_set);
-        FD_SET (socket_fd, &read_fd_set);
+        read_fd_set = active_fd_set;
 
         int selected;
         if ((selected = select (FD_SETSIZE, &read_fd_set, NULL, NULL, &timeout)) < 0) {
             perror("Errore durante l'operazione di select.\n");
-            continue;
+            break;
         }
 
         if(config->server_port != port) {
             printf("Chiusura socket su porta %d. \n", port);
-            close(socket_fd);
+            close(server_socket);
             return;
         }
 
         if (selected == 0) continue;
 
-        for (int fd = 0; fd < FD_SETSIZE; fd++) {
+        for (int fd = 0; fd < FD_SETSIZE; ++fd)
             if (FD_ISSET (fd, &read_fd_set)) {
-                if (fd == socket_fd) {
-                    socket_size = sizeof(socket_addr);
-                    int new = accept(socket_fd, (struct sockaddr *) &socket_addr, &socket_size);
+                if (fd == server_socket) {
+                    size = sizeof(client_addr);
+                    int new = accept(server_socket, (struct sockaddr *)&client_addr, &size);
                     if (new < 0) {
                         perror("Errore nell'accettare la richiesta del client\n");
                         continue;
                     }
-                    FD_SET (new, &read_fd_set);
+                    FD_SET (new, &active_fd_set);
                 } else {
-                    char *client_ip = get_client_ip(&socket_addr);
+                    char *client_ip = get_client_ip(&client_addr);
                     if (handle(fd, client_ip, port) == -1) {
                         FD_CLR (fd, &read_fd_set);
+                        close(fd);
                         fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", fd, client_ip);
                         continue;
                     }
+                    FD_CLR (fd, &active_fd_set);
                 }
             }
-        }
     }
-    close(socket_fd);
 }
 
 
