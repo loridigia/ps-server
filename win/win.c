@@ -8,7 +8,7 @@ void init(int argc, char *argv[]) {
         perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
         exit(1);
     }
-
+    /*
     //logger process
     if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &process_info) == 0){
         perror("Errore nell'eseguire il processo logger");
@@ -28,7 +28,7 @@ void init(int argc, char *argv[]) {
     }
 
     write_on_pipe("caio giulio cesare \n");
-
+    */
     //mapping del config per renderlo globale
 
     //loading configuration
@@ -68,15 +68,28 @@ DWORD WINAPI listener_routine(void *args) {
 
 DWORD WINAPI receiver_routine(void *args) {
     thread_arg_receiver *params = (thread_arg_receiver*)args;
-    char buffer[1024];
-    int valread = recv(params->socket, buffer, sizeof(buffer), 0);
-    buffer[valread] = '\0';
-    if (valread == SOCKET_ERROR) {
-        fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", params->socket, params->client_ip);
-    } else {
-        printf("%s: %s \n" , params->client_ip, buffer);
+    serve_client(params->socket, params->client_ip, params->port);
+    free(args);
+}
+
+int serve_client(SOCKET socket, char *client_ip, int port) {
+    int res = 0;
+    char *err;
+
+    char *client_buffer = get_client_buffer(socket, &res, 0);
+
+    if (res == -1) {
+        err = "Errore nel ricevere i dati.\n";
+        fprintf(stderr,"%s",err);
+        send_error(socket, err);
+        closesocket(socket);
+        return -1;
     }
-    closesocket(params->socket);
+
+    char *route = trim(client_buffer);
+
+    puts(route);
+    closesocket(socket);
 }
 
 void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
@@ -272,4 +285,8 @@ size_t _getline(char **lineptr, size_t *n, FILE *stream) {
 
 int send_error(SOCKET socket, char *err) {
     return send(socket, err, strlen(err), 0);
+}
+
+int _recv(int s,char *buf,int len,int flags) {
+    return recv(s,buf,len,flags);
 }
