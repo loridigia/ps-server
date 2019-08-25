@@ -236,11 +236,11 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
 
         if (selected == 0) continue;
 
-        for (int fd = 0; fd < FD_SETSIZE; ++fd)
+        for (int fd = 0; fd < FD_SETSIZE; ++fd) {
             if (FD_ISSET (fd, &read_fd_set)) {
                 if (fd == server_socket) {
                     size = sizeof(client_addr);
-                    int new = accept(server_socket, (struct sockaddr *)&client_addr, &size);
+                    int new = accept(server_socket, (struct sockaddr *) &client_addr, &size);
                     if (new < 0) {
                         perror("Errore nell'accettare la richiesta del client\n");
                         continue;
@@ -251,12 +251,13 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
                     if (handle(fd, client_ip, port) == -1) {
                         FD_CLR (fd, &read_fd_set);
                         close(fd);
-                        fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", fd, client_ip);
+                        fprintf(stderr, "Errore nel comunicare con la socket %d. Client-ip: %s", fd, client_ip);
                         continue;
                     }
                     FD_CLR (fd, &active_fd_set);
                 }
             }
+        }
     }
 }
 
