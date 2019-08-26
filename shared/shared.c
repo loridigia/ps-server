@@ -167,20 +167,16 @@ int is_daemon(int argc, char *argv[]) {
     return 0;
 }
 
-char *get_client_buffer(int client_fd, int *err, int flag) {
-    int size = 10, chunk = 10;
+char *get_client_buffer(int socket, int *n, int flag) {
+    int size = 10, chunk = 10, len = 0;
     char *client_buffer = (char*)calloc(sizeof(char), size);
-    int len = 0, n;
-    while ((n = _recv(client_fd, client_buffer + len, chunk, flag)) > 0 ) {
-        len += n;
+
+    while ((*n = _recv(socket, client_buffer + len, chunk, flag)) > 0 ) {
+        len += *n;
         if (len + chunk >= size) {
             size *= 2;
             client_buffer = (char*)realloc(client_buffer, size);
         }
-    }
-
-    if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK){
-        *err = -1;
     }
 
     return client_buffer;
