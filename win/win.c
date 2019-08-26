@@ -38,7 +38,6 @@ void init(int argc, char *argv[]) {
 
     //mutex / condition variables
 
-    //creazione processo per log routine
 
     //inizio
     start();
@@ -53,10 +52,19 @@ void start(){
     if (equals(config->server_type, "thread")) {
         HANDLE thread = CreateThread(NULL, 0, listener_routine, &config->server_port, 0, NULL);
         if (thread == NULL) {
-            //handle error
+            perror("Errore nel creare thread listener");
+            exit(1);
         }
     } else {
-        // processes
+        PROCESS_INFORMATION ProcessInfo; //This is what we get as an [out] parameter
+        STARTUPINFO StartupInfo; //This is an [in] parameter
+        char *cmdArgs;
+        sprintf(cmdArgs, "%u", config->server_port);
+        printf("%s", cmdArgs);
+        if(!CreateProcess("listener.exe", cmdArgs, NULL,NULL,FALSE,0,NULL, NULL,&StartupInfo,&ProcessInfo)){
+            perror("Errore nel creare processo listener");
+            exit(1);
+        }
     }
 }
 
