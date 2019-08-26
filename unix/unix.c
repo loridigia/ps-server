@@ -356,9 +356,18 @@ int serve_client(int client_fd, char *client_ip, int port) {
         int size = v.st_size;
         if (size == 0) truncate(path, 4);
 
-        flock(file_fd, LOCK_EX);
+        if (flock(file_fd, LOCK_EX) < 0) {
+            perror("Impossibile lockare il file.\n");
+            close(client_fd);
+            return -1;
+        }
         char *file_in_memory = mmap(NULL, size, PROT_READ, MAP_PRIVATE, file_fd, 0);
-        flock(file_fd, LOCK_UN);
+        if (flock(file_fd, LOCK_UN) < 0) {
+            perror("Impossibile unlockare il file.\n");
+            close(client_fd);
+            return -1;
+        }
+
         if (file_in_memory == MAP_FAILED) {
             perror("Errore nell'operazione di mapping del file.\n");
             close(client_fd);
