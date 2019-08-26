@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <windows.h>
-#include <tchar.h>
 #define pipename "\\\\.\\pipe\\LogPipe"
 #define logger_event_name "\\\\.\\logger\\Logger_event"
 #define LOG_PATH "../log.txt"
 
 void _log(char *buffer);
 
-int main(int argc, _TCHAR *argv[]) {
+int main(int argc, char *argv[]) {
     HANDLE logger_event;
     HANDLE h_pipe;
     char buffer[1024];
