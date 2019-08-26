@@ -72,30 +72,14 @@ DWORD WINAPI receiver_routine(void *args) {
     free(args);
 }
 
-int get_client_buffera(int socket, char *client_buffer, int size, int flag) {
-    int chunk = 10, len = 0, n;
-
-    while ((n = _recv(socket, client_buffer + len, chunk, flag)) > 0 ) {
-        len += n;
-        if (len + chunk >= size) {
-            size *= 2;
-            client_buffer = (char*)realloc(client_buffer, size);
-        }
-    }
-    return n;
-}
-
 int serve_client(SOCKET socket, char *client_ip, int port) {
     char *err;
+    int n;
     u_long iMode = 1;
     ioctlsocket(socket, FIONBIO, &iMode);
-    int size = 100;
-    char *client_buffer = (char*)calloc(size, sizeof(char));
+    char *client_buffer = get_client_buffer(socket, &n, 0);
 
-    if (get_client_buffera(socket, client_buffer, size, 0) == -1 &&
-        WSAGetLastError() != EAGAIN &&
-        WSAGetLastError() != WSAEWOULDBLOCK) {
-
+    if (n < 0 && WSAGetLastError() != EAGAIN && WSAGetLastError() != WSAEWOULDBLOCK) {
         err = "Errore nel ricevere i dati.\n";
         fprintf(stderr,"%s",err);
         send_error(socket, err);

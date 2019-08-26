@@ -314,12 +314,12 @@ void *send_routine(void *arg) {
 }
 
 int serve_client(int client_fd, char *client_ip, int port) {
-    int res = 0;
     char *err;
+    int n;
 
-    char *client_buffer = get_client_buffer(client_fd, &res, MSG_DONTWAIT);
+    char *client_buffer = get_client_buffer(client_fd, &n, MSG_DONTWAIT);
 
-    if (res == -1) {
+    if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
         err = "Errore nel ricevere i dati.\n";
         fprintf(stderr,"%s",err);
         send_error(client_fd, err);
@@ -329,14 +329,12 @@ int serve_client(int client_fd, char *client_ip, int port) {
 
     unsigned int end = index_of(client_buffer, '\r');
     if (end == -1) {
-        puts("-1");
         end = strlen(client_buffer);
     }
     client_buffer[end] = '\0';
 
-    char path[sizeof(PUBLIC_PATH) + strlen(client_buffer)];
-    strcpy(path, PUBLIC_PATH);
-    strcat(path, client_buffer);
+    char path[strlen(PUBLIC_PATH) + strlen(client_buffer)];
+    sprintf(path,"%s%s", PUBLIC_PATH, client_buffer);
 
     if (is_file(path)) {
         int file_fd = open(path, O_RDONLY);
