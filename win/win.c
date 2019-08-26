@@ -72,41 +72,30 @@ DWORD WINAPI receiver_routine(void *args) {
     free(args);
 }
 
-char *get_client_buffera(SOCKET client_fd, int *err, int flag) {
+char *get_client_buffera(SOCKET client_fd, int *n, int flag) {
     int size = 100, chunk = 10;
     char *client_buffer = (char*)calloc(size, sizeof(char));
 
-    int len = 0, n;
+    int len = 0;
 
-    while ((n = recv(client_fd, client_buffer + len, chunk, flag)) > 0 ) {
-        len += n;
+    while ((*n = _recv(client_fd, client_buffer + len, chunk, flag)) > 0 ) {
+        len += *n;
         if (len + chunk >= size) {
             size *= 2;
             client_buffer = (char*)realloc(client_buffer, size);
         }
     }
 
-    if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK){
-        *err = -1;
-    }
-
     return client_buffer;
 }
 
 int serve_client(SOCKET socket, char *client_ip, int port) {
-    int res = 0;
     char *err;
     u_long iMode = 1;
     ioctlsocket(socket, FIONBIO, &iMode);
-    int n, len = 0;
-    char *client_buffer = (char*)calloc(100,sizeof(char));
-    while ((n = (recv(socket, client_buffer + len, 2, 0))) > 0) {
-        len += n;
-    }
-
-    //char *client_buffer = get_client_buffera(socket,&res, 0);
-
-    if (res == -1) {
+    int n;
+    char *client_buffer = get_client_buffera(socket,&n, 0);
+    if (n == -1 && WSAGetLastError() != EAGAIN && WSAGetLastError() != WSAEWOULDBLOCK) {
         err = "Errore nel ricevere i dati.\n";
         fprintf(stderr,"%s",err);
         send_error(socket, err);
