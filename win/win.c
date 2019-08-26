@@ -8,17 +8,18 @@ void init(int argc, char *argv[]) {
         perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
         exit(1);
     }
-    /*
+
+    //logger event
+    logger_event = CreateEventA(NULL, FALSE, FALSE, logger_event_name);
+
     //logger process
     if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &process_info) == 0){
         perror("Errore nell'eseguire il processo logger");
         exit(1);
     }
 
-    // il supporto tecnico se ne sta occupando, non esistono primitive per capire quando un processo generato è ready,
-    // questo ovviamente da problema con la pipe che è condivisa
-    sleep(4);
-
+    //wait initialization of logger process
+    WaitForSingleObject(logger_event, INFINITE);
 
     //create pipe
     h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
@@ -27,8 +28,6 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
-    write_on_pipe("caio giulio cesare \n");
-    */
     //mapping del config per renderlo globale
 
     //loading configuration

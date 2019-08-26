@@ -2,14 +2,19 @@
 #include <windows.h>
 #include <tchar.h>
 #define pipename "\\\\.\\pipe\\LogPipe"
+#define logger_event_name "\\\\.\\logger\\Logger_event"
 #define LOG_PATH "../log.txt"
 
 void _log(char *buffer);
 
 int main(int argc, _TCHAR *argv[]) {
+    HANDLE logger_event;
     HANDLE h_pipe;
     char buffer[1024];
     DWORD dw_read;
+
+    //prendi l'handle dell'evento
+    logger_event = OpenEventA(EVENT_ALL_ACCESS, FALSE, logger_event_name);
 
     h_pipe = CreateNamedPipe(pipename,
                              PIPE_ACCESS_DUPLEX,
@@ -19,6 +24,9 @@ int main(int argc, _TCHAR *argv[]) {
                             1024 * 16,
                              NMPWAIT_USE_DEFAULT_WAIT,
                              NULL);
+    //cambia lo stato dell'evento quando la pipe è creata
+    SetEvent(logger_event);
+
     while (h_pipe != INVALID_HANDLE_VALUE){
         if (ConnectNamedPipe(h_pipe, NULL) != FALSE)   // wait here for someone to connect to the pipe
         {

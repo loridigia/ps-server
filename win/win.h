@@ -8,6 +8,7 @@
 #include "../shared/shared.h"
 #pragma comment(lib,"ws2_32.lib")
 #define pipename "\\\\.\\pipe\\LogPipe"
+#define logger_event_name "\\\\.\\logger\\Logger_event"
 
 typedef struct thread_arg_receiver {
     SOCKET socket;
@@ -17,6 +18,7 @@ typedef struct thread_arg_receiver {
 
 STARTUPINFO info;
 PROCESS_INFORMATION process_info;
+HANDLE logger_event;
 HANDLE h_pipe;
 DWORD dw_written;
 
