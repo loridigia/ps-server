@@ -8,7 +8,7 @@ void init(int argc, char *argv[]) {
         perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
         exit(1);
     }
-
+    /*
     //logger event
     logger_event = CreateEventA(NULL, FALSE, FALSE, logger_event_name);
 
@@ -27,7 +27,7 @@ void init(int argc, char *argv[]) {
         perror("Errore nella creazione della pipe");
         exit(1);
     }
-
+    */
     //mapping del config per renderlo globale
 
     //loading configuration
@@ -95,8 +95,84 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
     char path[strlen(PUBLIC_PATH) + strlen(client_buffer)];
     sprintf(path,"%s%s", PUBLIC_PATH, client_buffer);
 
-    puts(client_buffer);
-    puts(path);
+    BOOL success = FALSE;
+
+    HANDLE handler = CreateFile(TEXT(path),
+                                GENERIC_READ | GENERIC_WRITE,
+                                0,
+                                NULL,
+                                OPEN_EXISTING,
+                                0,
+                                NULL);
+
+    if (handler == INVALID_HANDLE_VALUE) {
+        err = "Errore nell'apertura del file. \n";
+        fprintf(stderr,"%s%s",err,path);
+        send_error(socket, err);
+        closesocket(socket);
+        return -1;
+    }
+    DWORD size = GetFileSize(handler,NULL);
+
+    OVERLAPPED sOverlapped;
+    sOverlapped.Offset = 0;
+    sOverlapped.OffsetHigh = 0;
+
+    success = LockFileEx(handler,
+                          LOCKFILE_EXCLUSIVE_LOCK |
+                          LOCKFILE_FAIL_IMMEDIATELY,
+                          0,
+                          size,
+                          0,
+                          &sOverlapped);
+
+    if (!success) {
+        perror("Impossibile lockare il file.\n");
+        closesocket(socket);
+        return -1;
+    }
+
+    /*
+    https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createfilemappinga
+    HANDLE file = CreateFileMappingA(
+            HANDLE                hFile,
+            LPSECURITY_ATTRIBUTES lpFileMappingAttributes,
+            DWORD                 flProtect,
+            DWORD                 dwMaximumSizeHigh,
+            DWORD                 dwMaximumSizeLow,
+            LPCSTR                lpName
+    );
+    */
+    success = UnlockFileEx(handler,
+                            0,
+                            size,
+                            0,
+                            &sOverlapped);
+    if (!success) {
+        perror("Impossibile unlockare il file.\n");
+        closesocket(socket);
+        return -1;
+    }
+
+    thread_arg_sender *args = (thread_arg_sender *)malloc(sizeof (thread_arg_sender));
+
+    if (args < 0) {
+        perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'sender'.\n");
+        free(args);
+        return -1;
+    }
+
+    /*
+    args->client_ip = client_ip;
+    args->client_fd = client_fd;
+    args->port = port;
+    //args->file_in_memory = file_in_memory;
+    args->route = client_buffer;
+    args->size = size;
+    */
+    CloseHandle(handler);
+    closesocket(socket);
+    return (0);
 
     closesocket(socket);
 }
