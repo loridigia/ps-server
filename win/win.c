@@ -74,7 +74,7 @@ DWORD WINAPI listener_routine(void *args) {
 
 DWORD WINAPI receiver_routine(void *args) {
     thread_arg_receiver *params = (thread_arg_receiver*)args;
-    serve_client(params->new_socket_fd, params->client_ip, params->port);
+    serve_client(params->client_socket, params->client_ip, params->port);
     free(args);
 }
 
@@ -103,87 +103,138 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
     sprintf(path,"%s%s", PUBLIC_PATH, client_buffer);
 
     BOOL success = FALSE;
+    if (is_file(path)) {
+        HANDLE handle = CreateFile(TEXT(path),
+                                   GENERIC_READ | GENERIC_WRITE,
+                                   0,
+                                   NULL,
+                                   OPEN_EXISTING,
+                                   0,
+                                   NULL);
 
-    HANDLE handle = CreateFile(TEXT(path),
-                                GENERIC_READ | GENERIC_WRITE,
-                                0,
-                                NULL,
-                                OPEN_EXISTING,
-                                0,
-                                NULL);
+        if (handle == INVALID_HANDLE_VALUE) {
+            err = "Errore nell'apertura del file. \n";
+            fprintf(stderr,"%s%s",err,path);
+            send_error(socket, err);
+            closesocket(socket);
+            return -1;
+        }
+        DWORD size = GetFileSize(handle,NULL);
 
-    if (handle == INVALID_HANDLE_VALUE) {
-        err = "Errore nell'apertura del file. \n";
-        fprintf(stderr,"%s%s",err,path);
-        send_error(socket, err);
-        closesocket(socket);
-        return -1;
+        OVERLAPPED sOverlapped;
+        sOverlapped.Offset = 0;
+        sOverlapped.OffsetHigh = 0;
+
+        success = LockFileEx(handle,
+                             LOCKFILE_EXCLUSIVE_LOCK |
+                             LOCKFILE_FAIL_IMMEDIATELY,
+                             0,
+                             size,
+                             0,
+                             &sOverlapped);
+
+        if (!success) {
+            perror("Impossibile lockare il file.\n");
+            closesocket(socket);
+            return -1;
+        }
+
+        HANDLE file = CreateFileMappingA(handle,NULL,PAGE_READONLY,0,size,"file");
+        char* view = (char*)MapViewOfFile(file, FILE_MAP_READ, 0, 0, 0);
+
+        success = UnlockFileEx(handle,0,size,0,&sOverlapped);
+        if (!success) {
+            perror("Impossibile unlockare il file.\n");
+            closesocket(socket);
+            return -1;
+        }
+
+        if (file == NULL) {
+            perror("Impossibile mappare il file.\n");
+            closesocket(socket);
+            return -1;
+        }
+
+        if (view == NULL) {
+            perror("Impossibile creare la view.\n");
+            closesocket(socket);
+            return -1;
+        }
+
+        thread_arg_sender *args = (thread_arg_sender *)malloc(sizeof(thread_arg_sender));
+
+        if (args < 0) {
+            perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'sender'.\n");
+            free(args);
+            return -1;
+        }
+
+        args->client_ip = client_ip;
+        args->client_socket = socket;
+        args->port = port;
+        args->file_in_memory = view;
+        args->route = client_buffer;
+        args->size = size;
+
+        if (equals(config->server_type, "thread")) {
+            send_routine(args);
+        } else if (equals(config->server_type, "process")) {
+            /*
+            if (pthread_create(&pthread, &pthread_attr, send_routine, (void *) args) != 0) {
+                perror("Impossibile creare un nuovo thread di tipo 'sender'.\n");
+                free(args);
+                return -1;
+            }
+            */
+        }
+        CloseHandle(handle);
+    } else {
+        char *listing_buffer;
+        int size;
+        if ((listing_buffer = get_file_listing(client_buffer, path, &size)) == NULL) {
+            err = "File o directory non esistente.\n";
+            fprintf(stderr,"%s",err);
+            send_error(socket, err);
+            closesocket(socket);
+            return -1;
+        }
+        else {
+            if (send(socket, listing_buffer, size, 0) != 0) {
+                perror("Errore nel comunicare con la socket.\n");
+                closesocket(socket);
+                return -1;
+            }
+            closesocket(socket);
+        }
     }
-    DWORD size = GetFileSize(handle,NULL);
-
-    OVERLAPPED sOverlapped;
-    sOverlapped.Offset = 0;
-    sOverlapped.OffsetHigh = 0;
-
-    success = LockFileEx(handle,
-                          LOCKFILE_EXCLUSIVE_LOCK |
-                          LOCKFILE_FAIL_IMMEDIATELY,
-                          0,
-                          size,
-                          0,
-                          &sOverlapped);
-
-    if (!success) {
-        perror("Impossibile lockare il file.\n");
-        closesocket(socket);
-        return -1;
-    }
-
-    HANDLE file = CreateFileMappingA(handle,NULL,PAGE_READONLY,0,size,"file");
-    char* view = (char*)MapViewOfFile(file, FILE_MAP_READ, 0, 0, 0);
-
-    success = UnlockFileEx(handle,0,size,0,&sOverlapped);
-    if (!success) {
-        perror("Impossibile unlockare il file.\n");
-        closesocket(socket);
-        return -1;
-    }
-
-    if (file == NULL) {
-        perror("Impossibile mappare il file.\n");
-        closesocket(socket);
-        return -1;
-    }
-
-    if (view == NULL) {
-        perror("Impossibile creare la view.\n");
-        closesocket(socket);
-        return -1;
-    }
-
-    puts(view);
-
-    thread_arg_sender *args = (thread_arg_sender *)malloc(sizeof(thread_arg_sender));
-
-    if (args < 0) {
-        perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'sender'.\n");
-        free(args);
-        return -1;
-    }
-
-    /*
-    args->client_ip = client_ip;
-    args->client_fd = client_fd;
-    args->port = port;
-    //args->file_in_memory = file_in_memory;
-    args->route = client_buffer;
-    args->size = size;
-    */
-    CloseHandle(handle);
-    closesocket(socket);
     return (0);
+}
 
-    closesocket(socket);
+void *send_routine(void *arg) {
+    thread_arg_sender *args = (thread_arg_sender *) arg;
+    if (send_file(args->client_socket, args->file_in_memory, args->size) < 0){
+        fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
+    } else {
+        /*
+        if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
+            fprintf(stderr, "Errore nello scrivere sulla pipe LOG.\n");
+            return NULL;
+        }
+        */
+    }
+    return NULL;
+}
+
+int send_file(int socket_fd, char *file){
+    char new[strlen(file)+2];
+    sprintf(new, "%s\n", file);
+    int res = 0;
+    if (send(socket_fd, new, strlen(new), 0) == -1) {
+        res = -1;
+    }
+    UnmapViewOfFile(file);
+    closesocket(socket_fd);
+    return res;
 }
 
 void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
@@ -287,7 +338,7 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
 int work_with_threads(SOCKET socket, char *client_ip, int port) {
     thread_arg_receiver *args =
             (thread_arg_receiver *)malloc(sizeof(thread_arg_receiver));
-    args->new_socket_fd = socket;
+    args->client_socket = socket;
     args->port = port;
     args->client_ip = client_ip;
     if (CreateThread(NULL, 0, receiver_routine, (HANDLE*)args, 0, NULL) == NULL) {
