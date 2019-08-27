@@ -90,15 +90,13 @@ char *get_client_ip(struct sockaddr_in *socket_addr){
 }
 
 int send_file(int socket_fd, char *file, size_t file_size){
-    char *new_str = malloc(strlen(file) + 2);
-    strcpy(new_str, file);
-    strcat(new_str, "\n");
+    char new[strlen(file)+2];
+    sprintf(new, "%s\n", file);
     int res = 0;
-    if (send(socket_fd, new_str, strlen(new_str), 0) == -1) {
+    if (send(socket_fd, new, strlen(new), 0) == -1) {
         res = -1;
     }
     munmap(file, file_size);
-    free(new_str);
     close(socket_fd);
     return res;
 }
@@ -239,7 +237,7 @@ int work_with_threads(int fd, char *client_ip, int port) {
         free(args);
         return -1;
     }
-    args->new_socket_fd = fd;
+    args->client_socket = fd;
     args->port = port;
     args->client_ip = client_ip;
 
@@ -266,7 +264,7 @@ int work_with_processes(int fd, char *client_ip, int port) {
 
 void *receiver_routine(void *arg) {
     thread_arg_receiver *args = (thread_arg_receiver *) arg;
-    serve_client(args->new_socket_fd, args->client_ip, args->port);
+    serve_client(args->client_socket, args->client_ip, args->port);
     free(arg);
     return NULL;
 }
@@ -288,7 +286,7 @@ int write_on_pipe(int size, char* name, int port, char *client_ip){
 
 void *send_routine(void *arg) {
     thread_arg_sender *args = (thread_arg_sender *) arg;
-    int send = send_file(args->client_fd, args->file_in_memory, args->size);
+    int send = send_file(args->client_socket, args->file_in_memory, args->size);
     if (send == -1){
         fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
     } else {
@@ -373,7 +371,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
         }
 
         args->client_ip = client_ip;
-        args->client_fd = client_fd;
+        args->client_socket = client_fd;
         args->port = port;
         args->file_in_memory = file_in_memory;
         args->route = client_buffer;

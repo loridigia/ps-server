@@ -34,7 +34,7 @@ typedef struct configuration {
 
 typedef struct thread_arg_sender {
     int size;
-    int client_fd;
+    int client_socket;
     int port;
     char *file_in_memory;
     char *route;
@@ -42,7 +42,7 @@ typedef struct thread_arg_sender {
 } thread_arg_sender;
 
 typedef struct thread_arg_receiver {
-    int new_socket_fd;
+    int client_socket;
     int port;
     char *client_ip;
 } thread_arg_receiver;
