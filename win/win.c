@@ -13,7 +13,7 @@ void init(int argc, char *argv[]) {
     logger_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Process_Event"));
 
     //creazione processo per log routine
-    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &process_info) == 0){
+    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &logger_info) == 0){
         perror("Errore nell'eseguire il processo logger");
         exit(1);
     }
@@ -31,7 +31,6 @@ void init(int argc, char *argv[]) {
     //mapping del config per renderlo globale
 
     //loading configuration
-    printf("%u", conf.server_port);
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
         perror("Errore nel caricare la configurazione");
         exit(1);
@@ -54,13 +53,14 @@ void start(){
     if (equals(config->server_type, "thread")) {
         HANDLE thread = CreateThread(NULL, 0, listener_routine, &config->server_port, 0, NULL);
         if (thread == NULL) {
-            perror("Errore nel creare il thread listner");
+            perror("Errore nel creare il thread listener");
             exit(1);
         }
     } else {
-        PROCESS_INFORMATION p_info;
+        char *arg = malloc(16);
+        sprintf(arg, "%d", config->server_port);
 
-        if (CreateProcess("listener.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &p_info) == 0){
+        if (CreateProcess("listener.exe", arg, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &listener_info) == 0){
             perror("Errore nell'eseguire il processo listener");
             exit(1);
         }

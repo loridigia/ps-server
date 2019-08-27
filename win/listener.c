@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include "win.h"
 
+extern configuration *config;
 int main(int argc, char *argv[]) {
-    unsigned int port = conf.server_port;
-    printf("%u", &conf.server_port);
+    printf("%s", argv[0]);
+    printf("%s", argv[1]);
 }
