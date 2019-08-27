@@ -27,6 +27,7 @@ typedef struct thread_arg_sender {
     */
 } thread_arg_sender;
 
+
 STARTUPINFO info;
 PROCESS_INFORMATION process_info;
 HANDLE logger_event;

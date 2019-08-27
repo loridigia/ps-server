@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <windows.h>
+#include <zconf.h>
+
 #define pipename "\\\\.\\pipe\\LogPipe"
-#define logger_event_name "\\\\.\\logger\\Logger_event"
 #define LOG_PATH "../log.txt"
 
 void _log(char *buffer);
@@ -12,9 +13,7 @@ int main(int argc, char *argv[]) {
     char buffer[1024];
     DWORD dw_read;
 
-    //prendi l'handle dell'evento
-    logger_event = OpenEventA(EVENT_ALL_ACCESS, FALSE, logger_event_name);
-
+    //init pipe
     h_pipe = CreateNamedPipe(pipename,
                              PIPE_ACCESS_DUPLEX,
                             PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
@@ -23,6 +22,10 @@ int main(int argc, char *argv[]) {
                             1024 * 16,
                              NMPWAIT_USE_DEFAULT_WAIT,
                              NULL);
+
+    //prendi l'handle dell'evento
+    logger_event = OpenEvent(EVENT_MODIFY_STATE, FALSE, TEXT("Process_Event"));
+
     //cambia lo stato dell'evento quando la pipe è creata
     SetEvent(logger_event);
 
