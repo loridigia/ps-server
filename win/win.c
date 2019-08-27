@@ -8,9 +8,9 @@ void init(int argc, char *argv[]) {
         perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
         exit(1);
     }
-    /*
+
     //logger event
-    logger_event = CreateEventA(NULL, FALSE, FALSE, logger_event_name);
+    logger_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Process_Event"));
 
     //logger process
     if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &process_info) == 0){
@@ -27,7 +27,7 @@ void init(int argc, char *argv[]) {
         perror("Errore nella creazione della pipe");
         exit(1);
     }
-    */
+
     //mapping del config per renderlo globale
 
     //loading configuration
@@ -56,13 +56,11 @@ void start(){
             exit(1);
         }
     } else {
-        PROCESS_INFORMATION ProcessInfo; //This is what we get as an [out] parameter
-        STARTUPINFO StartupInfo; //This is an [in] parameter
-        char *cmdArgs;
-        sprintf(cmdArgs, "%u", config->server_port);
-        printf("%s", cmdArgs);
-        if(!CreateProcess("listener.exe", cmdArgs, NULL,NULL,FALSE,0,NULL, NULL,&StartupInfo,&ProcessInfo)){
-            perror("Errore nel creare processo listener");
+        PROCESS_INFORMATION p_info;
+
+        char cmdArgs[] = "mario rossi";
+        if (CreateProcess("listener.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &p_info) == 0){
+            perror("Errore nell'eseguire il processo listener");
             exit(1);
         }
     }
