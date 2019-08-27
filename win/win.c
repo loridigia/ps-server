@@ -8,11 +8,11 @@ void init(int argc, char *argv[]) {
         perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
         exit(1);
     }
-    /*
+
     //logger event
     logger_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Process_Event"));
 
-    //logger process
+    //creazione processo per log routine
     if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &process_info) == 0){
         perror("Errore nell'eseguire il processo logger");
         exit(1);
@@ -27,10 +27,11 @@ void init(int argc, char *argv[]) {
         perror("Errore nella creazione della pipe");
         exit(1);
     }
-    */
+
     //mapping del config per renderlo globale
 
     //loading configuration
+    printf("%u", conf.server_port);
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
         perror("Errore nel caricare la configurazione");
         exit(1);
@@ -38,7 +39,7 @@ void init(int argc, char *argv[]) {
 
     //mutex / condition variables
 
-    //creazione processo per log routine
+    //creazione processo per log routine ( STA SOPRA )
 
     //inizio
     start();
@@ -53,11 +54,12 @@ void start(){
     if (equals(config->server_type, "thread")) {
         HANDLE thread = CreateThread(NULL, 0, listener_routine, &config->server_port, 0, NULL);
         if (thread == NULL) {
-            //handle error
+            perror("Errore nel creare il thread listner");
+            exit(1);
         }
     } else {
         PROCESS_INFORMATION p_info;
-        char cmdArgs[] = "mario rossi";
+
         if (CreateProcess("listener.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &p_info) == 0){
             perror("Errore nell'eseguire il processo listener");
             exit(1);

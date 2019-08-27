@@ -8,7 +8,6 @@
 #include "../shared/shared.h"
 #pragma comment(lib,"ws2_32.lib")
 #define pipename "\\\\.\\pipe\\LogPipe"
-#define logger_event_name "\\\\.\\logger\\Logger_event"
 
 STARTUPINFO info;
 PROCESS_INFORMATION process_info;

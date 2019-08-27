@@ -2,7 +2,6 @@
 #include <windows.h>
 #include <zconf.h>
 
-#define pipename "\\\\.\\pipe\\LogPipe"
 #define LOG_PATH "../log.txt"
 
 void _log(char *buffer);
