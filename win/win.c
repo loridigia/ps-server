@@ -72,7 +72,7 @@ DWORD WINAPI listener_routine(void *args) {
 
 DWORD WINAPI receiver_routine(void *args) {
     thread_arg_receiver *params = (thread_arg_receiver*)args;
-    serve_client(params->socket, params->client_ip, params->port);
+    serve_client(params->new_socket_fd, params->client_ip, params->port);
     free(args);
 }
 
@@ -285,7 +285,7 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
 int work_with_threads(SOCKET socket, char *client_ip, int port) {
     thread_arg_receiver *args =
             (thread_arg_receiver *)malloc(sizeof(thread_arg_receiver));
-    args->socket = socket;
+    args->new_socket_fd = socket;
     args->port = port;
     args->client_ip = client_ip;
     if (CreateThread(NULL, 0, receiver_routine, (HANDLE*)args, 0, NULL) == NULL) {
