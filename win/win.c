@@ -38,6 +38,7 @@ void init(int argc, char *argv[]) {
 
     //mutex / condition variables
 
+    //creazione processo per log routine
 
     //inizio
     start();
@@ -52,19 +53,10 @@ void start(){
     if (equals(config->server_type, "thread")) {
         HANDLE thread = CreateThread(NULL, 0, listener_routine, &config->server_port, 0, NULL);
         if (thread == NULL) {
-            perror("Errore nel creare thread listener");
-            exit(1);
+            //handle error
         }
     } else {
-        PROCESS_INFORMATION ProcessInfo; //This is what we get as an [out] parameter
-        STARTUPINFO StartupInfo; //This is an [in] parameter
-        char *cmdArgs;
-        sprintf(cmdArgs, "%u", config->server_port);
-        printf("%s", cmdArgs);
-        if(!CreateProcess("listener.exe", cmdArgs, NULL,NULL,FALSE,0,NULL, NULL,&StartupInfo,&ProcessInfo)){
-            perror("Errore nel creare processo listener");
-            exit(1);
-        }
+        // processes
     }
 }
 
@@ -105,7 +97,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
 
     BOOL success = FALSE;
 
-    HANDLE handler = CreateFile(TEXT(path),
+    HANDLE handle = CreateFile(TEXT(path),
                                 GENERIC_READ | GENERIC_WRITE,
                                 0,
                                 NULL,
@@ -113,20 +105,20 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
                                 0,
                                 NULL);
 
-    if (handler == INVALID_HANDLE_VALUE) {
+    if (handle == INVALID_HANDLE_VALUE) {
         err = "Errore nell'apertura del file. \n";
         fprintf(stderr,"%s%s",err,path);
         send_error(socket, err);
         closesocket(socket);
         return -1;
     }
-    DWORD size = GetFileSize(handler,NULL);
+    DWORD size = GetFileSize(handle,NULL);
 
     OVERLAPPED sOverlapped;
     sOverlapped.Offset = 0;
     sOverlapped.OffsetHigh = 0;
 
-    success = LockFileEx(handler,
+    success = LockFileEx(handle,
                           LOCKFILE_EXCLUSIVE_LOCK |
                           LOCKFILE_FAIL_IMMEDIATELY,
                           0,
@@ -140,29 +132,31 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
         return -1;
     }
 
-    /*
-    https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createfilemappinga
-    HANDLE file = CreateFileMappingA(
-            HANDLE                hFile,
-            LPSECURITY_ATTRIBUTES lpFileMappingAttributes,
-            DWORD                 flProtect,
-            DWORD                 dwMaximumSizeHigh,
-            DWORD                 dwMaximumSizeLow,
-            LPCSTR                lpName
-    );
-    */
-    success = UnlockFileEx(handler,
-                            0,
-                            size,
-                            0,
-                            &sOverlapped);
+    HANDLE file = CreateFileMappingA(handle,NULL,PAGE_READONLY,0,size,"file");
+    char* view = (char*)MapViewOfFile(file, FILE_MAP_READ, 0, 0, 0);
+
+    success = UnlockFileEx(handle,0,size,0,&sOverlapped);
     if (!success) {
         perror("Impossibile unlockare il file.\n");
         closesocket(socket);
         return -1;
     }
 
-    thread_arg_sender *args = (thread_arg_sender *)malloc(sizeof (thread_arg_sender));
+    if (file == NULL) {
+        perror("Impossibile mappare il file.\n");
+        closesocket(socket);
+        return -1;
+    }
+
+    if (view == NULL) {
+        perror("Impossibile creare la view.\n");
+        closesocket(socket);
+        return -1;
+    }
+
+    puts(view);
+
+    thread_arg_sender *args = (thread_arg_sender *)malloc(sizeof(thread_arg_sender));
 
     if (args < 0) {
         perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'sender'.\n");
@@ -178,7 +172,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
     args->route = client_buffer;
     args->size = size;
     */
-    CloseHandle(handler);
+    CloseHandle(handle);
     closesocket(socket);
     return (0);
 
