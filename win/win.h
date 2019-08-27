@@ -10,24 +10,6 @@
 #define pipename "\\\\.\\pipe\\LogPipe"
 #define logger_event_name "\\\\.\\logger\\Logger_event"
 
-typedef struct thread_arg_receiver {
-    SOCKET socket;
-    int port;
-    char *client_ip;
-} thread_arg_receiver;
-
-typedef struct thread_arg_sender {
-    /*
-    args->client_ip = client_ip;
-    args->client_fd = client_fd;
-    args->port = port;
-    //args->file_in_memory = file_in_memory;
-    args->route = client_buffer;
-    args->size = size;
-    */
-} thread_arg_sender;
-
-
 STARTUPINFO info;
 PROCESS_INFORMATION process_info;
 HANDLE logger_event;

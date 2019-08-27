@@ -143,21 +143,12 @@ int send_error(int socket_fd, char *err) {
 
 void start() {
     if (equals(config->server_type, "thread")) {
-        pthread_arg_listener *args =
-                (pthread_arg_listener *)malloc(sizeof (pthread_arg_listener));
-        if (args < 0) {
-            perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'listener'.\n");
-            free(args);
-            exit(1);
-        }
-        args->port = config->server_port;
         if (pthread_create(
                 &pthread,
                 &pthread_attr,
                 listener_routine,
-                (void *) args) != 0) {
+                (void *) &config->server_port) != 0) {
             perror("Impossibile creare un nuovo thread.\n");
-            free(args);
             exit(1);
         }
     } else {
@@ -174,9 +165,7 @@ void start() {
 
 
 void *listener_routine(void *arg) {
-    pthread_arg_listener *args = (pthread_arg_listener *) arg;
-    int port = args->port;
-    free(args);
+    int port = *(int*)arg;
     handle_requests(port, work_with_threads);
     return NULL;
 }
@@ -243,8 +232,8 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
 
 
 int work_with_threads(int fd, char *client_ip, int port) {
-    pthread_arg_receiver *args =
-            (pthread_arg_receiver *)malloc(sizeof (pthread_arg_receiver));
+    thread_arg_receiver *args =
+            (thread_arg_receiver *)malloc(sizeof (thread_arg_receiver));
     if (args < 0) {
         perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'receiver'.\n");
         free(args);
@@ -276,7 +265,7 @@ int work_with_processes(int fd, char *client_ip, int port) {
 }
 
 void *receiver_routine(void *arg) {
-    pthread_arg_receiver *args = (pthread_arg_receiver *) arg;
+    thread_arg_receiver *args = (thread_arg_receiver *) arg;
     serve_client(args->new_socket_fd, args->client_ip, args->port);
     free(arg);
     return NULL;
@@ -298,7 +287,7 @@ int write_on_pipe(int size, char* name, int port, char *client_ip){
 }
 
 void *send_routine(void *arg) {
-    pthread_arg_sender *args = (pthread_arg_sender *) arg;
+    thread_arg_sender *args = (thread_arg_sender *) arg;
     int send = send_file(args->client_fd, args->file_in_memory, args->size);
     if (send == -1){
         fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
@@ -374,8 +363,8 @@ int serve_client(int client_fd, char *client_ip, int port) {
             return -1;
         }
 
-        pthread_arg_sender *args =
-                (pthread_arg_sender *)malloc(sizeof (pthread_arg_sender));
+        thread_arg_sender *args =
+                (thread_arg_sender *)malloc(sizeof (thread_arg_sender));
 
         if (args < 0) {
             perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'sender'.\n");

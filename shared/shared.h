@@ -32,6 +32,21 @@ typedef struct configuration {
     unsigned int server_port;
 } configuration;
 
+typedef struct thread_arg_sender {
+    int size;
+    int client_fd;
+    int port;
+    char *file_in_memory;
+    char *route;
+    char *client_ip;
+} thread_arg_sender;
+
+typedef struct thread_arg_receiver {
+    int new_socket_fd;
+    int port;
+    char *client_ip;
+} thread_arg_receiver;
+
 configuration conf;
 
 int load_arguments(int argc, char *argv[]);
