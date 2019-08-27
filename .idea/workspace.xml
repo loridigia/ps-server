@@ -2,11 +2,11 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
     <generated>
-      <config projectName="ps_server" targetName="PS" />
-      <config projectName="ps_server" targetName="listener" />
-      <config projectName="ps_server" targetName="logger" />
       <config projectName="ps_server" targetName="ps_server" />
       <config projectName="ps_server" targetName="reciver" />
+      <config projectName="ps_server" targetName="logger" />
+      <config projectName="ps_server" targetName="PS" />
+      <config projectName="ps_server" targetName="listener" />
     </generated>
   </component>
   <component name="CMakeSettings" AUTO_RELOAD="true">
@@ -16,13 +16,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7f07cd6c-b336-4153-a2da-92d8df351a8d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/win/listener.c" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/win/reciver.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/log.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/win/logger.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/logger.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/win/win.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.txt" beforeDir="false" afterPath="$PROJECT_DIR$/config.txt" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
