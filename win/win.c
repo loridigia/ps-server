@@ -335,6 +335,9 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
     return 0;
 }
 
+int work_with_processes(SOCKET socket, char *client_ip, int port){
+}
+
 int work_with_threads(SOCKET socket, char *client_ip, int port) {
     thread_arg_receiver *args =
             (thread_arg_receiver *)malloc(sizeof(thread_arg_receiver));
