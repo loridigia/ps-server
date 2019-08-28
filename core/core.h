@@ -10,7 +10,6 @@ int serve_client();
 int work_with_threads();
 int work_with_processes();
 int write_on_pipe();
-char *get_client_ip();
 char *get_server_ip();
 void start();
 void log_routine();
