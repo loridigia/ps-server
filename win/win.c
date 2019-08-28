@@ -338,8 +338,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
         CloseHandle(handle);
     } else {
         char *listing_buffer;
-        int size;
-        if ((listing_buffer = get_file_listing(client_buffer, path, &size)) == NULL) {
+        if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {
             err = "File o directory non esistente.\n";
             fprintf(stderr,"%s",err);
             send_error(socket, err);

@@ -82,13 +82,6 @@ void log_routine() {
     }
 }
 
-char *get_client_ip(struct sockaddr_in *socket_addr){
-    struct in_addr ipAddr = socket_addr->sin_addr;
-    char *str = malloc(INET_ADDRSTRLEN);
-    inet_ntop( AF_INET, &ipAddr, str, INET_ADDRSTRLEN );
-    return str;
-}
-
 int send_file(int socket_fd, char *file, size_t file_size){
     char new[strlen(file)+2];
     sprintf(new, "%s\n", file);
@@ -214,7 +207,8 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
                     }
                     FD_SET (new, &active_fd_set);
                 } else {
-                    char *client_ip = get_client_ip(&client_addr);
+                    char *client_ip = malloc(INET_ADDRSTRLEN);
+                    inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
                     if (handle(fd, client_ip, port) == -1) {
                         FD_CLR (fd, &read_fd_set);
                         close(fd);
