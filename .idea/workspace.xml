@@ -19,7 +19,6 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/listener.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/listener.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/win.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/win/win.h" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.h" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -189,7 +188,7 @@
       <workItem from="1566821591605" duration="7221000" />
       <workItem from="1566986023004" duration="2868000" />
       <workItem from="1567022603804" duration="635000" />
-      <workItem from="1567023279583" duration="2034000" />
+      <workItem from="1567023279583" duration="3698000" />
     </task>
     <servers />
   </component>

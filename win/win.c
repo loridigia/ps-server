@@ -36,11 +36,10 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
-    /*
     //mapping del config per renderlo globale
     LPCTSTR pBuf;
     HANDLE hMapFile;
-    hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, TEXT("Global\\Config"));
+    hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, "Global\\Config");
 
     if (hMapFile == NULL){
         perror("Errore nel creare memory object");
@@ -53,13 +52,9 @@ void init(int argc, char *argv[]) {
         CloseHandle(hMapFile);
         exit(1);
     }
+
     CopyMemory((PVOID)pBuf, szMsg, (_tcslen(szMsg) * sizeof(TCHAR)));
-    _getch();
-
-    //UnmapViewOfFile(pBuf);
-    CloseHandle(hMapFile);
-
-     */
+    UnmapViewOfFile(pBuf);
 
     //mutex / condition variables
 
@@ -512,4 +507,4 @@ int send_error(SOCKET socket, char *err) {
 
 int _recv(int s,char *buf,int len,int flags) {
     return recv(s,buf,len,flags);
-}  
+}
