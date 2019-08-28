@@ -2,8 +2,9 @@
 #include "win.h"
 
 int main(int argc, char *argv[]) {
-    int *port = (int*)argv[0];
-    handle_requests(port, work_with_processes());
+    printf("listner ready");
+    int port = atoi(argv[0]);
 
-    printf("%d", port);
+    handle_requests(port, work_with_processes);
+
 }

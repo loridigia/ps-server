@@ -8,7 +8,7 @@ void init(int argc, char *argv[]) {
         perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
         exit(1);
     }
-
+    
     //logger event
     logger_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Process_Event"));
 
@@ -76,6 +76,155 @@ DWORD WINAPI receiver_routine(void *args) {
     thread_arg_receiver *params = (thread_arg_receiver*)args;
     serve_client(params->client_socket, params->client_ip, params->port);
     free(args);
+}
+
+
+void *send_routine(void *arg) {
+    thread_arg_sender *args = (thread_arg_sender *) arg;
+    if (send_file(args->client_socket, args->file_in_memory, args->size) < 0){
+        fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
+    } else {
+        /*
+        if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
+            fprintf(stderr, "Errore nello scrivere sulla pipe LOG.\n");
+            return NULL;
+        }
+        */
+    }
+    return NULL;
+}
+
+int send_file(int socket_fd, char *file){
+    char new[strlen(file)+2];
+    sprintf(new, "%s\n", file);
+    int res = 0;
+    if (send(socket_fd, new, strlen(new), 0) == -1) {
+        res = -1;
+    }
+    UnmapViewOfFile(file);
+    closesocket(socket_fd);
+    return res;
+}
+
+void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
+    SOCKET sock, client_socket[BACKLOG];
+    struct sockaddr_in server;
+    int addrlen;
+
+    if (listen_on(port, &server, &addrlen, &sock)) {
+        fprintf(stderr, "Impossibile creare la socket su porta: %d", port);
+        return;
+    }
+
+    for(int i = 0 ; i < BACKLOG;i++) {
+        client_socket[i] = 0;
+    }
+
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 100000;
+
+    fd_set read_fd_set;
+    while(TRUE) {
+        FD_ZERO(&read_fd_set);
+        FD_SET(sock, &read_fd_set);
+
+        for (int i = 0 ; i < BACKLOG ; i++) {
+            SOCKET s = client_socket[i];
+            if(s > 0) FD_SET(s, &read_fd_set);
+        }
+
+        if (select(0 , &read_fd_set , NULL , NULL , &timeout) == SOCKET_ERROR) {
+            perror("Errore durante l'operazione di select.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        printf(">>>%s", config->server_port);
+        printf("-- %u - %d --", config->server_port, port);
+
+        if(config->server_port != port) {
+            printf("Chiusura socket su porta %d. \n", port);
+            break;
+        }
+
+        /* soluzione timeout da aggiungere */
+
+        struct sockaddr_in address;
+        SOCKET new_socket;
+        if (FD_ISSET(sock , &read_fd_set)) {
+            if ((new_socket = accept(sock , (struct sockaddr *)&address, (int *)&addrlen)) < 0) {
+                perror("Errore nell'accettare la richiesta del client\n");
+                exit(EXIT_FAILURE);
+            }
+
+            for (int i = 0; i < BACKLOG; i++) {
+                if (client_socket[i] == 0) {
+                    client_socket[i] = new_socket;
+                    break;
+                }
+            }
+        }
+
+        for (int i = 0; i < BACKLOG; i++) {
+            SOCKET s = client_socket[i];
+            if (FD_ISSET(s, &read_fd_set)) {
+                getpeername(s , (struct sockaddr*)&address , (int*)&addrlen);
+                char *client_ip = inet_ntoa(address.sin_addr);
+                if (handle(s, client_ip, port) < 0) {
+                    fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", s, client_ip);
+                    closesocket(s);
+                }
+                client_socket[i] = 0;
+            }
+        }
+    }
+    WSACleanup();
+}
+
+int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) {
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
+        printf("Failed. Error Code : %d",WSAGetLastError());
+        return -1;
+    }
+
+    if ((*sock = socket(AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET) {
+        printf("Could not create socket : %d" , WSAGetLastError());
+        return -1;
+    }
+
+    server->sin_family = AF_INET;
+    server->sin_addr.s_addr = INADDR_ANY;
+    server->sin_port = htons(port);
+
+    if (bind(*sock , (struct sockaddr *)server , sizeof(*server)) == SOCKET_ERROR) {
+        printf("Bind failed with error code : %d" , WSAGetLastError());
+        return -1;
+    }
+
+    listen(*sock , BACKLOG);
+    *addrlen = sizeof(struct sockaddr_in);
+    return 0;
+}
+
+int work_with_processes(SOCKET socket, char *client_ip, int port){
+    char *args = malloc(256);
+    sprintf(args, "%d %s %s", port, client_ip, socket);
+    printf(args);
+}
+
+int work_with_threads(SOCKET socket, char *client_ip, int port) {
+    thread_arg_receiver *args =
+            (thread_arg_receiver *)malloc(sizeof(thread_arg_receiver));
+    args->client_socket = socket;
+    args->port = port;
+    args->client_ip = client_ip;
+    if (CreateThread(NULL, 0, receiver_routine, (HANDLE*)args, 0, NULL) == NULL) {
+        perror("Impossibile creare un nuovo thread di tipo 'receiver'.\n");
+        free(args);
+        return -1;
+    }
+    return 0;
 }
 
 int serve_client(SOCKET socket, char *client_ip, int port) {
@@ -210,147 +359,6 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
     return (0);
 }
 
-void *send_routine(void *arg) {
-    thread_arg_sender *args = (thread_arg_sender *) arg;
-    if (send_file(args->client_socket, args->file_in_memory, args->size) < 0){
-        fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
-    } else {
-        /*
-        if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
-            fprintf(stderr, "Errore nello scrivere sulla pipe LOG.\n");
-            return NULL;
-        }
-        */
-    }
-    return NULL;
-}
-
-int send_file(int socket_fd, char *file){
-    char new[strlen(file)+2];
-    sprintf(new, "%s\n", file);
-    int res = 0;
-    if (send(socket_fd, new, strlen(new), 0) == -1) {
-        res = -1;
-    }
-    UnmapViewOfFile(file);
-    closesocket(socket_fd);
-    return res;
-}
-
-void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
-    SOCKET sock, client_socket[BACKLOG];
-    struct sockaddr_in server;
-    int addrlen;
-
-    if (listen_on(port, &server, &addrlen, &sock)) {
-        fprintf(stderr, "Impossibile creare la socket su porta: %d", port);
-        return;
-    }
-
-    for(int i = 0 ; i < BACKLOG;i++) {
-        client_socket[i] = 0;
-    }
-
-    struct timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 100000;
-
-    fd_set read_fd_set;
-    while(TRUE) {
-        FD_ZERO(&read_fd_set);
-        FD_SET(sock, &read_fd_set);
-
-        for (int i = 0 ; i < BACKLOG ; i++) {
-            SOCKET s = client_socket[i];
-            if(s > 0) FD_SET(s, &read_fd_set);
-        }
-
-        if (select(0 , &read_fd_set , NULL , NULL , &timeout) == SOCKET_ERROR) {
-            perror("Errore durante l'operazione di select.\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if(config->server_port != port) {
-            printf("Chiusura socket su porta %d. \n", port);
-            break;
-        }
-
-        /* soluzione timeout da aggiungere */
-
-        struct sockaddr_in address;
-        SOCKET new_socket;
-        if (FD_ISSET(sock , &read_fd_set)) {
-            if ((new_socket = accept(sock , (struct sockaddr *)&address, (int *)&addrlen)) < 0) {
-                perror("Errore nell'accettare la richiesta del client\n");
-                exit(EXIT_FAILURE);
-            }
-
-            for (int i = 0; i < BACKLOG; i++) {
-                if (client_socket[i] == 0) {
-                    client_socket[i] = new_socket;
-                    break;
-                }
-            }
-        }
-
-        for (int i = 0; i < BACKLOG; i++) {
-            SOCKET s = client_socket[i];
-            if (FD_ISSET(s, &read_fd_set)) {
-                getpeername(s , (struct sockaddr*)&address , (int*)&addrlen);
-                char *client_ip = inet_ntoa(address.sin_addr);
-                if (handle(s, client_ip, port) < 0) {
-                    fprintf(stderr,"Errore nel comunicare con la socket %d. Client-ip: %s", s, client_ip);
-                    closesocket(s);
-                }
-                client_socket[i] = 0;
-            }
-        }
-    }
-    WSACleanup();
-}
-
-int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) {
-    WSADATA wsa;
-    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
-        printf("Failed. Error Code : %d",WSAGetLastError());
-        return -1;
-    }
-
-    if ((*sock = socket(AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET) {
-        printf("Could not create socket : %d" , WSAGetLastError());
-        return -1;
-    }
-
-    server->sin_family = AF_INET;
-    server->sin_addr.s_addr = INADDR_ANY;
-    server->sin_port = htons(port);
-
-    if (bind(*sock , (struct sockaddr *)server , sizeof(*server)) == SOCKET_ERROR) {
-        printf("Bind failed with error code : %d" , WSAGetLastError());
-        return -1;
-    }
-
-    listen(*sock , BACKLOG);
-    *addrlen = sizeof(struct sockaddr_in);
-    return 0;
-}
-
-int work_with_processes(SOCKET socket, char *client_ip, int port){
-}
-
-int work_with_threads(SOCKET socket, char *client_ip, int port) {
-    thread_arg_receiver *args =
-            (thread_arg_receiver *)malloc(sizeof(thread_arg_receiver));
-    args->client_socket = socket;
-    args->port = port;
-    args->client_ip = client_ip;
-    if (CreateThread(NULL, 0, receiver_routine, (HANDLE*)args, 0, NULL) == NULL) {
-        perror("Impossibile creare un nuovo thread di tipo 'receiver'.\n");
-        free(args);
-        return -1;
-    }
-    return 0;
-}
 
 int write_on_pipe(char *buffer) {
     if (h_pipe != INVALID_HANDLE_VALUE){

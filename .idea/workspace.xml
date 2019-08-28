@@ -2,11 +2,11 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
     <generated>
-      <config projectName="ps_server" targetName="ps_server" />
-      <config projectName="ps_server" targetName="reciver" />
       <config projectName="ps_server" targetName="logger" />
-      <config projectName="ps_server" targetName="PS" />
       <config projectName="ps_server" targetName="listener" />
+      <config projectName="ps_server" targetName="reciver" />
+      <config projectName="ps_server" targetName="PS" />
+      <config projectName="ps_server" targetName="ps_server" />
     </generated>
   </component>
   <component name="CMakeSettings" AUTO_RELOAD="true">
@@ -17,6 +17,7 @@
   <component name="ChangeListManager">
     <list default="true" id="7f07cd6c-b336-4153-a2da-92d8df351a8d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.txt" beforeDir="false" afterPath="$PROJECT_DIR$/config.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/listener.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/listener.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/win.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.c" afterDir="false" />
     </list>
@@ -186,6 +187,7 @@
       <workItem from="1566752449931" duration="982000" />
       <workItem from="1566768189207" duration="5401000" />
       <workItem from="1566821591605" duration="7221000" />
+      <workItem from="1566986023004" duration="2571000" />
     </task>
     <servers />
   </component>
@@ -218,5 +220,16 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/main.c</url>
+          <line>10</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
