@@ -91,7 +91,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="CMake Application.PS">
+  <component name="RunManager" selected="CMake Application.listener">
     <configuration name="PS" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ps_server" TARGET_NAME="ps_server" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="ps_server" RUN_TARGET_NAME="ps_server">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />

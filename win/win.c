@@ -139,7 +139,7 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
             exit(EXIT_FAILURE);
         }
 
-        
+
         printf("-- %u - %d --", config->server_port, port);
 
         if(config->server_port != port) {
