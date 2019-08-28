@@ -121,7 +121,7 @@ char *get_file_listing(char *route, char *path, int *size) {
     int len = 0;
     int row_size = MAX_EXT_LENGTH + MAX_NAME_LENGTH + strlen(route) + strlen(config->server_ip) + MAX_PORT_LENGTH + 20;
     *size = row_size;
-    char *buffer = (char*)calloc(sizeof(char), row_size);
+    char *buffer = (char*)calloc(row_size,sizeof(char));
     if ((d = opendir (path)) != NULL) {
         while ((dir = readdir (d)) != NULL) {
             if (equals(dir->d_name, ".") || equals(dir->d_name, "..")) {
