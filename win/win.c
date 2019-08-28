@@ -1,5 +1,7 @@
 #include "win.h"
 
+TCHAR szMsg[]=TEXT("JUST A TEST");
+
 extern configuration *config;
 
 void init(int argc, char *argv[]) {
@@ -28,13 +30,36 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
-    //mapping del config per renderlo globale
-
     //loading configuration
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
         perror("Errore nel caricare la configurazione");
         exit(1);
     }
+
+    /*
+    //mapping del config per renderlo globale
+    LPCTSTR pBuf;
+    HANDLE hMapFile;
+    hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, TEXT("Global\\Config"));
+
+    if (hMapFile == NULL){
+        perror("Errore nel creare memory object");
+        exit(1);
+    }
+
+    pBuf = (LPTSTR) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
+    if (pBuf == NULL){
+        perror("Errore nel mappare la view del file");
+        CloseHandle(hMapFile);
+        exit(1);
+    }
+    CopyMemory((PVOID)pBuf, szMsg, (_tcslen(szMsg) * sizeof(TCHAR)));
+    _getch();
+
+    //UnmapViewOfFile(pBuf);
+    CloseHandle(hMapFile);
+
+     */
 
     //mutex / condition variables
 
@@ -487,4 +512,4 @@ int send_error(SOCKET socket, char *err) {
 
 int _recv(int s,char *buf,int len,int flags) {
     return recv(s,buf,len,flags);
-}
+}  

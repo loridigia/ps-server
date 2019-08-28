@@ -2,11 +2,11 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
     <generated>
-      <config projectName="ps_server" targetName="logger" />
-      <config projectName="ps_server" targetName="listener" />
-      <config projectName="ps_server" targetName="reciver" />
-      <config projectName="ps_server" targetName="PS" />
       <config projectName="ps_server" targetName="ps_server" />
+      <config projectName="ps_server" targetName="reciver" />
+      <config projectName="ps_server" targetName="logger" />
+      <config projectName="ps_server" targetName="PS" />
+      <config projectName="ps_server" targetName="listener" />
     </generated>
   </component>
   <component name="CMakeSettings" AUTO_RELOAD="true">
@@ -16,7 +16,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7f07cd6c-b336-4153-a2da-92d8df351a8d" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/win/listener.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/listener.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/win.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/win/win.h" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.h" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -91,7 +94,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="CMake Application.listener">
+  <component name="RunManager" selected="CMake Application.PS">
     <configuration name="PS" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ps_server" TARGET_NAME="ps_server" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="ps_server" RUN_TARGET_NAME="ps_server">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -185,6 +188,8 @@
       <workItem from="1566768189207" duration="5401000" />
       <workItem from="1566821591605" duration="7221000" />
       <workItem from="1566986023004" duration="2868000" />
+      <workItem from="1567022603804" duration="635000" />
+      <workItem from="1567023279583" duration="2034000" />
     </task>
     <servers />
   </component>

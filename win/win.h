@@ -9,6 +9,10 @@
 #pragma comment(lib,"ws2_32.lib")
 #define pipename "\\\\.\\pipe\\LogPipe"
 
+//memory object stuff
+#define BUF_SIZE 256
+
+
 STARTUPINFO info;
 PROCESS_INFORMATION listener_info;
 PROCESS_INFORMATION logger_info;
