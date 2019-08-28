@@ -347,7 +347,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
             return -1;
         }
         else {
-            if (send(socket, listing_buffer, size, 0) != 0) {
+            if (send(socket, listing_buffer, strlen(listing_buffer), 0) < 0) {
                 perror("Errore nel comunicare con la socket.\n");
                 closesocket(socket);
                 return -1;
@@ -366,7 +366,6 @@ int write_on_pipe(char *buffer) {
     }
 }
 
-
 char *get_server_ip(){
     WORD wVersionRequested;
     WSADATA wsaData;
@@ -384,6 +383,51 @@ char *get_server_ip(){
     }
     return ip;
 }
+
+/* NON CANCELLARMI
+char *get_file_listing(char *route, char *path, int *size) {
+    WIN32_FIND_DATA ffd;
+    int len = 0;
+    HANDLE handle = INVALID_HANDLE_VALUE;
+    if (strlen(path) > MAX_PATH - 3) {
+        perror("Path della directory troppo lungo. Max: 260");
+    }
+
+    char dir[MAX_PATH];
+    sprintf(dir, "%s\\*", path);
+
+    if((handle = FindFirstFile(dir, &ffd)) == INVALID_HANDLE_VALUE) {
+        return NULL;
+    }
+
+    int row_size = MAX_EXT_LENGTH + MAX_NAME_LENGTH + strlen(route) + strlen(config->server_ip) + MAX_PORT_LENGTH + 20;
+    *size = row_size;
+    char *buffer = (char*)calloc(row_size,sizeof(char));
+
+    do {
+        char *file_name = ffd.cFileName;
+        if (equals(file_name, ".") || equals(file_name, "..")) {
+            continue;
+        }
+
+        len += sprintf(buffer + len,
+                       "%s%s\t%s\t%s\t%d\n",
+                       get_extension_code(file_name),
+                       file_name,
+                       route,
+                       config->server_ip,
+                       config->server_port);
+        if (*size - len < row_size) {
+            *size *= 2;
+            buffer = (char *)realloc(buffer, *size);
+        }
+
+    } while (FindNextFile(handle, &ffd) != 0);
+
+    FindClose(handle);
+    return buffer;
+}
+*/
 
 /* This code is public domain -- Will Hartung 4/9/09 */
 size_t _getline(char **lineptr, size_t *n, FILE *stream) {

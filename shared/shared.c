@@ -115,6 +115,39 @@ char *get_parameter(char *line, FILE *stream) {
     return NULL;
 }
 
+int is_file(char *path) {
+    struct stat path_stat;
+    stat(path, &path_stat);
+    return S_ISREG(path_stat.st_mode);
+}
+
+int is_daemon(int argc, char *argv[]) {
+    const char *flag = "--daemon";
+    char *input;
+    for (int i = 1; i < argc; i++) {
+        input = argv[i];
+        if (strncmp(input, flag, strlen(flag)) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+char *get_client_buffer(int socket, int *n, int flag) {
+    int size = 10, chunk = 10, len = 0;
+    char *client_buffer = (char*)calloc(sizeof(char), size);
+
+    while ((*n = _recv(socket, client_buffer + len, chunk, flag)) > 0 ) {
+        len += *n;
+        if (len + chunk >= size) {
+            size *= 2;
+            client_buffer = (char*)realloc(client_buffer, size);
+        }
+    }
+
+    return client_buffer;
+}
+
 char *get_file_listing(char *route, char *path, int *size) {
     DIR *d;
     struct dirent *dir;
@@ -147,37 +180,4 @@ char *get_file_listing(char *route, char *path, int *size) {
         return NULL;
     }
     return buffer;
-}
-
-int is_file(char *path) {
-    struct stat path_stat;
-    stat(path, &path_stat);
-    return S_ISREG(path_stat.st_mode);
-}
-
-int is_daemon(int argc, char *argv[]) {
-    const char *flag = "--daemon";
-    char *input;
-    for (int i = 1; i < argc; i++) {
-        input = argv[i];
-        if (strncmp(input, flag, strlen(flag)) == 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-char *get_client_buffer(int socket, int *n, int flag) {
-    int size = 10, chunk = 10, len = 0;
-    char *client_buffer = (char*)calloc(sizeof(char), size);
-
-    while ((*n = _recv(socket, client_buffer + len, chunk, flag)) > 0 ) {
-        len += *n;
-        if (len + chunk >= size) {
-            size *= 2;
-            client_buffer = (char*)realloc(client_buffer, size);
-        }
-    }
-
-    return client_buffer;
 }
