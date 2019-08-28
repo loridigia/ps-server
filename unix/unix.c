@@ -341,7 +341,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
         }
 
         int size = v.st_size;
-        if (size == 0) truncate(path, 4);
+        if (size == 0) truncate(path, 0);
 
         if (flock(file_fd, LOCK_EX) < 0) {
             perror("Impossibile lockare il file.\n");
@@ -389,8 +389,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
 
     } else {
         char *listing_buffer;
-        int size;
-        if ((listing_buffer = get_file_listing(client_buffer, path, &size)) == NULL) {
+        if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {
             err = "File o directory non esistente.\n";
             fprintf(stderr,"%s",err);
             send_error(client_fd, err);
@@ -398,12 +397,10 @@ int serve_client(int client_fd, char *client_ip, int port) {
             return -1;
         }
         else {
-            if (send(client_fd, listing_buffer, size, 0) != 0) {
-                if ((errno != EAGAIN || errno != EWOULDBLOCK)) {
-                    perror("Errore nel comunicare con la socket.\n");
-                    close(client_fd);
-                    return -1;
-                }
+            if (send(client_fd, listing_buffer, strlen(listing_buffer), 0) < 0) {
+                perror("Errore nel comunicare con la socket.\n");
+                close(client_fd);
+                return -1;
             }
         }
         close(client_fd);

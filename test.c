@@ -25,7 +25,7 @@ I image.jpg\t/\t127.0.0.1\t7070\n\
 
 #define SIMPLE_TEXT "Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n"
 
-#define EMPTY_STRING "\n"
+#define EMPTY_STRING ""
 
 #define CONFIG_CONTENT_BACK "\
 server_port:7070\n\

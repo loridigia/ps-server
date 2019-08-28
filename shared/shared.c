@@ -80,7 +80,7 @@ int load_configuration(int mode) {
     return 0;
 }
 
-char *get_extension_code(const char *filename){
+char *get_extension_code(const char *filename) {
     const char *ext = strrchr(filename, '.');
     if (ext == NULL) {
         return "1 ";
@@ -148,12 +148,12 @@ char *get_client_buffer(int socket, int *n, int flag) {
     return client_buffer;
 }
 
-char *get_file_listing(char *route, char *path, int *size) {
+char *get_file_listing(char *route, char *path) {
     DIR *d;
     struct dirent *dir;
     int len = 0;
     int row_size = MAX_EXT_LENGTH + MAX_NAME_LENGTH + strlen(route) + strlen(config->server_ip) + MAX_PORT_LENGTH + 20;
-    *size = row_size;
+    int size = row_size;
     char *buffer = (char*)calloc(row_size,sizeof(char));
     if ((d = opendir (path)) != NULL) {
         while ((dir = readdir (d)) != NULL) {
@@ -167,9 +167,9 @@ char *get_file_listing(char *route, char *path, int *size) {
                            route,
                            config->server_ip,
                            config->server_port);
-            if (*size - len < row_size) {
-                *size *= 2;
-                buffer = (char *)realloc(buffer, *size);
+            if (size - len < row_size) {
+                size *= 2;
+                buffer = (char *)realloc(buffer, size);
             }
         }
         strcat(buffer + len, ".\n");

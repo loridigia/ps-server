@@ -57,5 +57,5 @@ int is_daemon(int argc, char *argv[]);
 char *get_extension_code(const char *filename);
 char *get_parameter(char *line, FILE *stream);
 char *get_client_buffer(int socket, int *n, int flag);
-char *get_file_listing(char *route, char *path, int *size);
+char *get_file_listing(char *route, char *path);
 void restart();
