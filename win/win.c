@@ -8,7 +8,7 @@ void init(int argc, char *argv[]) {
         perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
         exit(1);
     }
-    
+
     //logger event
     logger_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Process_Event"));
 
@@ -139,7 +139,7 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
             exit(EXIT_FAILURE);
         }
 
-        printf(">>>%s", config->server_port);
+        
         printf("-- %u - %d --", config->server_port, port);
 
         if(config->server_port != port) {
