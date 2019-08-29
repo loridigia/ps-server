@@ -1,7 +1,5 @@
 #include "win.h"
 
-TCHAR szMsg[]=TEXT("JUST A TEST");
-
 extern configuration *config;
 
 void init(int argc, char *argv[]) {
@@ -55,7 +53,7 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
-    CopyMemory((PVOID)pBuf, szMsg, (_tcslen(szMsg) * sizeof(TCHAR)));
+    CopyMemory((PVOID)pBuf, config, sizeof(configuration));
     UnmapViewOfFile(pBuf);
 
     //mutex / condition variables

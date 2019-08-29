@@ -27,8 +27,8 @@
 #endif
 
 typedef struct configuration {
-    char *server_type;
-    char *server_ip;
+    char server_type[32];
+    char server_ip[32];
     unsigned int server_port;
 } configuration;
 

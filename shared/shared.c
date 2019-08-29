@@ -25,7 +25,7 @@ int load_arguments(int argc, char *argv[]) {
                 return -1;
             }
         } else if (strncmp(input, TYPE_FLAG, strlen(TYPE_FLAG)) == 0) {
-            config->server_type = input + strlen(TYPE_FLAG);
+            strcpy(config->server_type, input + strlen(TYPE_FLAG));
             if (!(equals(config->server_type, "thread") || equals(config->server_type, "process"))) {
                 fprintf(stderr,"Seleziona una modalità corretta di avvio (thread o process)\n");
                 return -1;
@@ -64,14 +64,15 @@ int load_configuration(int mode) {
         return 0;
     }
     char *type_param = get_parameter(line,stream);
-    config->server_type = type_param;
+    strcpy(config->server_type, type_param);
     if (!(equals(config->server_type, "thread") || equals(config->server_type, "process"))) {
         fprintf(stderr,"Seleziona una modalità corretta di avvio (thread o process).\n");
         fclose(stream);
         return -1;
     }
-    config->server_ip = get_server_ip();
-    if (config->server_ip == NULL) {
+    char *ip = get_server_ip();
+    strcpy(config->server_ip, ip);
+    if (ip == NULL) {
         perror("Impossibile ottenere l'ip del server.\n");
         fclose(stream);
         return -1;

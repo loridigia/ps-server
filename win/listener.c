@@ -5,7 +5,7 @@
 extern configuration *config;
 
 int main(int argc, char *argv[]) {
-    printf("listner ready");
+    printf("listner  \n");
     int port = atoi(argv[0]);
 
     HANDLE handle_mapped_file;
@@ -25,8 +25,10 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    printf("%u", config->server_port);
-    printf("%s", config->test_point);
+    printf("%u \n", config->server_port);
+    printf("%s \n", config->server_type);
+    printf("%s \n", config->server_ip);
+
     //handle_requests(port, work_with_processes);
     sleep(5);
 
