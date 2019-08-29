@@ -11,6 +11,8 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
+    mutex = CreateMutex(NULL,FALSE,NULL);
+
     //logger event
     logger_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Process_Event"));
 
@@ -58,7 +60,6 @@ void init(int argc, char *argv[]) {
 
     //mutex / condition variables
 
-    //creazione processo per log routine ( STA SOPRA )
 
     //inizio
     start();
@@ -104,9 +105,13 @@ void *send_routine(void *arg) {
     if (send_file(args->client_socket, args->file_in_memory, args->size) < 0){
         fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
     } else {
+        WaitForSingleObject(mutex,INFINITE);
         if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
             fprintf(stderr, "Errore nello scrivere sulla pipe LOG.\n");
             return NULL;
+        }
+        if (!ReleaseMutex(mutex)) {
+            fprintf(stderr, "Impossibile rilasciare il mutex.\n");
         }
     } if (equals(config->server_type,"process")) {
         closesocket(args->client_socket);

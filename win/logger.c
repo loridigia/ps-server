@@ -9,7 +9,7 @@ void _log(char *buffer);
 int main(int argc, char *argv[]) {
     HANDLE logger_event;
     HANDLE h_pipe;
-    char buffer[1024];
+    char buffer[8192];
     DWORD dw_read;
 
     //init pipe
