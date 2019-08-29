@@ -114,14 +114,14 @@ void *send_routine(void *arg) {
     return NULL;
 }
 
-int send_file(int socket_fd, char *file){
+int send_file(int socket_fd, char *file, int size){
     char new[strlen(file)+2];
     sprintf(new, "%s\n", file);
     int res = 0;
     if (send(socket_fd, new, strlen(new), 0) == -1) {
         res = -1;
     }
-    UnmapViewOfFile(file);
+    if (size > 0) UnmapViewOfFile(file);
     closesocket(socket_fd);
     return res;
 }
@@ -288,45 +288,49 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
             return -1;
         }
         DWORD size = GetFileSize(handle,NULL);
+        char *view;
+        if (size > 0) {
+            OVERLAPPED sOverlapped;
+            sOverlapped.Offset = 0;
+            sOverlapped.OffsetHigh = 0;
 
-        OVERLAPPED sOverlapped;
-        sOverlapped.Offset = 0;
-        sOverlapped.OffsetHigh = 0;
+            success = LockFileEx(handle,
+                                 LOCKFILE_EXCLUSIVE_LOCK |
+                                 LOCKFILE_FAIL_IMMEDIATELY,
+                                 0,
+                                 size,
+                                 0,
+                                 &sOverlapped);
 
-        success = LockFileEx(handle,
-                             LOCKFILE_EXCLUSIVE_LOCK |
-                             LOCKFILE_FAIL_IMMEDIATELY,
-                             0,
-                             size,
-                             0,
-                             &sOverlapped);
+            if (!success) {
+                perror("Impossibile lockare il file.\n");
+                closesocket(socket);
+                return -1;
+            }
 
-        if (!success) {
-            perror("Impossibile lockare il file.\n");
-            closesocket(socket);
-            return -1;
-        }
+            HANDLE file = CreateFileMappingA(handle,NULL,PAGE_READONLY,0,size,"file");
+            view = (char*)MapViewOfFile(file, FILE_MAP_READ, 0, 0, 0);
 
-        HANDLE file = CreateFileMappingA(handle,NULL,PAGE_READONLY,0,size,"file");
-        char* view = (char*)MapViewOfFile(file, FILE_MAP_READ, 0, 0, 0);
+            success = UnlockFileEx(handle,0,size,0,&sOverlapped);
+            if (!success) {
+                perror("Impossibile unlockare il file.\n");
+                closesocket(socket);
+                return -1;
+            }
 
-        success = UnlockFileEx(handle,0,size,0,&sOverlapped);
-        if (!success) {
-            perror("Impossibile unlockare il file.\n");
-            closesocket(socket);
-            return -1;
-        }
+            if (file == NULL) {
+                perror("Impossibile mappare il file.\n");
+                closesocket(socket);
+                return -1;
+            }
 
-        if (file == NULL) {
-            perror("Impossibile mappare il file.\n");
-            closesocket(socket);
-            return -1;
-        }
-
-        if (view == NULL) {
-            perror("Impossibile creare la view.\n");
-            closesocket(socket);
-            return -1;
+            if (view == NULL) {
+                perror("Impossibile creare la view.\n");
+                closesocket(socket);
+                return -1;
+            }
+        } else {
+            view = "";
         }
 
         thread_arg_sender *args = (thread_arg_sender *)malloc(sizeof(thread_arg_sender));

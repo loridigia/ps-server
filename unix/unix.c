@@ -89,7 +89,7 @@ int send_file(int socket_fd, char *file, size_t file_size){
     if (send(socket_fd, new, strlen(new), 0) == -1) {
         res = -1;
     }
-    munmap(file, file_size);
+    if (file_size > 0) munmap(file, file_size);
     close(socket_fd);
     return res;
 }
@@ -280,8 +280,7 @@ int write_on_pipe(int size, char* name, int port, char *client_ip){
 
 void *send_routine(void *arg) {
     thread_arg_sender *args = (thread_arg_sender *) arg;
-    int send = send_file(args->client_socket, args->file_in_memory, args->size);
-    if (send == -1){
+    if (send_file(args->client_socket, args->file_in_memory, args->size) < 0){
         fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
     } else {
         if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
@@ -334,25 +333,28 @@ int serve_client(int client_fd, char *client_ip, int port) {
             return -1;
         }
 
+        char *file_in_memory;
         int size = v.st_size;
-        if (size == 0) truncate(path, 0);
+        if (size > 0) {
+            if (flock(file_fd, LOCK_EX) < 0) {
+                perror("Impossibile lockare il file.\n");
+                close(client_fd);
+                return -1;
+            }
+            file_in_memory = mmap(NULL, size, PROT_READ, MAP_PRIVATE, file_fd, 0);
+            if (flock(file_fd, LOCK_UN) < 0) {
+                perror("Impossibile unlockare il file.\n");
+                close(client_fd);
+                return -1;
+            }
 
-        if (flock(file_fd, LOCK_EX) < 0) {
-            perror("Impossibile lockare il file.\n");
-            close(client_fd);
-            return -1;
-        }
-        char *file_in_memory = mmap(NULL, size, PROT_READ, MAP_PRIVATE, file_fd, 0);
-        if (flock(file_fd, LOCK_UN) < 0) {
-            perror("Impossibile unlockare il file.\n");
-            close(client_fd);
-            return -1;
-        }
-
-        if (file_in_memory == MAP_FAILED) {
-            perror("Errore nell'operazione di mapping del file.\n");
-            close(client_fd);
-            return -1;
+            if (file_in_memory == MAP_FAILED) {
+                perror("Errore nell'operazione di mapping del file.\n");
+                close(client_fd);
+                return -1;
+            }
+        } else {
+            file_in_memory = "";
         }
 
         thread_arg_sender *args =
