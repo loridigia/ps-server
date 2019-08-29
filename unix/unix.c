@@ -263,7 +263,7 @@ void *receiver_routine(void *arg) {
     return NULL;
 }
 
-int write_on_pipe(int size, char* name, int port, char *client_ip){
+int write_on_pipe(int size, char* name, int port, char *client_ip) {
     char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + LOG_MIN_SIZE);
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
     pthread_mutex_lock(&mutex);
@@ -284,7 +284,7 @@ void *send_routine(void *arg) {
         fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
     } else {
         if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
-            fprintf(stderr, "Errore nello scrivere sulla pipe LOG.\n");
+            fprintf(stderr, "Errore scrittura su pipe. ('sender')\n");
             return NULL;
         }
     } if (equals(config->server_type,"process")) {

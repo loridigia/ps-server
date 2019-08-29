@@ -19,7 +19,6 @@ HANDLE logger_event;
 HANDLE h_pipe;
 DWORD dw_written;
 
-int write_on_pipe(char *buffer);
 DWORD WINAPI listener_routine(void *args);
 DWORD WINAPI receiver_routine(void *args);
 size_t getline(char **lineptr, size_t *n, FILE *stream);

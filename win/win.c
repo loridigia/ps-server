@@ -104,12 +104,13 @@ void *send_routine(void *arg) {
     if (send_file(args->client_socket, args->file_in_memory, args->size) < 0){
         fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
     } else {
-        /*
         if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
             fprintf(stderr, "Errore nello scrivere sulla pipe LOG.\n");
             return NULL;
         }
-        */
+    } if (equals(config->server_type,"process")) {
+        closesocket(args->client_socket);
+        exit(0);
     }
     return NULL;
 }
@@ -382,10 +383,11 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
 }
 
 
-int write_on_pipe(char *buffer) {
-    if (h_pipe != INVALID_HANDLE_VALUE){
+int write_on_pipe(int size, char* name, int port, char *client_ip) {
+    char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + LOG_MIN_SIZE);
+    sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
+    if (h_pipe != INVALID_HANDLE_VALUE) {
         WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL);
-        CloseHandle(h_pipe);
     }
 }
 
