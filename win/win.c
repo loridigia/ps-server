@@ -1,5 +1,11 @@
 #include "win.h"
 
+//receiver process stuff
+HANDLE g_hChildStd_IN_Rd = NULL;
+HANDLE g_hChildStd_IN_Wr = NULL;
+HANDLE g_hChildStd_OUT_Rd = NULL;
+HANDLE g_hChildStd_OUT_Wr = NULL;
+
 extern configuration *config;
 
 void init(int argc, char *argv[]) {
