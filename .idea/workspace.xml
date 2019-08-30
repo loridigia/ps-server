@@ -2,11 +2,11 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
     <generated>
-      <config projectName="ps_server" targetName="logger" />
-      <config projectName="ps_server" targetName="listener" />
-      <config projectName="ps_server" targetName="reciver" />
       <config projectName="ps_server" targetName="PS" />
+      <config projectName="ps_server" targetName="listener" />
+      <config projectName="ps_server" targetName="logger" />
       <config projectName="ps_server" targetName="ps_server" />
+      <config projectName="ps_server" targetName="receiver" />
     </generated>
   </component>
   <component name="CMakeSettings" AUTO_RELOAD="true">
@@ -16,9 +16,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7f07cd6c-b336-4153-a2da-92d8df351a8d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/shared/shared.c" beforeDir="false" afterPath="$PROJECT_DIR$/shared/shared.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shared/shared.h" beforeDir="false" afterPath="$PROJECT_DIR$/shared/shared.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/win/listener.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/listener.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/win/receiver.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/receiver.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/win.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.c" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -105,7 +105,7 @@
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="reciver" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ps_server" TARGET_NAME="reciver" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="ps_server" RUN_TARGET_NAME="reciver">
+    <configuration name="receiver" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ps_server" TARGET_NAME="receiver" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="ps_server" RUN_TARGET_NAME="receiver">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -113,7 +113,7 @@
     <list>
       <item itemvalue="CMake Application.PS" />
       <item itemvalue="CMake Application.listener" />
-      <item itemvalue="CMake Application.reciver" />
+      <item itemvalue="CMake Application.receiver" />
     </list>
   </component>
   <component name="ServiceViewManager">
@@ -190,6 +190,8 @@
       <workItem from="1566986023004" duration="2868000" />
       <workItem from="1567022603804" duration="635000" />
       <workItem from="1567023279583" duration="3698000" />
+      <workItem from="1567156588228" duration="552000" />
+      <workItem from="1567157212953" duration="3626000" />
     </task>
     <servers />
   </component>

@@ -163,8 +163,6 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
             exit(EXIT_FAILURE);
         }
 
-        //printf("-- %u - %d --", config->server_port, port);
-
         if(config->server_port != port) {
             printf("Chiusura socket su porta %d. \n", port);
             break;
@@ -231,9 +229,18 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
 }
 
 int work_with_processes(SOCKET socket, char *client_ip, int port){
+    printf("work_processes");
     char *args = malloc(256);
-    sprintf(args, "%d %s %s", port, client_ip, socket);
-    printf(args);
+    sprintf(args, "%d %s %p", port, client_ip, &socket);
+    printf("%s", args);
+
+    //creazione processo receiver per gestire la richiesta
+    PROCESS_INFORMATION receiver_info;
+    if (CreateProcess("receiver.exe", args, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &receiver_info) == 0){
+        printf("-%lu-", GetLastError());
+        perror("Errore nell'eseguire il processo receiver");
+        exit(1);
+    }
 }
 
 int work_with_threads(SOCKET socket, char *client_ip, int port) {
