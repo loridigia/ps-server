@@ -66,6 +66,11 @@ void init(int argc, char *argv[]) {
     }
 
     start();
+    fprintf(stdout,"Server started...\n"
+                   "Listening on port: %d\n"
+                   "Process ID: %d\n\n",
+            config->server_port, getpid());
+
     signal(SIGHUP, restart);
     while(1) sleep(1);
 }
