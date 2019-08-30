@@ -28,4 +28,5 @@ HANDLE mutex;
 
 DWORD WINAPI listener_routine(void *args);
 DWORD WINAPI receiver_routine(void *args);
+void create_receiver_process(char *args);
 size_t getline(char **lineptr, size_t *n, FILE *stream);

@@ -230,6 +230,8 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
 
 int work_with_processes(SOCKET socket, char *client_ip, int port){
     printf("work_processes");
+    char *args = malloc(256);
+    sprintf(args, "%d %s", port, client_ip);
 
     //creazione processo receiver per gestire la richiesta
     SECURITY_ATTRIBUTES saAttr;
@@ -255,13 +257,13 @@ int work_with_processes(SOCKET socket, char *client_ip, int port){
     if (! SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) )
         perror("Stdin SetHandleInformation");
 
-    create_receiver_process();
+    create_receiver_process(char *args);
 
     // Write socket on pipe
 
 }
 
-void create_receiver_process(){
+void create_receiver_process(char *args){
     PROCESS_INFORMATION receiver_info;
     STARTUPINFO si_start_info;
 
@@ -275,7 +277,7 @@ void create_receiver_process(){
     si_start_info.hStdInput = g_hChildStd_IN_Rd;
     si_start_info.dwFlags |= STARTF_USESTDHANDLES;
 
-    if (CreateProcess("receiver.exe", NULL, NULL, NULL, TRUE, 0, NULL, NULL, &si_start_info, &receiver_info) == 0){
+    if (CreateProcess("receiver.exe", args, NULL, NULL, TRUE, 0, NULL, NULL, &si_start_info, &receiver_info) == 0){
         printf("-%lu-", GetLastError());
         perror("Errore nell'eseguire il processo receiver");
         exit(1);
