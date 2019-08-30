@@ -12,6 +12,12 @@
 //memory object stuff
 #define BUF_SIZE 256
 
+//receiver process stuff
+HANDLE g_hChildStd_IN_Rd = NULL;
+HANDLE g_hChildStd_IN_Wr = NULL;
+HANDLE g_hChildStd_OUT_Rd = NULL;
+HANDLE g_hChildStd_OUT_Wr = NULL;
+
 STARTUPINFO info;
 PROCESS_INFORMATION listener_info;
 PROCESS_INFORMATION logger_info;

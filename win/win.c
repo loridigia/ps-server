@@ -230,17 +230,57 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
 
 int work_with_processes(SOCKET socket, char *client_ip, int port){
     printf("work_processes");
-    char *args = malloc(256);
-    sprintf(args, "%d %s %p", port, client_ip, &socket);
-    printf("%s", args);
 
     //creazione processo receiver per gestire la richiesta
+    SECURITY_ATTRIBUTES saAttr;
+
+    // Set the bInheritHandle flag so pipe handles are inherited.
+    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+    saAttr.bInheritHandle = TRUE;
+    saAttr.lpSecurityDescriptor = NULL;
+
+    // Create a pipe for the child process's STDOUT.
+    if (! CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0) )
+        perror("Errore creazione pipe STDOUT");
+
+    // Ensure the read handle to the pipe for STDOUT is not inherited.
+    if (! SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0) )
+        perror("Stdout SetHandleInformation");
+
+    // Create a pipe for the child process's STDIN.
+    if (! CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0))
+        perror("Errore creazione pipe STDIN");
+
+    // Ensure the write handle to the pipe for STDIN is not inherited.
+    if (! SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) )
+        perror("Stdin SetHandleInformation");
+
+    create_receiver_process();
+
+    // Write socket on pipe
+
+}
+
+void create_receiver_process(){
     PROCESS_INFORMATION receiver_info;
-    if (CreateProcess("receiver.exe", args, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &receiver_info) == 0){
+    STARTUPINFO si_start_info;
+
+    ZeroMemory( &receiver_info, sizeof(PROCESS_INFORMATION) );
+
+    // This structure specifies the STDIN and STDOUT handles for redirection.
+    ZeroMemory( &si_start_info, sizeof(STARTUPINFO) );
+    si_start_info.cb = sizeof(STARTUPINFO);
+    si_start_info.hStdError = g_hChildStd_OUT_Wr;
+    si_start_info.hStdOutput = g_hChildStd_OUT_Wr;
+    si_start_info.hStdInput = g_hChildStd_IN_Rd;
+    si_start_info.dwFlags |= STARTF_USESTDHANDLES;
+
+    if (CreateProcess("receiver.exe", NULL, NULL, NULL, TRUE, 0, NULL, NULL, &si_start_info, &receiver_info) == 0){
         printf("-%lu-", GetLastError());
         perror("Errore nell'eseguire il processo receiver");
         exit(1);
     }
+
 }
 
 int work_with_threads(SOCKET socket, char *client_ip, int port) {

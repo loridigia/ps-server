@@ -17,9 +17,9 @@
   <component name="ChangeListManager">
     <list default="true" id="7f07cd6c-b336-4153-a2da-92d8df351a8d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/receiver.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/receiver.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/win.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/win/win.h" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.h" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -191,7 +191,7 @@
       <workItem from="1567022603804" duration="635000" />
       <workItem from="1567023279583" duration="3698000" />
       <workItem from="1567156588228" duration="552000" />
-      <workItem from="1567157212953" duration="3626000" />
+      <workItem from="1567157212953" duration="9804000" />
     </task>
     <servers />
   </component>
