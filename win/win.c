@@ -263,7 +263,20 @@ int work_with_processes(SOCKET socket, char *client_ip, int port){
     if (! SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) )
         perror("Stdin SetHandleInformation");
 
-    //create_receiver_process(char *args);
+    printf("CREO PROCESSO");
+    create_receiver_process(args);
+
+    DWORD dwRead;
+    DWORD child_id;
+    CHAR chBuf[8];
+    BOOL success = FALSE;
+
+    printf("INIZIO ATTESA BUFFER-");
+
+    ReadFile(g_hChildStd_OUT_Rd, chBuf, 8, &dwRead, NULL);
+    child_id = (DWORD)atoi(chBuf);
+
+    printf("FINITO DI LEGGERE %lu", child_id);
 
     // Write socket on pipe
 

@@ -16,4 +16,7 @@ int main(int argc, char *argv[]) {
         perror("invalid handles");
         exit(1);
     }
+    sleep(4);
+    DWORD id = GetCurrentProcessId();
+    printf("%lu", id);
 }
