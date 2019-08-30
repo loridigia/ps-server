@@ -7,7 +7,7 @@
 
 #define equals(str1, str2) strcmp(str1,str2) == 0
 #define CONFIG_PATH "config.txt"
-#define TIMEOUT 50000
+#define DEFAULT_TIMEOUT 50000
 #define PID_FLAG "--pid="
 #define HELP_FLAG "--help"
 
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
     fprintf(stdout, "#FAILED: %s\n", desc);
   }
   init_string(&s);
-  usleep(TIMEOUT);
+  usleep(DEFAULT_TIMEOUT);
 
 /*#----------------------------------  // TEST_2  ---------------------------------------#*/
   desc = "Verifica che venga fatto correttamente il listing di una sottocartella";
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
       fprintf(stdout, "#FAILED: %s\n", desc);
   }
   init_string(&s);
-  usleep(TIMEOUT);
+  usleep(DEFAULT_TIMEOUT);
 
 /*#----------------------------------  // TEST_3  ---------------------------------------#*/
   desc = "Verifica che venga correttamente restituito un file .txt";
@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
     fprintf(stdout, "#FAILED: %s\n", desc);
   }
   init_string(&s);
-  usleep(TIMEOUT);
+  usleep(DEFAULT_TIMEOUT);
 
 /*#----------------------------------  // TEST_4  ---------------------------------------#*/
   desc = "Verifica che venga correttamente restituito un file vuoto .txt";
@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
     fprintf(stdout, "#FAILED: %s\n", desc);
   }
   init_string(&s);
-  usleep(TIMEOUT);
+  usleep(DEFAULT_TIMEOUT);
 
 /*#----------------------------------  // TEST_5  ---------------------------------------#*/
   desc = "Verifica che il server cambi porta con SIGHUP";
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
   init_string(&s);
   file = fopen(CONFIG_PATH, "wb");
   fprintf(file, "%s", CONFIG_CONTENT_BACK);
-  usleep(TIMEOUT);
+  usleep(DEFAULT_TIMEOUT);
 
 /*#----------------------------------  // TEST_6  ---------------------------------------#*/
   desc = "Verifica che il server non ascolti più sulla porta precedente";
@@ -196,7 +196,7 @@ int main(int argc, char *argv[]) {
     fprintf(stdout, "#FAILED: %s\n", desc);
   }
   init_string(&s);
-  usleep(TIMEOUT);
+  usleep(DEFAULT_TIMEOUT);
 
 /*#----------------------------------  // TEST_BOMB  ---------------------------------------#*/
 
