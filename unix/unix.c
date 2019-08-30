@@ -47,11 +47,12 @@ void init(int argc, char *argv[]) {
         exit(1);
     } config->main_pid = getpid();
 
-    pthread_mutexattr_t mutexAttr;
+    pthread_mutexattr_t mutexAttr = {};
+    pthread_condattr_t condAttr = {};
+
     pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
     pthread_mutex_init(&mutex, &mutexAttr);
 
-    pthread_condattr_t condAttr;
     pthread_condattr_setpshared(&condAttr, PTHREAD_PROCESS_SHARED);
     pthread_cond_init(&condition, &condAttr);
 
