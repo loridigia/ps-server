@@ -4,7 +4,7 @@ project(ps_server C)
 set(CMAKE_C_STANDARD 99)
 
 if (UNIX)
-    add_executable(ps_server main.c shared/shared.h shared/shared.c unix/unix.h unix/unix.c core/core.h test.c)
+    add_executable(ps_server main.c shared/shared.h shared/shared.c unix/unix.h unix/unix.c core/core.h)
 endif (UNIX)
 
 if (WIN32)
