@@ -77,6 +77,10 @@ int load_configuration(int mode) {
         fclose(stream);
         return -1;
     }
+
+    free(ip);
+    free(port_param);
+    free(type_param);
     fclose(stream);
     return 0;
 }
@@ -107,15 +111,15 @@ void restart() {
 
 char *get_parameter(char *line, FILE *stream) {
     size_t len;
-    char *ptr;
+    char *ptr = (char*)malloc(10);
     if (_getline(&line, &len, stream) != -1) {
         strtok(line, ":");
-        ptr = strtok(NULL, "\n");
+        sprintf(ptr, "%s",strtok(NULL, "\n"));
+        free(line);
         return ptr;
     }
     return NULL;
 }
-
 int is_file(char *path) {
     struct stat path_stat;
     stat(path, &path_stat);
@@ -153,7 +157,7 @@ char *get_file_listing(char *route, char *path) {
     DIR *d;
     struct dirent *dir;
     int len = 0;
-    int row_size = MAX_EXT_LENGTH + MAX_NAME_LENGTH + strlen(route) + strlen(config->server_ip) + MAX_PORT_LENGTH + 20;
+    int row_size = MAX_EXT_LENGTH + MAX_FILENAME_LENGTH + strlen(route) + strlen(config->server_ip) + MAX_PORT_LENGTH + 20;
     int size = row_size;
     char *buffer = (char*)calloc(row_size,sizeof(char));
     if ((d = opendir (path)) != NULL) {
@@ -181,4 +185,20 @@ char *get_file_listing(char *route, char *path) {
         return NULL;
     }
     return buffer;
+}
+
+int write_infos() {
+    int size = 128;
+    char data[size];
+    FILE *file = fopen("../info.txt", "w");
+
+    if(file == NULL) {
+        fprintf(stderr,"Impossibile creare il file di infos.\n");
+        return -1;
+    }
+    sprintf(data, "%s:%d", config->server_type, config->main_pid);
+
+    fputs(data, file);
+    fclose(file);
+    return 0;
 }

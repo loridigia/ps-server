@@ -45,13 +45,14 @@ void init(int argc, char *argv[]) {
 
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
         exit(1);
-    }
+    } config->main_pid = getpid();
 
-    pthread_mutexattr_t mutexAttr;
+    pthread_mutexattr_t mutexAttr = {};
+    pthread_condattr_t condAttr = {};
+
     pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
     pthread_mutex_init(&mutex, &mutexAttr);
 
-    pthread_condattr_t condAttr;
     pthread_condattr_setpshared(&condAttr, PTHREAD_PROCESS_SHARED);
     pthread_cond_init(&condition, &condAttr);
 
@@ -66,11 +67,12 @@ void init(int argc, char *argv[]) {
     }
 
     start();
+
     fprintf(stdout,"Server started...\n"
                    "Listening on port: %d\n"
                    "Process ID: %d\n\n",
-            config->server_port, getpid());
-
+            config->server_port, config->main_pid);
+    write_infos();
     signal(SIGHUP, restart);
     while(1) sleep(1);
 }
@@ -122,15 +124,17 @@ char *get_server_ip() {
     struct ifaddrs *addrs;
     getifaddrs(&addrs);
     struct ifaddrs *tmp = addrs;
-
+    char *ip = (char*) malloc(MAX_IP_SIZE);
     while (tmp) {
         if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET) {
             struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
-            return inet_ntoa(pAddr->sin_addr);
-        } tmp = tmp->ifa_next;
+            strcpy(ip, inet_ntoa(pAddr->sin_addr));
+            break;
+        }
+        tmp = tmp->ifa_next;
     }
-    //freeifaddrs(addrs);
-    return NULL;
+    freeifaddrs(addrs);
+    return ip;
 }
 
 int send_error(int socket_fd, char *err) {
@@ -269,7 +273,7 @@ void *receiver_routine(void *arg) {
 }
 
 int write_on_pipe(int size, char* name, int port, char *client_ip) {
-    char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + LOG_MIN_SIZE);
+    char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + CHUNK);
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
     pthread_mutex_lock(&mutex);
     if (write(pipe_fd[1], buffer, strlen(buffer)) < 0) {
@@ -395,15 +399,18 @@ int serve_client(int client_fd, char *client_ip, int port) {
             fprintf(stderr,"%s",err);
             send_error(client_fd, err);
             close(client_fd);
+            free(listing_buffer);
             return -1;
         }
         else {
             if (send(client_fd, listing_buffer, strlen(listing_buffer), 0) < 0) {
                 perror("Errore nel comunicare con la socket.\n");
                 close(client_fd);
+                free(listing_buffer);
                 return -1;
             }
         }
+        free(listing_buffer);
         close(client_fd);
     }
     return 0;
