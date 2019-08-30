@@ -123,13 +123,14 @@ char *get_server_ip() {
     struct ifaddrs *addrs;
     getifaddrs(&addrs);
     struct ifaddrs *tmp = addrs;
-    char *ip = (char*)malloc(IP_SIZE);
+    char *ip = (char*) malloc(MAX_IP_SIZE);
     while (tmp) {
         if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET) {
             struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
-            ip = inet_ntoa(pAddr->sin_addr);
+            strcpy(ip, inet_ntoa(pAddr->sin_addr));
             break;
-        } tmp = tmp->ifa_next;
+        }
+        tmp = tmp->ifa_next;
     }
     freeifaddrs(addrs);
     return ip;
@@ -271,7 +272,7 @@ void *receiver_routine(void *arg) {
 }
 
 int write_on_pipe(int size, char* name, int port, char *client_ip) {
-    char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + LOG_MIN_SIZE);
+    char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + CHUNK);
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
     pthread_mutex_lock(&mutex);
     if (write(pipe_fd[1], buffer, strlen(buffer)) < 0) {
