@@ -257,7 +257,7 @@ int work_with_processes(SOCKET socket, char *client_ip, int port){
     if (! SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) )
         perror("Stdin SetHandleInformation");
 
-    create_receiver_process(char *args);
+    //create_receiver_process(char *args);
 
     // Write socket on pipe
 
@@ -436,7 +436,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
 
 
 int write_on_pipe(int size, char* name, int port, char *client_ip) {
-    char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + LOG_MIN_SIZE);
+    char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + CHUNK);
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
     if (h_pipe != INVALID_HANDLE_VALUE) {
         WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL);

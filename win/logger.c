@@ -1,8 +1,14 @@
 #include <stdio.h>
 #include <windows.h>
 #include <zconf.h>
+#ifdef DEVELOPMENT
+    #include "../core/constants.h"
+#else
+    #include "core/constants.h"
+#endif
+#include CORE_PATH
+
 #define pipename "\\\\.\\pipe\\LogPipe"
-#define LOG_PATH "../log.txt"
 
 void _log(char *buffer);
 

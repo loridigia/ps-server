@@ -7,19 +7,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <dirent.h>
-#include "../core/core.h"
 
-#define PUBLIC_PATH "../public"
-#define LOG_PATH "../log.txt"
-#define BACKLOG 128
-#define COMPLETE 0
-#define PORT_ONLY 1
-#define CHUNK 32
-#define MAX_TYPE_LENGTH 10
-#define MAX_IP_SIZE 20
-#define MAX_EXT_LENGTH 3
-#define MAX_PORT_LENGTH 6
-#define MAX_FILENAME_LENGTH 256
+#ifdef DEVELOPMENT
+    #include "../core/constants.h"
+#else
+    #include "core/constants.h"
+#endif
+#include CORE_PATH
+
 #define equals(str1, str2) strcmp(str1,str2) == 0
 
 #if defined(__linux__) || defined(__APPLE__)
@@ -27,6 +22,7 @@
 #elif defined(_WIN32)
     #define UNIX_OS 0
 #endif
+
 
 typedef struct configuration {
     char server_type[MAX_TYPE_LENGTH];

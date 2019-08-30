@@ -1,9 +1,0 @@
-#include <sys/stat.h>
-#include <errno.h>
-#include <sys/file.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <dirent.h>
-#include "../shared/shared.h"
-#include "../core/core.h"

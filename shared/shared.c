@@ -4,13 +4,6 @@
 #include <sys/stat.h>
 #include "shared.h"
 
-#define CONFIG_PATH "../config.txt"
-#define PORT_FLAG "--port="
-#define TYPE_FLAG "--type="
-#define HELP_FLAG "--help"
-#define MIN_PORT 1024
-#define MAX_PORT 65535
-
 configuration *config = &conf;
 
 int load_arguments(int argc, char *argv[]) {
@@ -190,7 +183,7 @@ char *get_file_listing(char *route, char *path) {
 int write_infos() {
     int size = 128;
     char data[size];
-    FILE *file = fopen("../info.txt", "w");
+    FILE *file = fopen(INFO_PATH, "w");
 
     if(file == NULL) {
         fprintf(stderr,"Impossibile creare il file di infos.\n");

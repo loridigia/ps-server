@@ -4,16 +4,10 @@
 #include <curl/curl.h>
 #include <unistd.h>
 #include <signal.h>
-#include "core/core.h"
-
-#if defined(__linux__) || defined(__APPLE__)
-    #include "unix/unix.h"
-#elif defined(_WIN32)
-    #include "win/win.h"
-#endif
+#include "core/constants.h"
+#include CORE_PATH
 
 #define equals(str1, str2) strcmp(str1,str2) == 0
-#define CONFIG_PATH "config.txt"
 #define DEFAULT_TIMEOUT 50000
 #define PID_FLAG "--pid="
 #define HELP_FLAG "--help"
