@@ -18,6 +18,7 @@
 #define MAX_EXT_LENGTH 3
 #define MAX_PORT_LENGTH 5
 #define MAX_NAME_LENGTH 256
+#define IP_SIZE 20
 #define equals(str1, str2) strcmp(str1,str2) == 0
 
 #if defined(__linux__) || defined(__APPLE__)
@@ -30,6 +31,7 @@ typedef struct configuration {
     char server_type[32];
     char server_ip[32];
     unsigned int server_port;
+    int main_pid;
 } configuration;
 
 typedef struct thread_arg_sender {
@@ -54,8 +56,10 @@ int load_configuration(int first_start);
 int index_of(char *values, char find);
 int is_file(char *path);
 int is_daemon(int argc, char *argv[]);
+int write_infos();
 char *get_extension_code(const char *filename);
 char *get_parameter(char *line, FILE *stream);
 char *get_client_buffer(int socket, int *n, int flag);
 char *get_file_listing(char *route, char *path);
 void restart();
+

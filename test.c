@@ -4,6 +4,13 @@
 #include <curl/curl.h>
 #include <unistd.h>
 #include <signal.h>
+#include "core/core.h"
+
+#if defined(__linux__) || defined(__APPLE__)
+    #include "unix/unix.h"
+#elif defined(_WIN32)
+    #include "win/win.h"
+#endif
 
 #define equals(str1, str2) strcmp(str1,str2) == 0
 #define CONFIG_PATH "config.txt"
@@ -29,11 +36,11 @@ I image.jpg\t/\t127.0.0.1\t7070\n\
 
 #define CONFIG_CONTENT_BACK "\
 server_port:7070\n\
-server_type:thread"
+server_type:"
 
 #define CONFIG_CONTENT_NEW "\
 server_port:7071\n\
-server_type:thread"
+server_type:"
 
 struct string {
   char *ptr;
@@ -64,24 +71,21 @@ size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s) {
 }
 
 int main(int argc, char *argv[]) {
-  int pid = 0;
-  char *input;
-  for (int i = 1; i < argc; i++) {
-      input = argv[i];
-      char *endptr;
-      if (strncmp(input, PID_FLAG, strlen(PID_FLAG)) == 0) {
-          pid = strtol(input + strlen(PID_FLAG), &endptr, 10);
-      } else if (strncmp(input, HELP_FLAG, strlen(HELP_FLAG)) == 0) {
-          puts("Tool per testare le funzionalità del server.\n\n"
-               "--pid=<pid_server> per specificare il process id del server da testare.\n");
-          exit(0);
-      }
+  FILE *info = fopen("info.txt","r");
+  if(info == NULL) {
+      fprintf(stderr,"Impossibile leggere il file di infos.\n");
+      return -1;
   }
 
-  if (pid == 0) {
-    fprintf(stderr, "%s\n", "Errore: verificare che il PID sia stato inserito correttamente.");
-    exit(1);
-  }
+  char *line;
+  size_t len;
+  getline(&line,&len,info);
+  char *pid_str = strchr(line, ':')+1;
+  int size = pid_str-line-1;
+  char type[size];
+  memcpy(type,line, size);
+
+  int pid = strtol(pid_str, NULL, 10);
 
   CURL *curl;
   CURLcode res;
@@ -100,7 +104,7 @@ int main(int argc, char *argv[]) {
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
 
-
+  char string[64];
 /*#----------------------------------  // TEST_1  ---------------------------------------#*/
   char *desc = "Verifica che venga fatto correttamente il listing delle cartella root";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/");
@@ -164,7 +168,8 @@ int main(int argc, char *argv[]) {
 /*#----------------------------------  // TEST_5  ---------------------------------------#*/
   desc = "Verifica che il server cambi porta con SIGHUP";
   FILE *file = fopen(CONFIG_PATH, "wb");
-  fprintf(file, "%s", CONFIG_CONTENT_NEW);
+  sprintf(string,"%s%s",CONFIG_CONTENT_NEW,type);
+  fprintf(file, "%s", string);
   fclose(file);
   kill(pid, SIGHUP);
 
@@ -180,7 +185,8 @@ int main(int argc, char *argv[]) {
   }
   init_string(&s);
   file = fopen(CONFIG_PATH, "wb");
-  fprintf(file, "%s", CONFIG_CONTENT_BACK);
+  sprintf(string,"%s%s",CONFIG_CONTENT_BACK,type);
+  fprintf(file, "%s", string);
   usleep(DEFAULT_TIMEOUT);
 
 /*#----------------------------------  // TEST_6  ---------------------------------------#*/

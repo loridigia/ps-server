@@ -182,3 +182,19 @@ char *get_file_listing(char *route, char *path) {
     }
     return buffer;
 }
+
+int write_infos() {
+    int size = 128;
+    char data[size];
+    FILE *file = fopen("../info.txt", "w");
+
+    if(file == NULL) {
+        fprintf(stderr,"Impossibile creare il file di infos.\n");
+        return -1;
+    }
+    sprintf(data, "%s:%d", config->server_type, config->main_pid);
+
+    fputs(data, file);
+    fclose(file);
+    return 0;
+}
