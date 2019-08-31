@@ -6,7 +6,7 @@ int main(int argc, char *argv[]) {
     int port = atoi(argv[0]);
     char *ip = argv[1];
 
-    CHAR chBuf[256];
+    CHAR chBuf[2048];
     DWORD dwRead, dwWritten;
     HANDLE hStdin, hStdout;
 
@@ -16,7 +16,13 @@ int main(int argc, char *argv[]) {
         perror("invalid handles");
         exit(1);
     }
-    sleep(4);
+    
     DWORD id = GetCurrentProcessId();
     printf("%lu", id);
+
+    sleep(4);
+
+    //ReadFile(hStdin, chBuf, 2048, &dwRead, NULL);
+    printf("%s", chBuf);
+    
 }

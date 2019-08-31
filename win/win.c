@@ -263,26 +263,26 @@ int work_with_processes(SOCKET socket, char *client_ip, int port){
     if (! SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) )
         perror("Stdin SetHandleInformation");
 
-    printf("CREO PROCESSO");
-    create_receiver_process(args);
 
-    DWORD dwRead;
+    WSAPROTOCOL_INFO protocol_info;
+    DWORD dwWrite;
     DWORD child_id;
-    CHAR chBuf[8];
-    BOOL success = FALSE;
 
-    printf("INIZIO ATTESA BUFFER-");
+    printf("CREO PROCESSO RECEIVER");
+    child_id = create_receiver_process(args);
 
-    ReadFile(g_hChildStd_OUT_Rd, chBuf, 8, &dwRead, NULL);
-    child_id = (DWORD)atoi(chBuf);
+    WSADuplicateSocketA(socket, child_id, &protocol_info);
+    if (! WriteFile(g_hChildStd_IN_Wr, &protocol_info, sizeof(protocol_info), &dwWrite, NULL)){
+        perror("errore nello scrivere su pipe STD_IN");
+        exit(1);
+    }
 
-    printf("FINITO DI LEGGERE %lu", child_id);
 
     // Write socket on pipe
 
 }
 
-void create_receiver_process(char *args){
+DWORD create_receiver_process(char *args){
     PROCESS_INFORMATION receiver_info;
     STARTUPINFO si_start_info;
 
@@ -301,6 +301,7 @@ void create_receiver_process(char *args){
         perror("Errore nell'eseguire il processo receiver");
         exit(1);
     }
+    return receiver_info.dwProcessId;
 
 }
 
