@@ -4,13 +4,12 @@
 #include <stdio.h>
 #include <windows.h>
 #include <tchar.h>
-#ifdef DEVELOPMENT
-    #include "../shared/shared.h"
-#else
-    #include "shared/shared.h"
-#endif
 
+#include "../shared/shared.h"
+
+#include CONSTANTS
 #include CORE_PATH
+
 #pragma comment(lib,"ws2_32.lib")
 #define pipename "\\\\.\\pipe\\LogPipe"
 
