@@ -71,19 +71,21 @@ int main(int argc, char *argv[]) {
       return -1;
   }
 
-  char *line;
-  size_t len;
-  getline(&line,&len,info);
+  char line[50];
+  if(fgets(line,50,info) < 0) {
+      fprintf(stderr, "Impossibile leggere il file di infos. (getline).\n");
+      return - 1;
+  }
+
   char *pid_str = strchr(line, ':')+1;
   int size = pid_str-line-1;
   char type[size];
   memcpy(type,line, size);
-
   int pid = strtol(pid_str, NULL, 10);
 
   CURL *curl;
   CURLcode res;
-
+  fclose(info);
   int passed = 0;
   int failed = 0;
 
@@ -161,7 +163,7 @@ int main(int argc, char *argv[]) {
 
 /*#----------------------------------  // TEST_5  ---------------------------------------#*/
   desc = "Verifica che il server cambi porta con SIGHUP";
-  FILE *file = fopen(CONFIG_PATH, "wb");
+  FILE *file = fopen(CONFIG_PATH, "w+");
   sprintf(string,"%s%s",CONFIG_CONTENT_NEW,type);
   fprintf(file, "%s", string);
   fclose(file);
@@ -178,9 +180,10 @@ int main(int argc, char *argv[]) {
     fprintf(stdout, "#FAILED: %s\n", desc);
   }
   init_string(&s);
-  file = fopen(CONFIG_PATH, "wb");
+  file = fopen(CONFIG_PATH, "w+");
   sprintf(string,"%s%s",CONFIG_CONTENT_BACK,type);
   fprintf(file, "%s", string);
+  fclose(file);
   usleep(DEFAULT_TIMEOUT);
 
 /*#----------------------------------  // TEST_6  ---------------------------------------#*/
