@@ -367,6 +367,8 @@ int serve_client(int client_fd, char *client_ip, int port) {
             file_in_memory = "";
         }
 
+        close(file_fd);
+
         thread_arg_sender *args =
                 (thread_arg_sender *)malloc(sizeof (thread_arg_sender));
 
