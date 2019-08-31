@@ -165,13 +165,13 @@ int main(int argc, char *argv[]) {
   sprintf(string,"%s%s",CONFIG_CONTENT_BACK,type);
   fprintf(file, "%s", string);
   fclose(file);
-  usleep(DEFAULT_TIMEOUT * 10);
+  usleep(DEFAULT_TIMEOUT * 20);
 
 /*#----------------------------------  // TEST_6  ---------------------------------------#*/
   desc = "Verifica che il server non ascolti più sulla porta precedente";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/testo.txt");
 
-  if (curl_easy_perform(curl) == 56) {
+  if (curl_easy_perform(curl) != 0) {
     passed++;
     fprintf(stdout, "#PASSED: %s\n", desc);
   }
@@ -197,7 +197,6 @@ int main(int argc, char *argv[]) {
       curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7071/0/testo.txt");
       int res = curl_easy_perform(curl);
       if (res != 0 && strcmp(s.ptr,SIMPLE_TEXT) != 0) {
-          fprintf(stderr,"%d\n",res);
           bomb = 0;
           break;
       }
