@@ -6,24 +6,7 @@
 #include <signal.h>
 #include "core/constants.h"
 
-#define equals(str1, str2) strcmp(str1,str2) == 0
 #define DEFAULT_TIMEOUT 50000
-
-#define ROOT_LISTING "\
-g anim.gif\t/\t127.0.0.1\t7070\n\
-1 folder\t/\t127.0.0.1\t7070\n\
-0 testo.txt\t/\t127.0.0.1\t7070\n\
-I image.jpg\t/\t127.0.0.1\t7070\n\
-\
-.\n"
-
-#define SUBFOLDER_LISTING "\
-0 vuoto.txt\t/folder\t127.0.0.1\t7070\n\
-.\n"
-
-#define SIMPLE_TEXT "Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n"
-
-#define EMPTY_STRING "\n"
 
 #define CONFIG_CONTENT_BACK "\
 server_port:7070\n\
@@ -32,6 +15,8 @@ server_type:"
 #define CONFIG_CONTENT_NEW "\
 server_port:7071\n\
 server_type:"
+
+#define SIMPLE_TEXT "Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n"
 
 struct string {
   char *ptr;
@@ -62,7 +47,7 @@ size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s) {
 }
 
 int main(int argc, char *argv[]) {
-  FILE *info = fopen("../info.txt","r");
+  FILE *info = fopen(INFO_PATH,"r");
   if(info == NULL) {
       fprintf(stderr,"Impossibile leggere il file di infos.\n");
       return -1;
@@ -81,7 +66,6 @@ int main(int argc, char *argv[]) {
   int pid = strtol(pid_str, NULL, 10);
 
   CURL *curl;
-  CURLcode res;
   fclose(info);
   int passed = 0;
   int failed = 0;
@@ -101,8 +85,8 @@ int main(int argc, char *argv[]) {
 /*#----------------------------------  // TEST_1  ---------------------------------------#*/
   char *desc = "Verifica che venga fatto correttamente il listing delle cartella root";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/");
-  res = curl_easy_perform(curl);
-  if (equals(s.ptr, ROOT_LISTING)) {
+
+  if (curl_easy_perform(curl) == 0) {
     passed++;
     fprintf(stdout, "#PASSED: %s\n", desc);
   }
@@ -116,8 +100,8 @@ int main(int argc, char *argv[]) {
 /*#----------------------------------  // TEST_2  ---------------------------------------#*/
   desc = "Verifica che venga fatto correttamente il listing di una sottocartella";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/folder");
-  res = curl_easy_perform(curl);
-  if (equals(s.ptr, SUBFOLDER_LISTING)) {
+
+  if (curl_easy_perform(curl) == 0) {
       passed++;
       fprintf(stdout, "#PASSED: %s\n", desc);
   }
@@ -131,8 +115,8 @@ int main(int argc, char *argv[]) {
 /*#----------------------------------  // TEST_3  ---------------------------------------#*/
   desc = "Verifica che venga correttamente restituito un file .txt";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/testo.txt");
-  res = curl_easy_perform(curl);
-  if (equals(s.ptr, SIMPLE_TEXT)) {
+
+  if (curl_easy_perform(curl) == 0) {
     passed++;
     fprintf(stdout, "#PASSED: %s\n", desc);
   }
@@ -146,8 +130,8 @@ int main(int argc, char *argv[]) {
 /*#----------------------------------  // TEST_4  ---------------------------------------#*/
   desc = "Verifica che venga correttamente restituito un file vuoto .txt";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/folder/vuoto.txt");
-  res = curl_easy_perform(curl);
-  if (equals(s.ptr, EMPTY_STRING)) {
+
+  if (curl_easy_perform(curl) == 0) {
     passed++;
     fprintf(stdout, "#PASSED: %s\n", desc);
   }
@@ -167,8 +151,8 @@ int main(int argc, char *argv[]) {
   kill(pid, SIGHUP);
 
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7071/1/testo.txt");
-  res = curl_easy_perform(curl);
-  if (equals(s.ptr, SIMPLE_TEXT)) {
+
+  if (curl_easy_perform(curl) == 0) {
     passed++;
     fprintf(stdout, "#PASSED: %s\n", desc);
   }
@@ -181,13 +165,13 @@ int main(int argc, char *argv[]) {
   sprintf(string,"%s%s",CONFIG_CONTENT_BACK,type);
   fprintf(file, "%s", string);
   fclose(file);
-  usleep(DEFAULT_TIMEOUT * 5);
+  usleep(DEFAULT_TIMEOUT * 10);
 
 /*#----------------------------------  // TEST_6  ---------------------------------------#*/
   desc = "Verifica che il server non ascolti più sulla porta precedente";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/testo.txt");
-  res = curl_easy_perform(curl);
-  if (res != 0) {
+
+  if (curl_easy_perform(curl) == 56) {
     passed++;
     fprintf(stdout, "#PASSED: %s\n", desc);
   }
@@ -205,14 +189,15 @@ int main(int argc, char *argv[]) {
   int upper = 5000;
   int bomb = 1;
   puts("#TEST_BOMB: Please wait");
-  for (int i = 0; i < 5000; i++) {
-      if (i % 500 == 0) {
+  for (int i = 0; i < 10000; i++) {
+      if (i % 1000 == 0) {
           printf(".");
           fflush(stdout);
       }
       curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7071/0/testo.txt");
-      res = curl_easy_perform(curl);
-      if (!(equals(s.ptr, SIMPLE_TEXT))) {
+      int res = curl_easy_perform(curl);
+      if (res != 0 && strcmp(s.ptr,SIMPLE_TEXT) != 0) {
+          fprintf(stderr,"%d\n",res);
           bomb = 0;
           break;
       }

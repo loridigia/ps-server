@@ -3,6 +3,8 @@
 #include <ifaddrs.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <signal.h>
 #include "../shared/shared.h"
 #include CONSTANTS
 #include CORE_PATH
