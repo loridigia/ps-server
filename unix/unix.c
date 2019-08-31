@@ -70,8 +70,9 @@ void init(int argc, char *argv[]) {
 
     fprintf(stdout,"Server started...\n"
                    "Listening on port: %d\n"
+                   "Type: multi%s\n"
                    "Process ID: %d\n\n",
-            config->server_port, config->main_pid);
+            config->server_port,config->server_type, config->main_pid);
     write_infos();
     signal(SIGHUP, restart);
     while(1) sleep(1);

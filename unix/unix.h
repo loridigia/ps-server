@@ -3,11 +3,8 @@
 #include <ifaddrs.h>
 #include <pthread.h>
 #include <stdio.h>
-#ifdef DEVELOPMENT
-    #include "../shared/shared.h"
-#else
-    #include "shared/shared.h"
-#endif
+#include "../shared/shared.h"
+#include CONSTANTS
 #include CORE_PATH
 
 int pipe_fd[2];

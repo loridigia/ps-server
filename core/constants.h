@@ -1,16 +1,8 @@
-#ifdef DEVELOPMENT
-    #define CONFIG_PATH "../config.txt"
-    #define INFO_PATH   "../info.txt"
-    #define LOG_PATH    "../log.txt"
-    #define PUBLIC_PATH "../public"
-    #define CORE_PATH   "../core/core.h"
-#else
-    #define CONFIG_PATH "config.txt"
-    #define INFO_PATH   "info.txt"
-    #define LOG_PATH    "log.txt"
-    #define PUBLIC_PATH "public"
-    #define CORE_PATH   "core/core.h"
-#endif
+#define CONFIG_PATH "../config.txt"
+#define INFO_PATH   "../info.txt"
+#define LOG_PATH    "../log.txt"
+#define PUBLIC_PATH "../public"
+#define CORE_PATH   "../core/core.h"
 
 #define BACKLOG 128
 #define COMPLETE 0

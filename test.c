@@ -5,12 +5,9 @@
 #include <unistd.h>
 #include <signal.h>
 #include "core/constants.h"
-#include CORE_PATH
 
 #define equals(str1, str2) strcmp(str1,str2) == 0
 #define DEFAULT_TIMEOUT 50000
-#define PID_FLAG "--pid="
-#define HELP_FLAG "--help"
 
 #define ROOT_LISTING "\
 g anim.gif\t/\t127.0.0.1\t7070\n\
@@ -65,7 +62,7 @@ size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s) {
 }
 
 int main(int argc, char *argv[]) {
-  FILE *info = fopen("info.txt","r");
+  FILE *info = fopen("../info.txt","r");
   if(info == NULL) {
       fprintf(stderr,"Impossibile leggere il file di infos.\n");
       return -1;
@@ -184,7 +181,7 @@ int main(int argc, char *argv[]) {
   sprintf(string,"%s%s",CONFIG_CONTENT_BACK,type);
   fprintf(file, "%s", string);
   fclose(file);
-  usleep(DEFAULT_TIMEOUT);
+  usleep(DEFAULT_TIMEOUT * 5);
 
 /*#----------------------------------  // TEST_6  ---------------------------------------#*/
   desc = "Verifica che il server non ascolti più sulla porta precedente";

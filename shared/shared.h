@@ -7,12 +7,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <dirent.h>
-
-#ifdef DEVELOPMENT
-    #include "../core/constants.h"
-#else
-    #include "core/constants.h"
-#endif
+#define CONSTANTS "../core/constants.h"
+#include CONSTANTS
 #include CORE_PATH
 
 #define equals(str1, str2) strcmp(str1,str2) == 0
