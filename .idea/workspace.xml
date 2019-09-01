@@ -2,10 +2,10 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
     <generated>
+      <config projectName="ps_server" targetName="ps_server" />
+      <config projectName="ps_server" targetName="logger" />
       <config projectName="ps_server" targetName="PS" />
       <config projectName="ps_server" targetName="listener" />
-      <config projectName="ps_server" targetName="logger" />
-      <config projectName="ps_server" targetName="ps_server" />
       <config projectName="ps_server" targetName="receiver" />
     </generated>
   </component>
@@ -19,7 +19,6 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/receiver.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/receiver.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/win/win.c" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/win/win.h" beforeDir="false" afterPath="$PROJECT_DIR$/win/win.h" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -94,7 +93,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="CMake Application.PS">
+  <component name="RunManager" selected="CMake Application.receiver">
     <configuration name="PS" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ps_server" TARGET_NAME="ps_server" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="ps_server" RUN_TARGET_NAME="ps_server">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -191,7 +190,8 @@
       <workItem from="1567022603804" duration="635000" />
       <workItem from="1567023279583" duration="3698000" />
       <workItem from="1567156588228" duration="552000" />
-      <workItem from="1567157212953" duration="16343000" />
+      <workItem from="1567157212953" duration="18360000" />
+      <workItem from="1567270271357" duration="10963000" />
     </task>
     <servers />
   </component>
@@ -230,7 +230,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/win/win.c</url>
-          <line>12</line>
+          <line>10</line>
           <option name="timeStamp" value="6" />
         </line-breakpoint>
       </breakpoints>

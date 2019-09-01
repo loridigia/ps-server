@@ -3,8 +3,6 @@
 //receiver process stuff
 HANDLE g_hChildStd_IN_Rd = NULL;
 HANDLE g_hChildStd_IN_Wr = NULL;
-HANDLE g_hChildStd_OUT_Rd = NULL;
-HANDLE g_hChildStd_OUT_Wr = NULL;
 
 extern configuration *config;
 
@@ -235,7 +233,6 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
 }
 
 int work_with_processes(SOCKET socket, char *client_ip, int port){
-    printf("work_processes");
     char *args = malloc(256);
     sprintf(args, "%d %s", port, client_ip);
 
@@ -246,14 +243,6 @@ int work_with_processes(SOCKET socket, char *client_ip, int port){
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
     saAttr.bInheritHandle = TRUE;
     saAttr.lpSecurityDescriptor = NULL;
-
-    // Create a pipe for the child process's STDOUT.
-    if (! CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0) )
-        perror("Errore creazione pipe STDOUT");
-
-    // Ensure the read handle to the pipe for STDOUT is not inherited.
-    if (! SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0) )
-        perror("Stdout SetHandleInformation");
 
     // Create a pipe for the child process's STDIN.
     if (! CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0))
@@ -268,18 +257,16 @@ int work_with_processes(SOCKET socket, char *client_ip, int port){
     DWORD dwWrite;
     DWORD child_id;
 
-    printf("CREO PROCESSO RECEIVER");
     child_id = create_receiver_process(args);
 
+    // Duplicate and write socket on pipe
     WSADuplicateSocketA(socket, child_id, &protocol_info);
     if (! WriteFile(g_hChildStd_IN_Wr, &protocol_info, sizeof(protocol_info), &dwWrite, NULL)){
         perror("errore nello scrivere su pipe STD_IN");
         exit(1);
     }
-
-
-    // Write socket on pipe
-
+    printf("-dad=%d-", protocol_info.iSocketType);
+    
 }
 
 DWORD create_receiver_process(char *args){
@@ -291,16 +278,15 @@ DWORD create_receiver_process(char *args){
     // This structure specifies the STDIN and STDOUT handles for redirection.
     ZeroMemory( &si_start_info, sizeof(STARTUPINFO) );
     si_start_info.cb = sizeof(STARTUPINFO);
-    si_start_info.hStdError = g_hChildStd_OUT_Wr;
-    si_start_info.hStdOutput = g_hChildStd_OUT_Wr;
     si_start_info.hStdInput = g_hChildStd_IN_Rd;
     si_start_info.dwFlags |= STARTF_USESTDHANDLES;
-
+    
     if (CreateProcess("receiver.exe", args, NULL, NULL, TRUE, 0, NULL, NULL, &si_start_info, &receiver_info) == 0){
         printf("-%lu-", GetLastError());
         perror("Errore nell'eseguire il processo receiver");
         exit(1);
     }
+    
     return receiver_info.dwProcessId;
 
 }
@@ -327,6 +313,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
     char *client_buffer = get_client_buffer(socket, &n, 0);
 
     if (n < 0 && WSAGetLastError() != EAGAIN && WSAGetLastError() != WSAEWOULDBLOCK) {
+        printf("%lu", GetLastError());
         err = "Errore nel ricevere i dati.\n";
         fprintf(stderr,"%s",err);
         send_error(socket, err);

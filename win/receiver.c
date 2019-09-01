@@ -3,26 +3,38 @@
 #include "win.h"
 
 int main(int argc, char *argv[]) {
+    CHAR chBuf[2048];
+    WSAPROTOCOL_INFO protocolInfo;
+    DWORD dwRead;
+    HANDLE hStdin, hStdout;
+
     int port = atoi(argv[0]);
     char *ip = argv[1];
 
-    CHAR chBuf[2048];
-    DWORD dwRead, dwWritten;
-    HANDLE hStdin, hStdout;
+    //Open STDERR / STDOUT
+    freopen("CONOUT$", "w", stderr);
+    freopen("CONOUT$", "w", stdout);
 
-    hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+    //Get handles
+    hStdout = CreateFile("CONOUT$",  GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     hStdin = GetStdHandle(STD_INPUT_HANDLE);
     if ((hStdout == INVALID_HANDLE_VALUE) || (hStdin == INVALID_HANDLE_VALUE)){
         perror("invalid handles");
         exit(1);
     }
-    
-    DWORD id = GetCurrentProcessId();
-    printf("%lu", id);
 
-    sleep(4);
+    SetStdHandle(STD_OUTPUT_HANDLE, hStdout);
+    SetStdHandle(STD_ERROR_HANDLE, hStdout);
 
-    //ReadFile(hStdin, chBuf, 2048, &dwRead, NULL);
-    printf("%s", chBuf);
+    printf("receiver ON");
+
+    ReadFile(hStdin, &protocolInfo, sizeof(protocolInfo), &dwRead, NULL);
+    int socket = WSASocket(protocolInfo.iAddressFamily,protocolInfo.iSocketType, protocolInfo.iProtocol,&protocolInfo, 0, WSA_FLAG_OVERLAPPED);
+
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2,0), &wsaData);
+    printf("end read");
+    serve_client(socket, ip, port);
+    printf("-child=%d-", protocolInfo.iSocketType);
     
 }
