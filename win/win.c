@@ -313,7 +313,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
     char *client_buffer = get_client_buffer(socket, &n, 0);
 
     if (n < 0 && WSAGetLastError() != EAGAIN && WSAGetLastError() != WSAEWOULDBLOCK) {
-        printf("%lu", GetLastError());
+        printf("%lu", WSAGetLastError());
         err = "Errore nel ricevere i dati.\n";
         fprintf(stderr,"%s",err);
         send_error(socket, err);

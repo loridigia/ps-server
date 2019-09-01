@@ -28,12 +28,19 @@ int main(int argc, char *argv[]) {
 
     printf("receiver ON");
 
-    ReadFile(hStdin, &protocolInfo, sizeof(protocolInfo), &dwRead, NULL);
-    int socket = WSASocket(protocolInfo.iAddressFamily,protocolInfo.iSocketType, protocolInfo.iProtocol,&protocolInfo, 0, WSA_FLAG_OVERLAPPED);
-
     WSADATA wsaData;
-    WSAStartup(MAKEWORD(2,0), &wsaData);
-    printf("end read");
+    WORD wVersionRequested = MAKEWORD( 2, 0 );
+    WSAStartup( wVersionRequested, &wsaData );
+
+    ReadFile(hStdin, &protocolInfo, sizeof(protocolInfo), &dwRead, NULL);
+    SOCKET socket = WSASocket(protocolInfo.iAddressFamily, protocolInfo.iSocketType, protocolInfo.iProtocol, &protocolInfo, 0, WSA_FLAG_OVERLAPPED);
+
+    //printf("family: %d - type: %d - protocol: %d", protocolInfo.iAddressFamily, protocolInfo.iSocketType, protocolInfo.iProtocol);
+
+    if( socket == INVALID_SOCKET) {
+        printf("errore socket: %lu", WSAGetLastError());
+        exit(1);
+    }
     serve_client(socket, ip, port);
     printf("-child=%d-", protocolInfo.iSocketType);
     

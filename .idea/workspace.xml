@@ -93,7 +93,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="CMake Application.receiver">
+  <component name="RunManager" selected="CMake Application.PS">
     <configuration name="PS" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ps_server" TARGET_NAME="ps_server" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="ps_server" RUN_TARGET_NAME="ps_server">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -191,7 +191,7 @@
       <workItem from="1567023279583" duration="3698000" />
       <workItem from="1567156588228" duration="552000" />
       <workItem from="1567157212953" duration="18360000" />
-      <workItem from="1567270271357" duration="10963000" />
+      <workItem from="1567270271357" duration="13884000" />
     </task>
     <servers />
   </component>
