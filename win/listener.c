@@ -23,6 +23,5 @@ int main(int argc, char *argv[]) {
     }
     
     handle_requests(port, work_with_processes);
-    sleep(5);
 
 }

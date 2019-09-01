@@ -410,12 +410,12 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
             send_routine(args);
         } else if (equals(config->server_type, "process")) {
             /*
-            if (pthread_create(&pthread, &pthread_attr, send_routine, (void *) args) != 0) {
+            if (CreateThread(NULL, 0, send_routine, (HANDLE*)args, 0, NULL) == NULL) {
                 perror("Impossibile creare un nuovo thread di tipo 'sender'.\n");
                 free(args);
                 return -1;
             }
-            */
+             */
         }
         CloseHandle(handle);
     } else {
