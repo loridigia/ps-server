@@ -233,7 +233,7 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
 }
 
 int work_with_processes(SOCKET socket, char *client_ip, int port){
-    char *args = malloc(256);
+    char *args = malloc(64);
     sprintf(args, "%d %s", port, client_ip);
 
     //creazione processo receiver per gestire la richiesta
@@ -265,8 +265,8 @@ int work_with_processes(SOCKET socket, char *client_ip, int port){
         perror("errore nello scrivere su pipe STD_IN");
         exit(1);
     }
-    printf("-dad=%d-", protocol_info.iSocketType);
-    
+
+    closesocket(socket);
 }
 
 DWORD create_receiver_process(char *args){
@@ -275,20 +275,19 @@ DWORD create_receiver_process(char *args){
 
     ZeroMemory( &receiver_info, sizeof(PROCESS_INFORMATION) );
 
-    // This structure specifies the STDIN and STDOUT handles for redirection.
+    // STDIN and STDOUT handles for redirection.
     ZeroMemory( &si_start_info, sizeof(STARTUPINFO) );
     si_start_info.cb = sizeof(STARTUPINFO);
     si_start_info.hStdInput = g_hChildStd_IN_Rd;
     si_start_info.dwFlags |= STARTF_USESTDHANDLES;
-    
+
     if (CreateProcess("receiver.exe", args, NULL, NULL, TRUE, 0, NULL, NULL, &si_start_info, &receiver_info) == 0){
         printf("-%lu-", GetLastError());
         perror("Errore nell'eseguire il processo receiver");
         exit(1);
     }
-    
-    return receiver_info.dwProcessId;
 
+    return receiver_info.dwProcessId;
 }
 
 int work_with_threads(SOCKET socket, char *client_ip, int port) {
@@ -313,7 +312,6 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
     char *client_buffer = get_client_buffer(socket, &n, 0);
 
     if (n < 0 && WSAGetLastError() != EAGAIN && WSAGetLastError() != WSAEWOULDBLOCK) {
-        printf("%lu", WSAGetLastError());
         err = "Errore nel ricevere i dati.\n";
         fprintf(stderr,"%s",err);
         send_error(socket, err);
