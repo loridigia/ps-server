@@ -188,15 +188,18 @@ int main(int argc, char *argv[]) {
   int lower = 1000;
   int upper = 5000;
   int bomb = 1;
+  int iterations = 5000;
   puts("#TEST_BOMB: Please wait");
-  for (int i = 0; i < 10000; i++) {
-      if (i % 1000 == 0) {
+  for (int i = 0; i < iterations; i++) {
+      if (i % (iterations/10) == 0) {
           printf(".");
           fflush(stdout);
       }
       curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7071/0/testo.txt");
       int res = curl_easy_perform(curl);
       if (res != 0 && strcmp(s.ptr,SIMPLE_TEXT) != 0) {
+          fprintf(stderr,"\nErr: %d\nString: %s", res, s.ptr);
+          //--trace-ascii dump.txt da aggiungere come flag
           bomb = 0;
           break;
       }

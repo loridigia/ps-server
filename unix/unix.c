@@ -274,7 +274,7 @@ void *receiver_routine(void *arg) {
 }
 
 int write_on_pipe(int size, char* name, int port, char *client_ip) {
-    char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + CHUNK);
+    char *buffer = malloc(MAX_FILENAME_LENGTH + MAX_IP_SIZE + MAX_PORT_LENGTH + CHUNK);
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
     pthread_mutex_lock(&mutex);
     if (write(pipe_fd[1], buffer, strlen(buffer)) < 0) {
@@ -307,7 +307,15 @@ int serve_client(int client_fd, char *client_ip, int port) {
     char *err;
     int n;
 
-    char *client_buffer = get_client_buffer(client_fd, &n, MSG_DONTWAIT);
+    if (fcntl(client_fd, F_SETFL, fcntl(client_fd, F_GETFL, 0) | O_NONBLOCK) < 0) {
+        err = "Impossibile gestire la richiesta. \n";
+        fprintf(stderr,"%s",err);
+        send_error(client_fd, err);
+        close(client_fd);
+        return -1;
+    }
+
+    char *client_buffer = get_client_buffer(client_fd, &n, 0);
 
     if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
         err = "Errore nel ricevere i dati.\n";
