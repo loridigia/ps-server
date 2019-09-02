@@ -71,9 +71,9 @@ int load_configuration(int mode) {
         return -1;
     }
 
-    //free(ip);
-    //free(port_param);
-    //free(type_param);
+    free(ip);
+    free(port_param);
+    free(type_param);
     fclose(stream);
     return 0;
 }
