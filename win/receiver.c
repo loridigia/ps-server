@@ -2,14 +2,36 @@
 #include <windows.h>
 #include "win.h"
 
+#define pipename "\\\\.\\pipe\\LogPipe"
+
+extern configuration *config;
+
 int main(int argc, char *argv[]) {
-    CHAR chBuf[2048];
+    HANDLE handle_mapped_file;
     WSAPROTOCOL_INFO protocolInfo;
     DWORD dwRead;
     HANDLE hStdin, hStdout;
-
+    
+    // Load argv
     int port = atoi(argv[0]);
     char *ip = argv[1];
+
+    //READ_ONLY from shared mem config
+    handle_mapped_file = OpenFileMapping(FILE_MAP_READ, FALSE, "Global\\Config");
+    if (handle_mapped_file == NULL){
+        perror("Errore nell'aprire memory object receiver");
+        exit(1);
+    }
+    config = (configuration *) MapViewOfFile(handle_mapped_file, FILE_MAP_READ, 0, 0, BUF_SIZE);
+    if (config == NULL){
+        perror("Errore nel mappare la view del file");
+        CloseHandle(handle_mapped_file);
+        exit(1);
+    }
+    
+    //get handles of mutex and pipe
+    h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    mutex = CreateMutex(NULL,FALSE,"Global\\Mutex");
 
     //Open STDERR / STDOUT
     freopen("CONOUT$", "w", stderr);

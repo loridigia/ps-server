@@ -13,7 +13,8 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
-    mutex = CreateMutex(NULL,FALSE,NULL);
+    //mutex global
+    mutex = CreateMutex(NULL,FALSE,"Global\\Mutex");
 
     //logger event
     logger_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Process_Event"));
@@ -101,38 +102,11 @@ DWORD WINAPI receiver_routine(void *args) {
     free(args);
 }
 
-
-void *send_routine(void *arg) {
-    thread_arg_sender *args = (thread_arg_sender *) arg;
-    if (send_file(args->client_socket, args->file_in_memory, args->size) < 0){
-        fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
-    } else {
-        WaitForSingleObject(mutex,INFINITE);
-        if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
-            fprintf(stderr, "Errore nello scrivere sulla pipe LOG.\n");
-            return NULL;
-        }
-        if (!ReleaseMutex(mutex)) {
-            fprintf(stderr, "Impossibile rilasciare il mutex.\n");
-        }
-    } if (equals(config->server_type,"process")) {
-        closesocket(args->client_socket);
-        exit(0);
-    }
-    return NULL;
+DWORD WINAPI sender_routine(void *args){
+    printf("IM IN sender");
+    send_routine(args);
 }
 
-int send_file(int socket_fd, char *file, int size){
-    char new[strlen(file)+2];
-    sprintf(new, "%s\n", file);
-    int res = 0;
-    if (send(socket_fd, new, strlen(new), 0) == -1) {
-        res = -1;
-    }
-    if (size > 0) UnmapViewOfFile(file);
-    closesocket(socket_fd);
-    return res;
-}
 
 void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
     SOCKET sock, client_socket[BACKLOG];
@@ -409,13 +383,13 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
         if (equals(config->server_type, "thread")) {
             send_routine(args);
         } else if (equals(config->server_type, "process")) {
+            send_routine(args);
             /*
-            if (CreateThread(NULL, 0, send_routine, (HANDLE*)args, 0, NULL) == NULL) {
-                perror("Impossibile creare un nuovo thread di tipo 'sender'.\n");
+            if (CreateThread(NULL, 0, sender_routine, (HANDLE*)args, 0, NULL) == NULL) {
+                perror("Impossibile creare un nuovo thread di tipo 'listener'.\n");
                 free(args);
                 return -1;
-            }
-             */
+            }*/
         }
         CloseHandle(handle);
     } else {
@@ -439,12 +413,51 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
     return (0);
 }
 
+void *send_routine(void *arg) {
+    thread_arg_sender *args = (thread_arg_sender *) arg;
+    if (send_file(args->client_socket, args->file_in_memory, args->size) < 0){
+        fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
+    } else {
+        WaitForSingleObject(mutex,INFINITE);
+        if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
+            fprintf(stderr, "Errore nello scrivere sulla pipe LOG.\n");
+            return NULL;
+        }
+        if (!ReleaseMutex(mutex)) {
+            fprintf(stderr, "Impossibile rilasciare il mutex.\n");
+        }
+    } if (equals(config->server_type,"process")) {
+        closesocket(args->client_socket);
+        exit(0);
+    }
+    return NULL;
+}
+
+int send_file(int socket_fd, char *file, int size){
+    char new[strlen(file)+2];
+    sprintf(new, "%s\n", file);
+    int res = 0;
+    if (send(socket_fd, new, strlen(new), 0) == -1) {
+        res = -1;
+    }
+    if (size > 0) UnmapViewOfFile(file);
+    closesocket(socket_fd);
+    return res;
+}
+
 
 int write_on_pipe(int size, char* name, int port, char *client_ip) {
+    DWORD dw_written;
     char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + CHUNK);
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
     if (h_pipe != INVALID_HANDLE_VALUE) {
-        WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL);
+        if (WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL) == FALSE ){
+            printf("%lu", GetLastError());
+        } else {
+            return TRUE;
+        }
+    } else {
+        printf("--INVALID HANDLE --%lu", GetLastError());
     }
 }
 
