@@ -30,8 +30,13 @@ int main(int argc, char *argv[]) {
     }
     
     //get handles of mutex and pipe
-    h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     mutex = CreateMutex(NULL,FALSE,"Global\\Mutex");
+
+    h_pipe = CreateFile(pipename, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY){
+        perror("Errore nella creazione della pipe");
+        exit(1);
+    }
 
     //Open STDERR / STDOUT
     freopen("CONOUT$", "w", stderr);

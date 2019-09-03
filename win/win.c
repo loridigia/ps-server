@@ -450,14 +450,10 @@ int write_on_pipe(int size, char* name, int port, char *client_ip) {
     DWORD dw_written;
     char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + CHUNK);
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
-    if (h_pipe != INVALID_HANDLE_VALUE) {
+    if (h_pipe != INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY) {
         if (WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL) == FALSE ){
             printf("%lu", GetLastError());
-        } else {
-            return TRUE;
         }
-    } else {
-        printf("--INVALID HANDLE --%lu", GetLastError());
     }
 }
 
