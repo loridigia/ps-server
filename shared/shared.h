@@ -25,6 +25,7 @@ typedef struct configuration {
     char server_ip[MAX_IP_SIZE];
     unsigned int server_port;
     int main_pid;
+    int server_socket;
 } configuration;
 
 typedef struct thread_arg_sender {

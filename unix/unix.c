@@ -83,12 +83,9 @@ void log_routine() {
     while(1) {
         bzero(buffer, sizeof buffer);
         pthread_cond_wait(&condition, &mutex);
-        puts("ciao");
         pthread_mutex_lock(&mutex);
-        puts("ciao2");
         read(pipe_fd[0], buffer, sizeof buffer);
         _log(buffer);
-        puts("ciao3");
         pthread_mutex_unlock(&mutex);
     }
 }
@@ -174,6 +171,11 @@ void *listener_routine(void *arg) {
     return NULL;
 }
 
+void _kill() {
+    close(config->server_socket);
+    exit(12);
+}
+
 void handle_requests(int port, int (*handle)(int, char*, int)){
     int server_socket;
     fd_set active_fd_set, read_fd_set;
@@ -184,6 +186,8 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
         fprintf(stderr, "Impossibile creare la socket su porta: %d", port);
         return;
     }
+
+    config->server_socket = server_socket;
 
     struct timeval timeout;
     timeout.tv_sec = 1;
@@ -233,6 +237,7 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
             }
         }
     }
+    signal(SIGKILL, _kill);
 }
 
 
@@ -288,7 +293,7 @@ int write_on_pipe(int size, char* name, int port, char *client_ip) {
     pthread_mutex_unlock(&mutex);
     pthread_cond_signal(&condition);
     //free(name);
-    free(buffer);
+    //free(buffer);
     return 0;
 }
 
