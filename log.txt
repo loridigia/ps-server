@@ -1,4 +1,0 @@
-name: /testo.txt | size: 56 | ip: 127.0.0.1 | server_port: 7070
-name: /testo.txt | size: 56 | ip: 127.0.0.1 | server_port: 7070
-name: /testo.txt | size: 56 | ip: 127.0.0.1 | server_port: 7070
-name: /testo.txt | size: 56 | ip: 127.0.0.1 | server_port: 7070

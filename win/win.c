@@ -28,13 +28,6 @@ void init(int argc, char *argv[]) {
     //wait initialization of logger process
     WaitForSingleObject(logger_event, INFINITE);
 
-    //create pipe
-    h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-    if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY){
-        perror("Errore nella creazione della pipe");
-        exit(1);
-    }
-
     //loading configuration
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
         perror("Errore nel caricare la configurazione");
@@ -60,6 +53,15 @@ void init(int argc, char *argv[]) {
 
     CopyMemory((PVOID)pBuf, config, sizeof(configuration));
     UnmapViewOfFile(pBuf);
+
+    //create pipe only for thread
+    if (config->server_type == "thread"){
+        h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+        if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY) {
+            perror("Errore nella creazione della pipe");
+            exit(1);
+        }
+    }
 
     //mutex / condition variables
 
@@ -451,8 +453,9 @@ int write_on_pipe(int size, char* name, int port, char *client_ip) {
     char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + CHUNK);
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
     if (h_pipe != INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY) {
+        printf("%lu", GetLastError());
+
         if (WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL) == FALSE ){
-            printf("%lu", GetLastError());
         }
     }
 }

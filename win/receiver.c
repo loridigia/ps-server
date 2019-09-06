@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
     WSAPROTOCOL_INFO protocolInfo;
     DWORD dwRead;
     HANDLE hStdin, hStdout;
-    
+
     // Load argv
     int port = atoi(argv[0]);
     char *ip = argv[1];
@@ -28,11 +28,11 @@ int main(int argc, char *argv[]) {
         CloseHandle(handle_mapped_file);
         exit(1);
     }
-    
+
     //get handles of mutex and pipe
     mutex = CreateMutex(NULL,FALSE,"Global\\Mutex");
 
-    h_pipe = CreateFile(pipename, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY){
         perror("Errore nella creazione della pipe");
         exit(1);
