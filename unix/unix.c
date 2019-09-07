@@ -306,7 +306,7 @@ void *send_routine(void *arg) {
             return NULL;
         }
     }
-
+    free(arg);
     if (equals(config->server_type,"process")) {
         exit(0);
     }
