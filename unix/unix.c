@@ -88,10 +88,10 @@ void log_routine() {
     while(1) {
         bzero(buffer, sizeof buffer);
         pthread_mutex_lock(mutex);
-        pthread_cond_wait(condition, mutex); //Automatically mutex will be unlocked. It will be locked again when signal is detected.
-        pthread_mutex_unlock(mutex);
+        pthread_cond_wait(condition, mutex);
         read(pipe_fd[0], buffer, sizeof buffer);
         _log(buffer);
+        pthread_mutex_unlock(mutex);
     }
 }
 
@@ -185,8 +185,12 @@ void start() {
     }
 }
 
+void release() {
+    pthread_exit(NULL);
+}
 
 void *listener_routine(void *arg) {
+    signal(SIGINT, release);
     int port = *(int*)arg;
     handle_requests(port, work_with_threads);
     return NULL;
@@ -328,10 +332,11 @@ int serve_client(int client_fd, char *client_ip, int port) {
     char *client_buffer = get_client_buffer(client_fd, &n, 0);
 
     if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-        err = "Errore nel ricevere i dati.\n";
+        err = "Errore nel ricevere i dati o richiesta mal posta.\n";
         fprintf(stderr,"%s",err);
         send_error(client_fd, err);
         close(client_fd);
+        free(client_buffer);
         return -1;
     }
 

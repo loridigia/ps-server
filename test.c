@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
 
 /*#----------------------------------  // TEST_6  ---------------------------------------#*/
   desc = "Verifica che il server non ascolti più sulla porta precedente";
-  curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/1/testo.txt");
+  curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/0/testo.txt");
 
   if (curl_easy_perform(curl) != 0) {
     passed++;
@@ -181,6 +181,44 @@ int main(int argc, char *argv[]) {
   }
   init_string(&s);
   usleep(DEFAULT_TIMEOUT);
+
+/*#----------------------------------  // TEST_7  ---------------------------------------#*/
+    desc = "Verifica che il server gestica file non esistenti";
+    curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7071/0/xxx");
+    curl_easy_perform(curl);
+    if (strcmp(s.ptr, "File o directory non esistente.\n") == 0) {
+        passed++;
+        fprintf(stdout, "#PASSED: %s\n", desc);
+    }
+    else {
+        failed++;
+        fprintf(stdout, "#FAILED: %s\n", desc);
+    }
+    init_string(&s);
+    usleep(DEFAULT_TIMEOUT);
+
+/*#----------------------------------  // TEST_8  ---------------------------------------#*/
+    desc = "Verifica che il server non crashi con richieste troppo lunghe";
+    char *url = "gopher://localhost:7071/0/";
+    char final_url[800];
+    sprintf(final_url,"%s",url);
+    for (int i = strlen(url); i < 799; i++) {
+        final_url[i] = 'x';
+    }
+    final_url[strlen(final_url)-1] = '\0';
+
+    curl_easy_setopt(curl, CURLOPT_URL, final_url);
+    curl_easy_perform(curl);
+    if (strcmp(s.ptr, "Errore nel ricevere i dati o richiesta mal posta.\n") == 0) {
+        passed++;
+        fprintf(stdout, "#PASSED: %s\n", desc);
+    }
+    else {
+        failed++;
+        fprintf(stdout, "#FAILED: %s\n", desc);
+    }
+    init_string(&s);
+    usleep(DEFAULT_TIMEOUT);
 
 /*#----------------------------------  // TEST_BOMB  ---------------------------------------#*/
 
@@ -218,6 +256,6 @@ int main(int argc, char *argv[]) {
 
   free(s.ptr);
   curl_easy_cleanup(curl);
-  system("pkill -f ps_server");
+  kill(pid, SIGINT);
   return 0;
 }

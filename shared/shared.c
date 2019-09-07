@@ -141,6 +141,11 @@ char *get_client_buffer(int socket, int *n, int flag) {
             size *= 2;
             client_buffer = (char*)realloc(client_buffer, size);
         }
+
+        if (len > 512) {
+            *n = -1;
+            return NULL;
+        }
     }
 
     return client_buffer;
