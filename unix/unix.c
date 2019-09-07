@@ -33,6 +33,12 @@ void init(int argc, char *argv[]) {
     config = mmap(NULL, sizeof config, PROT_READ | PROT_WRITE,
                   MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
+    mutex = mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE,
+                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+    condition = mmap(NULL, sizeof(pthread_cond_t), PROT_READ | PROT_WRITE,
+                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
     if (pthread_attr_init(&pthread_attr) != 0) {
         perror("Errore nell'inizializzazione degli attributi del thread.\n");
         exit(1);
@@ -48,13 +54,12 @@ void init(int argc, char *argv[]) {
     } config->main_pid = getpid();
 
     pthread_mutexattr_t mutexAttr = {};
-    pthread_condattr_t condAttr = {};
-
     pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
-    pthread_mutex_init(&mutex, &mutexAttr);
+    pthread_mutex_init(mutex, &mutexAttr);
 
+    pthread_condattr_t condAttr = {};
     pthread_condattr_setpshared(&condAttr, PTHREAD_PROCESS_SHARED);
-    pthread_cond_init(&condition, &condAttr);
+    pthread_cond_init(condition, &condAttr);
 
     pid_t pid_child = fork();
 
@@ -82,12 +87,28 @@ void log_routine() {
     char buffer[8192];
     while(1) {
         bzero(buffer, sizeof buffer);
-        pthread_cond_wait(&condition, &mutex);
-        pthread_mutex_lock(&mutex);
+        pthread_mutex_lock(mutex);
+        pthread_cond_wait(condition, mutex); //Automatically mutex will be unlocked. It will be locked again when signal is detected.
+        pthread_mutex_unlock(mutex);
         read(pipe_fd[0], buffer, sizeof buffer);
         _log(buffer);
-        pthread_mutex_unlock(&mutex);
     }
+}
+
+int write_on_pipe(int size, char* name, int port, char *client_ip) {
+    char *buffer = malloc(MAX_FILENAME_LENGTH + MAX_IP_SIZE + MAX_PORT_LENGTH + CHUNK);
+    sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
+    pthread_mutex_lock(mutex);
+    if (write(pipe_fd[1], buffer, strlen(buffer)) < 0) {
+        free(buffer);
+        return -1;
+    }
+    pthread_cond_signal(condition);
+    pthread_mutex_unlock(mutex);
+    free(name);
+    free(buffer);
+    free(client_ip);
+    return 0;
 }
 
 int send_file(int socket_fd, char *file, size_t file_size){
@@ -171,11 +192,6 @@ void *listener_routine(void *arg) {
     return NULL;
 }
 
-void _kill() {
-    close(config->server_socket);
-    exit(12);
-}
-
 void handle_requests(int port, int (*handle)(int, char*, int)){
     int server_socket;
     fd_set active_fd_set, read_fd_set;
@@ -237,7 +253,6 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
             }
         }
     }
-    signal(SIGKILL, _kill);
 }
 
 
@@ -279,22 +294,6 @@ void *receiver_routine(void *arg) {
     serve_client(args->client_socket, args->client_ip, args->port);
     free(arg);
     return NULL;
-}
-
-int write_on_pipe(int size, char* name, int port, char *client_ip) {
-    char *buffer = malloc(MAX_FILENAME_LENGTH + MAX_IP_SIZE + MAX_PORT_LENGTH + CHUNK);
-    sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
-    pthread_mutex_lock(&mutex);
-    if (write(pipe_fd[1], buffer, strlen(buffer)) < 0) {
-        pthread_mutex_unlock(&mutex);
-        free(buffer);
-        return -1;
-    }
-    pthread_mutex_unlock(&mutex);
-    pthread_cond_signal(&condition);
-    //free(name);
-    //free(buffer);
-    return 0;
 }
 
 void *send_routine(void *arg) {
