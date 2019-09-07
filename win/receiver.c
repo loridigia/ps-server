@@ -50,6 +50,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    //Redirect STDOUT/ERR to ConsoleSTD
     SetStdHandle(STD_OUTPUT_HANDLE, hStdout);
     SetStdHandle(STD_ERROR_HANDLE, hStdout);
 

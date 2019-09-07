@@ -105,10 +105,9 @@ DWORD WINAPI receiver_routine(void *args) {
 }
 
 DWORD WINAPI sender_routine(void *args){
-    printf("IM IN sender");
-    send_routine(args);
+    thread_arg_sender *arg = (thread_arg_sender *) args;
+    send_routine(arg);
 }
-
 
 void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
     SOCKET sock, client_socket[BACKLOG];
@@ -386,12 +385,14 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
             send_routine(args);
         } else if (equals(config->server_type, "process")) {
             send_routine(args);
+            // NON HO IDEA PERCHE NON FUNZIONA STO THREAD ( compilare prima Receiver e poi PS )
             /*
             if (CreateThread(NULL, 0, sender_routine, (HANDLE*)args, 0, NULL) == NULL) {
                 perror("Impossibile creare un nuovo thread di tipo 'listener'.\n");
                 free(args);
                 return -1;
-            }*/
+            }
+             */
         }
         CloseHandle(handle);
     } else {
@@ -452,10 +453,9 @@ int write_on_pipe(int size, char* name, int port, char *client_ip) {
     DWORD dw_written;
     char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + CHUNK);
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
-    if (h_pipe != INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY) {
-        printf("%lu", GetLastError());
-
+    if (h_pipe != INVALID_HANDLE_VALUE ) {
         if (WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL) == FALSE ){
+            printf("ERRORE WRITEFILE %lu", GetLastError());
         }
     }
 }
