@@ -349,7 +349,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
     char path[strlen(PUBLIC_PATH) + strlen(client_buffer)];
     sprintf(path,"%s%s", PUBLIC_PATH, client_buffer);
 
-    if (is_file(path)) {
+    if (is_file(path) != 0) {
         int file_fd = open(path, O_RDONLY);
         if (file_fd == -1) {
             err = "Errore nell'apertura del file. \n";
@@ -429,7 +429,6 @@ int serve_client(int client_fd, char *client_ip, int port) {
             fprintf(stderr,"%s",err);
             send_error(client_fd, err);
             close(client_fd);
-            //free(listing_buffer);
             free(client_buffer);
 
             return -1;

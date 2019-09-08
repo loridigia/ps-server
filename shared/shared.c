@@ -116,7 +116,9 @@ char *get_parameter(char *line, FILE *stream) {
 }
 int is_file(char *path) {
     struct stat path_stat;
-    stat(path, &path_stat);
+    if (stat(path, &path_stat) != 0) {
+        return 0;
+    }
     return S_ISREG(path_stat.st_mode);
 }
 
