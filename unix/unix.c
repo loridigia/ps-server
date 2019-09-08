@@ -326,6 +326,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
         fprintf(stderr,"%s",err);
         send_error(client_fd, err);
         close(client_fd);
+        free(client_ip);
         return -1;
     }
 
@@ -336,6 +337,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
         fprintf(stderr,"%s",err);
         send_error(client_fd, err);
         close(client_fd);
+        free(client_ip);
         free(client_buffer);
         return -1;
     }
@@ -355,6 +357,8 @@ int serve_client(int client_fd, char *client_ip, int port) {
             err = "Errore nell'apertura del file. \n";
             fprintf(stderr,"%s%s",err,path);
             send_error(client_fd, err);
+            free(client_ip);
+            free(client_buffer);
             close(client_fd);
             return -1;
         }
@@ -362,6 +366,8 @@ int serve_client(int client_fd, char *client_ip, int port) {
         struct stat v;
         if (stat(path,&v) == -1) {
             perror("Errore nel prendere la grandezza del file.\n");
+            free(client_ip);
+            free(client_buffer);
             close(client_fd);
             return -1;
         }
@@ -425,7 +431,9 @@ int serve_client(int client_fd, char *client_ip, int port) {
             fprintf(stderr,"%s",err);
             send_error(client_fd, err);
             close(client_fd);
-            free(listing_buffer);
+            //free(listing_buffer);
+            free(client_buffer);
+            free(client_ip);
             return -1;
         }
         else {
@@ -433,10 +441,14 @@ int serve_client(int client_fd, char *client_ip, int port) {
                 perror("Errore nel comunicare con la socket.\n");
                 close(client_fd);
                 free(listing_buffer);
+                free(client_buffer);
+                free(client_ip);
                 return -1;
             }
         }
         free(listing_buffer);
+        free(client_buffer);
+        //free(client_ip);
         close(client_fd);
     }
     return 0;

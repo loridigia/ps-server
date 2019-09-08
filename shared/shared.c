@@ -47,12 +47,13 @@ int load_configuration(int mode) {
     char *port_param = get_parameter(line,stream);
     char *endptr;
     config->server_port = strtol(port_param, &endptr, 10);
-    if (config->server_port < 1024 || config->server_port > MAX_PORT || *endptr != '\0' || endptr == port_param) {
+    if (config->server_port < MIN_PORT || config->server_port > MAX_PORT || *endptr != '\0' || endptr == port_param) {
         fprintf(stderr,"Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
         fclose(stream);
         return -1;
     }
     if (mode == PORT_ONLY) {
+        free(port_param);
         fclose(stream);
         return 0;
     }
@@ -144,7 +145,7 @@ char *get_client_buffer(int socket, int *n, int flag) {
 
         if (len > 512) {
             *n = -1;
-            return NULL;
+            return client_buffer;
         }
     }
 
@@ -180,6 +181,7 @@ char *get_file_listing(char *route, char *path) {
         closedir (d);
     }
     else {
+        free(buffer);
         return NULL;
     }
     return buffer;
