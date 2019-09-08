@@ -107,7 +107,6 @@ int write_on_pipe(int size, char* name, int port, char *client_ip) {
     pthread_mutex_unlock(mutex);
     free(name);
     free(buffer);
-    free(client_ip);
     return 0;
 }
 
@@ -244,7 +243,7 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
                     }
                     FD_SET (new, &active_fd_set);
                 } else {
-                    char *client_ip = malloc(INET_ADDRSTRLEN);
+                    char client_ip[INET_ADDRSTRLEN];
                     inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
                     if (handle(fd, client_ip, port) == -1) {
                         FD_CLR (fd, &read_fd_set);
@@ -307,7 +306,6 @@ void *send_routine(void *arg) {
     } else {
         if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
             fprintf(stderr, "Errore scrittura su pipe. ('sender')\n");
-            return NULL;
         }
     }
     free(arg);
@@ -326,7 +324,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
         fprintf(stderr,"%s",err);
         send_error(client_fd, err);
         close(client_fd);
-        free(client_ip);
+
         return -1;
     }
 
@@ -337,7 +335,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
         fprintf(stderr,"%s",err);
         send_error(client_fd, err);
         close(client_fd);
-        free(client_ip);
+
         free(client_buffer);
         return -1;
     }
@@ -357,7 +355,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
             err = "Errore nell'apertura del file. \n";
             fprintf(stderr,"%s%s",err,path);
             send_error(client_fd, err);
-            free(client_ip);
+
             free(client_buffer);
             close(client_fd);
             return -1;
@@ -366,7 +364,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
         struct stat v;
         if (stat(path,&v) == -1) {
             perror("Errore nel prendere la grandezza del file.\n");
-            free(client_ip);
+
             free(client_buffer);
             close(client_fd);
             return -1;
@@ -433,7 +431,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
             close(client_fd);
             //free(listing_buffer);
             free(client_buffer);
-            free(client_ip);
+
             return -1;
         }
         else {
@@ -442,13 +440,13 @@ int serve_client(int client_fd, char *client_ip, int port) {
                 close(client_fd);
                 free(listing_buffer);
                 free(client_buffer);
-                free(client_ip);
+
                 return -1;
             }
         }
         free(listing_buffer);
         free(client_buffer);
-        //free(client_ip);
+        //
         close(client_fd);
     }
     return 0;
