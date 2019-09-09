@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
   sprintf(string,"%s%s",CONFIG_CONTENT_BACK,type);
   fprintf(file, "%s", string);
   fclose(file);
-  usleep(DEFAULT_TIMEOUT * 20);
+  usleep(DEFAULT_TIMEOUT + 1 * 1000 * 1000);
 
 /*#----------------------------------  // TEST_6  ---------------------------------------#*/
   desc = "Verifica che il server non ascolti più sulla porta precedente";
