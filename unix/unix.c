@@ -286,6 +286,7 @@ int work_with_processes(int fd, char *client_ip, int port) {
         exit(0);
     } else if (pid_child == 0) {
         serve_client(fd, client_ip, port);
+        exit(0);
     } else {
         close(fd);
     }
@@ -309,9 +310,6 @@ void *send_routine(void *arg) {
         }
     }
     free(arg);
-    if (equals(config->server_type,"process")) {
-        exit(0);
-    }
     return NULL;
 }
 
@@ -415,11 +413,15 @@ int serve_client(int client_fd, char *client_ip, int port) {
         if (equals(config->server_type, "thread")) {
             send_routine(args);
         } else if (equals(config->server_type, "process")) {
-            if (pthread_create(&pthread, &pthread_attr, send_routine, (void *) args) != 0) {
+            pthread_t t;
+            if (pthread_create(&t, NULL, send_routine, (void *) args) != 0) {
                 perror("Impossibile creare un nuovo thread di tipo 'sender'.\n");
                 free(args);
+                //pthread_cancel
                 return -1;
             }
+            pthread_join(t,NULL);
+            exit(0);
         }
 
     } else {
@@ -430,7 +432,6 @@ int serve_client(int client_fd, char *client_ip, int port) {
             send_error(client_fd, err);
             close(client_fd);
             free(client_buffer);
-
             return -1;
         }
         else {
@@ -439,13 +440,11 @@ int serve_client(int client_fd, char *client_ip, int port) {
                 close(client_fd);
                 free(listing_buffer);
                 free(client_buffer);
-
                 return -1;
             }
         }
         free(listing_buffer);
         free(client_buffer);
-        //
         close(client_fd);
     }
     return 0;
