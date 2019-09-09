@@ -3,8 +3,6 @@
 //receiver process stuff
 HANDLE g_hChildStd_IN_Rd = NULL;
 HANDLE g_hChildStd_IN_Wr = NULL;
-HANDLE g_hChildStd_OUT_Rd = NULL;
-HANDLE g_hChildStd_OUT_Wr = NULL;
 
 extern configuration *config;
 
@@ -15,7 +13,8 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
-    mutex = CreateMutex(NULL,FALSE,NULL);
+    //mutex global
+    mutex = CreateMutex(NULL,FALSE,"Global\\Mutex");
 
     //logger event
     logger_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Process_Event"));
@@ -28,13 +27,6 @@ void init(int argc, char *argv[]) {
 
     //wait initialization of logger process
     WaitForSingleObject(logger_event, INFINITE);
-
-    //create pipe
-    h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-    if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY){
-        perror("Errore nella creazione della pipe");
-        exit(1);
-    }
 
     //loading configuration
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
@@ -61,6 +53,15 @@ void init(int argc, char *argv[]) {
 
     CopyMemory((PVOID)pBuf, config, sizeof(configuration));
     UnmapViewOfFile(pBuf);
+
+    //create pipe only for thread
+    if (config->server_type == "thread"){
+        h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+        if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY) {
+            perror("Errore nella creazione della pipe");
+            exit(1);
+        }
+    }
 
     //mutex / condition variables
 
@@ -103,37 +104,9 @@ DWORD WINAPI receiver_routine(void *args) {
     free(args);
 }
 
-
-void *send_routine(void *arg) {
-    thread_arg_sender *args = (thread_arg_sender *) arg;
-    if (send_file(args->client_socket, args->file_in_memory, args->size) < 0){
-        fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
-    } else {
-        WaitForSingleObject(mutex,INFINITE);
-        if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
-            fprintf(stderr, "Errore nello scrivere sulla pipe LOG.\n");
-            return NULL;
-        }
-        if (!ReleaseMutex(mutex)) {
-            fprintf(stderr, "Impossibile rilasciare il mutex.\n");
-        }
-    } if (equals(config->server_type,"process")) {
-        closesocket(args->client_socket);
-        exit(0);
-    }
-    return NULL;
-}
-
-int send_file(int socket_fd, char *file, int size){
-    char new[strlen(file)+2];
-    sprintf(new, "%s\n", file);
-    int res = 0;
-    if (send(socket_fd, new, strlen(new), 0) == -1) {
-        res = -1;
-    }
-    if (size > 0) UnmapViewOfFile(file);
-    closesocket(socket_fd);
-    return res;
+DWORD WINAPI sender_routine(void *args){
+    thread_arg_sender *arg = (thread_arg_sender *) args;
+    send_routine(arg);
 }
 
 void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
@@ -235,8 +208,7 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
 }
 
 int work_with_processes(SOCKET socket, char *client_ip, int port){
-    printf("work_processes");
-    char *args = malloc(256);
+    char *args = malloc(64);
     sprintf(args, "%d %s", port, client_ip);
 
     //creazione processo receiver per gestire la richiesta
@@ -247,14 +219,6 @@ int work_with_processes(SOCKET socket, char *client_ip, int port){
     saAttr.bInheritHandle = TRUE;
     saAttr.lpSecurityDescriptor = NULL;
 
-    // Create a pipe for the child process's STDOUT.
-    if (! CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0) )
-        perror("Errore creazione pipe STDOUT");
-
-    // Ensure the read handle to the pipe for STDOUT is not inherited.
-    if (! SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0) )
-        perror("Stdout SetHandleInformation");
-
     // Create a pipe for the child process's STDIN.
     if (! CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0))
         perror("Errore creazione pipe STDIN");
@@ -263,23 +227,32 @@ int work_with_processes(SOCKET socket, char *client_ip, int port){
     if (! SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) )
         perror("Stdin SetHandleInformation");
 
-    //create_receiver_process(char *args);
 
-    // Write socket on pipe
+    WSAPROTOCOL_INFO protocol_info;
+    DWORD dwWrite;
+    DWORD child_id;
 
+    child_id = create_receiver_process(args);
+
+    // Duplicate and write socket on pipe
+    WSADuplicateSocketA(socket, child_id, &protocol_info);
+    if (! WriteFile(g_hChildStd_IN_Wr, &protocol_info, sizeof(protocol_info), &dwWrite, NULL)){
+        perror("errore nello scrivere su pipe STD_IN");
+        exit(1);
+    }
+
+    closesocket(socket);
 }
 
-void create_receiver_process(char *args){
+DWORD create_receiver_process(char *args){
     PROCESS_INFORMATION receiver_info;
     STARTUPINFO si_start_info;
 
     ZeroMemory( &receiver_info, sizeof(PROCESS_INFORMATION) );
 
-    // This structure specifies the STDIN and STDOUT handles for redirection.
+    // STDIN and STDOUT handles for redirection.
     ZeroMemory( &si_start_info, sizeof(STARTUPINFO) );
     si_start_info.cb = sizeof(STARTUPINFO);
-    si_start_info.hStdError = g_hChildStd_OUT_Wr;
-    si_start_info.hStdOutput = g_hChildStd_OUT_Wr;
     si_start_info.hStdInput = g_hChildStd_IN_Rd;
     si_start_info.dwFlags |= STARTF_USESTDHANDLES;
 
@@ -289,6 +262,7 @@ void create_receiver_process(char *args){
         exit(1);
     }
 
+    return receiver_info.dwProcessId;
 }
 
 int work_with_threads(SOCKET socket, char *client_ip, int port) {
@@ -410,13 +384,15 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
         if (equals(config->server_type, "thread")) {
             send_routine(args);
         } else if (equals(config->server_type, "process")) {
+            send_routine(args);
+            // NON HO IDEA PERCHE NON FUNZIONA STO THREAD ( compilare prima Receiver e poi PS )
             /*
-            if (pthread_create(&pthread, &pthread_attr, send_routine, (void *) args) != 0) {
-                perror("Impossibile creare un nuovo thread di tipo 'sender'.\n");
+            if (CreateThread(NULL, 0, sender_routine, (HANDLE*)args, 0, NULL) == NULL) {
+                perror("Impossibile creare un nuovo thread di tipo 'listener'.\n");
                 free(args);
                 return -1;
             }
-            */
+             */
         }
         CloseHandle(handle);
     } else {
@@ -440,12 +416,47 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
     return (0);
 }
 
+void *send_routine(void *arg) {
+    thread_arg_sender *args = (thread_arg_sender *) arg;
+    if (send_file(args->client_socket, args->file_in_memory, args->size) < 0){
+        fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
+    } else {
+        WaitForSingleObject(mutex,INFINITE);
+        if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
+            fprintf(stderr, "Errore nello scrivere sulla pipe LOG.\n");
+            return NULL;
+        }
+        if (!ReleaseMutex(mutex)) {
+            fprintf(stderr, "Impossibile rilasciare il mutex.\n");
+        }
+    } if (equals(config->server_type,"process")) {
+        closesocket(args->client_socket);
+        exit(0);
+    }
+    return NULL;
+}
+
+int send_file(int socket_fd, char *file, int size){
+    char new[strlen(file)+2];
+    sprintf(new, "%s\n", file);
+    int res = 0;
+    if (send(socket_fd, new, strlen(new), 0) == -1) {
+        res = -1;
+    }
+    if (size > 0) UnmapViewOfFile(file);
+    closesocket(socket_fd);
+    return res;
+}
+
 
 int write_on_pipe(int size, char* name, int port, char *client_ip) {
+    DWORD dw_written;
     char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + CHUNK);
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
-    if (h_pipe != INVALID_HANDLE_VALUE) {
-        WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL);
+    if (h_pipe != INVALID_HANDLE_VALUE ) {
+        if (WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL) == FALSE ){
+            printf("ERRORE WRITEFILE %lu", GetLastError());
+        }
     }
 }
 
