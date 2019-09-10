@@ -55,7 +55,7 @@ void init(int argc, char *argv[]) {
     UnmapViewOfFile(pBuf);
 
     //create pipe only for thread
-    if (config->server_type == "thread"){
+    if (equals(config->server_type, "thread")){
         h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
         if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY) {
             perror("Errore nella creazione della pipe");
