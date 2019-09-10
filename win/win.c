@@ -70,9 +70,20 @@ void init(int argc, char *argv[]) {
     start();
 
     //attesa di evento per restart
+    /*
+    if (SetConsoleCtrlHandler(CtrlHandler, TRUE)) {
+        printf("sono nel set wuwu");
+        while(1) {}
+    } */
 
     while(1) Sleep(1000);
     //Sleep(3000);
+}
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
+    if (fdwCtrlType == CTRL_BREAK_EVENT) {
+        printf("catturato");
+        return TRUE;
+    }
 }
 
 void start(){
@@ -461,6 +472,7 @@ int write_on_pipe(int size, char* name, int port, char *client_ip) {
 }
 
 char *get_server_ip(){
+    /*
     WORD wVersionRequested;
     WSADATA wsaData;
     char name[255];
@@ -475,6 +487,8 @@ char *get_server_ip(){
         }
         WSACleanup();
     }
+     */
+    char *ip = (char*) malloc(256);
     return ip;
 }
 

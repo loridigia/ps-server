@@ -24,6 +24,7 @@ HANDLE logger_event;
 HANDLE h_pipe;
 HANDLE mutex;
 
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType);
 DWORD WINAPI listener_routine(void *args);
 DWORD WINAPI receiver_routine(void *args);
 DWORD WINAPI sender_routine(void *args);
