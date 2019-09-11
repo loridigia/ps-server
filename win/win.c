@@ -70,18 +70,14 @@ void init(int argc, char *argv[]) {
     start();
 
     //attesa di evento per restart
-    /*
-    if (SetConsoleCtrlHandler(CtrlHandler, TRUE)) {
-        printf("sono nel set wuwu");
-        while(1) {}
-    } */
 
+    SetConsoleCtrlHandler(CtrlHandler, TRUE);
     while(1) Sleep(1000);
     //Sleep(3000);
 }
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
     if (fdwCtrlType == CTRL_BREAK_EVENT) {
-        printf("catturato");
+        restart();
         return TRUE;
     }
 }
@@ -151,7 +147,8 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
 
         if(config->server_port != port) {
             printf("Chiusura socket su porta %d. \n", port);
-            break;
+            closesocket(sock);
+            return;
         }
 
         if (selected == 0) continue;
