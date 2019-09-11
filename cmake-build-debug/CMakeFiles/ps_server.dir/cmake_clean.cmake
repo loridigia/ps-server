@@ -1,5 +1,6 @@
 file(REMOVE_RECURSE
   "CMakeFiles/ps_server.dir/main.c.obj"
+  "CMakeFiles/ps_server.dir/test.c.obj"
   "CMakeFiles/ps_server.dir/shared/shared.c.obj"
   "CMakeFiles/ps_server.dir/win/win.c.obj"
   "ps_server.pdb"

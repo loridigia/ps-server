@@ -144,7 +144,7 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
         FD_SET(sock, &read_fd_set);
 
         int selected;
-        if ((selected = select(0 , &read_fd_set , NULL , NULL , NULL)) == SOCKET_ERROR) {
+        if ((selected = select(0 , &read_fd_set , NULL , NULL , &timeout)) == SOCKET_ERROR) {
             perror("Errore durante l'operazione di select.\n");
             exit(EXIT_FAILURE);
         }

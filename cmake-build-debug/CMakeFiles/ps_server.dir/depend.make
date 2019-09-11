@@ -9,6 +9,9 @@ CMakeFiles/ps_server.dir/main.c.obj: ../win/win.h
 CMakeFiles/ps_server.dir/shared/shared.c.obj: ../shared/shared.c
 CMakeFiles/ps_server.dir/shared/shared.c.obj: ../shared/shared.h
 
+CMakeFiles/ps_server.dir/test.c.obj: ../core/constants.h
+CMakeFiles/ps_server.dir/test.c.obj: ../test.c
+
 CMakeFiles/ps_server.dir/win/win.c.obj: ../shared/shared.h
 CMakeFiles/ps_server.dir/win/win.c.obj: ../win/win.c
 CMakeFiles/ps_server.dir/win/win.c.obj: ../win/win.h
