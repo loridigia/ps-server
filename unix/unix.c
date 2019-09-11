@@ -2,6 +2,12 @@
 
 extern configuration *config;
 
+void restart() {
+    if (load_configuration(PORT_ONLY) != -1) {
+        start();
+    }
+}
+
 void daemon_skeleton() {
     pid_t pid;
     pid = fork();

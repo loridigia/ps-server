@@ -12,6 +12,7 @@ int work_with_processes();
 int write_on_pipe();
 char *get_server_ip();
 void start();
+void restart();
 void log_routine();
 void init();
 void handle_requests();

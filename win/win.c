@@ -38,7 +38,6 @@ void init(int argc, char *argv[]) {
     LPCTSTR pBuf;
     HANDLE hMapFile;
     hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, "Global\\Config");
-
     if (hMapFile == NULL){
         perror("Errore nel creare memory object");
         exit(1);
@@ -77,10 +76,17 @@ void init(int argc, char *argv[]) {
 }
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
     if (fdwCtrlType == CTRL_BREAK_EVENT) {
+        printf("bau");
+        config->server_port = 9090;
         restart();
         return TRUE;
     }
 }
+
+void restart() {
+    printf("%d", config->server_port);
+}
+
 
 void start(){
     if (equals(config->server_type, "thread")) {
@@ -545,4 +551,21 @@ int send_error(SOCKET socket, char *err) {
 
 int _recv(int s,char *buf,int len,int flags) {
     return recv(s,buf,len,flags);
+}
+
+void get_shared_config(configuration *configuration){
+    HANDLE handle_mapped_file;
+
+    handle_mapped_file = OpenFileMapping(FILE_MAP_READ, FALSE, "Global\\Config");
+    if (handle_mapped_file == NULL){
+        perror("Errore nell'aprire memory object listener");
+        exit(1);
+    }
+    config = MapViewOfFile(handle_mapped_file, FILE_MAP_READ, 0, 0, BUF_SIZE);
+    if (config == NULL){
+        perror("Errore nel mappare la view del file");
+        CloseHandle(handle_mapped_file);
+        exit(1);
+    }
+
 }

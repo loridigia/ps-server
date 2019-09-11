@@ -7,7 +7,6 @@
 extern configuration *config;
 
 int main(int argc, char *argv[]) {
-    HANDLE handle_mapped_file;
     WSAPROTOCOL_INFO protocolInfo;
     DWORD dwRead;
     HANDLE hStdin, hStdout;
@@ -17,17 +16,7 @@ int main(int argc, char *argv[]) {
     char *ip = argv[1];
 
     //READ_ONLY from shared mem config
-    handle_mapped_file = OpenFileMapping(FILE_MAP_READ, FALSE, "Global\\Config");
-    if (handle_mapped_file == NULL){
-        perror("Errore nell'aprire memory object receiver");
-        exit(1);
-    }
-    config = (configuration *) MapViewOfFile(handle_mapped_file, FILE_MAP_READ, 0, 0, BUF_SIZE);
-    if (config == NULL){
-        perror("Errore nel mappare la view del file");
-        CloseHandle(handle_mapped_file);
-        exit(1);
-    }
+    get_shared_config(config);
 
     //get handles of mutex and pipe
     mutex = CreateMutex(NULL,FALSE,"Global\\Mutex");

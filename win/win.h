@@ -24,6 +24,7 @@ HANDLE logger_event;
 HANDLE h_pipe;
 HANDLE mutex;
 
+VOID get_shared_config(configuration *config);
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType);
 DWORD WINAPI listener_routine(void *args);
 DWORD WINAPI receiver_routine(void *args);

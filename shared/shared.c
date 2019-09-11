@@ -97,12 +97,6 @@ int index_of(char *values, char find) {
     return ptr ? ptr-values : -1;
 }
 
-void restart() {
-    if (load_configuration(PORT_ONLY) != -1) {
-        start();
-    }
-}
-
 char *get_parameter(char *line, FILE *stream) {
     size_t len;
     char *ptr = (char*)malloc(10);
