@@ -143,12 +143,8 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
         FD_ZERO(&read_fd_set);
         FD_SET(sock, &read_fd_set);
 
-        for (int i = 0 ; i < BACKLOG ; i++) {
-            SOCKET s = client_socket[i];
-            if(s > 0) FD_SET(s, &read_fd_set);
-        }
-
-        if (select(0 , &read_fd_set , NULL , NULL , &timeout) == SOCKET_ERROR) {
+        int selected;
+        if ((selected = select(0 , &read_fd_set , NULL , NULL , NULL)) == SOCKET_ERROR) {
             perror("Errore durante l'operazione di select.\n");
             exit(EXIT_FAILURE);
         }
@@ -158,7 +154,7 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
             break;
         }
 
-        /* soluzione timeout da aggiungere */
+        if (selected == 0) continue;
 
         struct sockaddr_in address;
         SOCKET new_socket;
@@ -171,6 +167,7 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
             for (int i = 0; i < BACKLOG; i++) {
                 if (client_socket[i] == 0) {
                     client_socket[i] = new_socket;
+                    FD_SET(new_socket, &read_fd_set);
                     break;
                 }
             }
