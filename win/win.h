@@ -18,8 +18,6 @@
 
 
 STARTUPINFO info;
-PROCESS_INFORMATION listener_info;
-PROCESS_INFORMATION logger_info;
 HANDLE logger_event;
 HANDLE h_pipe;
 HANDLE mutex;

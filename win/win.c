@@ -20,6 +20,8 @@ void init(int argc, char *argv[]) {
     logger_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Process_Event"));
 
     //creazione processo per log routine
+    PROCESS_INFORMATION logger_info;
+
     if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &logger_info) == 0){
         perror("Errore nell'eseguire il processo logger");
         exit(1);
@@ -85,6 +87,9 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
 
 void restart() {
     printf("%d", config->server_port);
+    if (load_configuration(PORT_ONLY) != -1) {
+        start();
+    }
 }
 
 
@@ -96,6 +101,7 @@ void start(){
             exit(1);
         }
     } else {
+        PROCESS_INFORMATION listener_info;
         char *arg = malloc(16);
         sprintf(arg, "%d", config->server_port);
 
