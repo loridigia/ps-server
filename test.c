@@ -223,8 +223,8 @@ int main(int argc, char *argv[]) {
 /*#----------------------------------  // TEST_BOMB  ---------------------------------------#*/
 
   desc = "Verifica che il server riesca a gestire multiple richieste consecutive";
-  int lower = 1000;
-  int upper = 5000;
+  int lower = 10000;
+  int upper = 50000;
   int bomb = 1;
   int iterations = 5000;
   puts("#TEST_BOMB: Please wait");

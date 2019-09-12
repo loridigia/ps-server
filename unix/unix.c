@@ -116,11 +116,9 @@ int write_on_pipe(int size, char* name, int port, char *client_ip) {
     return 0;
 }
 
-int send_file(int socket_fd, char *file, size_t file_size){
-    char new[strlen(file)+2];
-    sprintf(new, "%s\n", file);
+int send_file(int socket_fd, char *file, size_t file_size) {
     int res = 0;
-    if (send(socket_fd, new, strlen(new), 0) == -1) {
+    if (send(socket_fd, file, file_size, 0) == -1) {
         res = -1;
     }
     if (file_size > 0) munmap(file, file_size);
