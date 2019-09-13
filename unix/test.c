@@ -4,7 +4,7 @@
 #include <curl/curl.h>
 #include <unistd.h>
 #include <signal.h>
-#include "core/constants.h"
+#include "../core/constants.h"
 
 #define DEFAULT_TIMEOUT 50000
 
