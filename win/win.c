@@ -34,7 +34,7 @@ void init(int argc, char *argv[]) {
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
         perror("Errore nel caricare la configurazione");
         exit(1);
-    }
+    } config->main_pid = GetCurrentProcessId();
 
     //mapping del config per renderlo globale
     LPCTSTR pBuf;
@@ -70,7 +70,12 @@ void init(int argc, char *argv[]) {
     //inizio
     start();
 
-    //attesa di evento per restart
+    fprintf(stdout,"Server started...\n"
+                   "Listening on port: %d\n"
+                   "Type: multi%s\n"
+                   "Process ID: %d\n\n",
+            config->server_port,config->server_type, config->main_pid);
+    write_infos();
 
     SetConsoleCtrlHandler(CtrlHandler, TRUE);
     while(1) Sleep(1000);
