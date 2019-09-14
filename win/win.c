@@ -309,7 +309,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
     char *client_buffer = get_client_buffer(socket, &n, 0);
 
     if (n < 0 && WSAGetLastError() != EAGAIN && WSAGetLastError() != WSAEWOULDBLOCK) {
-        err = "Errore nel ricevere i dati.\n";
+        err = "Errore nel ricevere i dati o richiesta mal posta.\n";
         fprintf(stderr,"%s",err);
         send_error(socket, err);
         closesocket(socket);
