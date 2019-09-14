@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <windows.h>
 #include "win.h"
 
 #define pipename "\\\\.\\pipe\\LogPipe"
@@ -42,8 +41,6 @@ int main(int argc, char *argv[]) {
     //Redirect STDOUT/ERR to ConsoleSTD
     SetStdHandle(STD_OUTPUT_HANDLE, hStdout);
     SetStdHandle(STD_ERROR_HANDLE, hStdout);
-
-    printf("receiver ON");
 
     WSADATA wsaData;
     WORD wVersionRequested = MAKEWORD( 2, 0 );
