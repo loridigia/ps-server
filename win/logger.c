@@ -8,8 +8,10 @@
 #define pipename "\\\\.\\pipe\\LogPipe"
 
 void _log(char *buffer);
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType);
 
 int main(int argc, char *argv[]) {
+    SetConsoleCtrlHandler(CtrlHandler, TRUE);
     HANDLE logger_event;
     HANDLE h_pipe;
     char buffer[8192];
@@ -45,6 +47,11 @@ int main(int argc, char *argv[]) {
         }
 
         DisconnectNamedPipe(h_pipe);
+    }
+}
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
+    if (fdwCtrlType == CTRL_BREAK_EVENT) {
+        return TRUE;
     }
 }
 
