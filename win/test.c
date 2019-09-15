@@ -4,7 +4,7 @@
 #include <curl/curl.h>
 #include <unistd.h>
 #include <signal.h>
-#include "core/constants.h"
+#include "../core/constants.h"
 
 #define DEFAULT_TIMEOUT 50000
 
@@ -142,13 +142,85 @@ int main(int argc, char *argv[]) {
   init_string(&s);
   usleep(DEFAULT_TIMEOUT);
 
-/*#----------------------------------  // TEST_5  ---------------------------------------#*/
+  /*#----------------------------------  // TEST_5  ---------------------------------------#*/
+      desc = "Verifica che il server gestica file non esistenti";
+      curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/0/xxx");
+      curl_easy_perform(curl);
+      if (strcmp(s.ptr, "File o directory non esistente.\n") == 0) {
+          passed++;
+          fprintf(stdout, "#PASSED: %s\n", desc);
+      }
+      else {
+          failed++;
+          fprintf(stdout, "#FAILED: %s\n", desc);
+      }
+      init_string(&s);
+      usleep(DEFAULT_TIMEOUT);
+
+  /*#----------------------------------  // TEST_6  ---------------------------------------#*/
+      desc = "Verifica che il server non crashi con richieste troppo lunghe";
+      char *url = "gopher://localhost:7070/0/";
+      char final_url[800];
+      sprintf(final_url,"%s",url);
+      for (int i = strlen(url); i < 799; i++) {
+          final_url[i] = 'x';
+      }
+      final_url[strlen(final_url)-1] = '\0';
+
+      curl_easy_setopt(curl, CURLOPT_URL, final_url);
+      curl_easy_perform(curl);
+      if (strcmp(s.ptr, "Errore nel ricevere i dati o richiesta mal posta.\n") == 0) {
+          passed++;
+          fprintf(stdout, "#PASSED: %s\n", desc);
+      }
+      else {
+          failed++;
+          fprintf(stdout, "#FAILED: %s\n", desc);
+      }
+      init_string(&s);
+      usleep(DEFAULT_TIMEOUT);
+
+  /*#----------------------------------  // TEST_BOMB  ---------------------------------------#*/
+
+    desc = "Verifica che il server riesca a gestire multiple richieste consecutive";
+    int lower = 10000;
+    int upper = 50000;
+    int bomb = 1;
+    int iterations = 5000;
+    puts("#TEST_BOMB: Please wait");
+    for (int i = 0; i < iterations; i++) {
+        if (i % (iterations/10) == 0) {
+            printf(".");
+            fflush(stdout);
+        }
+        curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/0/testo.txt");
+        int res = curl_easy_perform(curl);
+        if (res != 0 && strcmp(s.ptr,SIMPLE_TEXT) != 0) {
+            fprintf(stderr,"\nErr: %d\nString: %s", res, s.ptr);
+            //--trace-ascii dump.txt da aggiungere come flag
+            bomb = 0;
+            break;
+        }
+        init_string(&s);
+        int timeout = (rand() % (upper - lower + 1)) + lower;
+        usleep(timeout);
+    }
+    if (bomb == 1) {
+        fprintf(stdout, "\n#PASSED: %s\n", desc);
+    } else {
+        fprintf(stdout, "\n#FAILED: %s\n", desc);
+    }
+
+char stop[2];
+scanf("%s",stop);
+
+/*#----------------------------------  // TEST_7  ---------------------------------------#*/
   desc = "Verifica che il server cambi porta con SIGHUP";
   FILE *file = fopen(CONFIG_PATH, "w+");
   sprintf(string,"%s%s",CONFIG_CONTENT_NEW,type);
   fprintf(file, "%s", string);
   fclose(file);
-  kill(pid, SIGHUP);
+  //kill(pid, SIGHUP);
 
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7071/1/testo.txt");
 
@@ -167,7 +239,7 @@ int main(int argc, char *argv[]) {
   fclose(file);
   usleep(DEFAULT_TIMEOUT + 1 * 1000 * 1000);
 
-/*#----------------------------------  // TEST_6  ---------------------------------------#*/
+/*#----------------------------------  // TEST_8  ---------------------------------------#*/
   desc = "Verifica che il server non ascolti più sulla porta precedente";
   curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7070/0/testo.txt");
 
@@ -182,80 +254,12 @@ int main(int argc, char *argv[]) {
   init_string(&s);
   usleep(DEFAULT_TIMEOUT);
 
-/*#----------------------------------  // TEST_7  ---------------------------------------#*/
-    desc = "Verifica che il server gestica file non esistenti";
-    curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7071/0/xxx");
-    curl_easy_perform(curl);
-    if (strcmp(s.ptr, "File o directory non esistente.\n") == 0) {
-        passed++;
-        fprintf(stdout, "#PASSED: %s\n", desc);
-    }
-    else {
-        failed++;
-        fprintf(stdout, "#FAILED: %s\n", desc);
-    }
-    init_string(&s);
-    usleep(DEFAULT_TIMEOUT);
-
-/*#----------------------------------  // TEST_8  ---------------------------------------#*/
-    desc = "Verifica che il server non crashi con richieste troppo lunghe";
-    char *url = "gopher://localhost:7071/0/";
-    char final_url[800];
-    sprintf(final_url,"%s",url);
-    for (int i = strlen(url); i < 799; i++) {
-        final_url[i] = 'x';
-    }
-    final_url[strlen(final_url)-1] = '\0';
-
-    curl_easy_setopt(curl, CURLOPT_URL, final_url);
-    curl_easy_perform(curl);
-    if (strcmp(s.ptr, "Errore nel ricevere i dati o richiesta mal posta.\n") == 0) {
-        passed++;
-        fprintf(stdout, "#PASSED: %s\n", desc);
-    }
-    else {
-        failed++;
-        fprintf(stdout, "#FAILED: %s\n", desc);
-    }
-    init_string(&s);
-    usleep(DEFAULT_TIMEOUT);
-
-/*#----------------------------------  // TEST_BOMB  ---------------------------------------#*/
-
-  desc = "Verifica che il server riesca a gestire multiple richieste consecutive";
-  int lower = 1000;
-  int upper = 5000;
-  int bomb = 1;
-  int iterations = 5000;
-  puts("#TEST_BOMB: Please wait");
-  for (int i = 0; i < iterations; i++) {
-      if (i % (iterations/10) == 0) {
-          printf(".");
-          fflush(stdout);
-      }
-      curl_easy_setopt(curl, CURLOPT_URL, "gopher://localhost:7071/0/testo.txt");
-      int res = curl_easy_perform(curl);
-      if (res != 0 && strcmp(s.ptr,SIMPLE_TEXT) != 0) {
-          fprintf(stderr,"\nErr: %d\nString: %s", res, s.ptr);
-          //--trace-ascii dump.txt da aggiungere come flag
-          bomb = 0;
-          break;
-      }
-      init_string(&s);
-      int timeout = (rand() % (upper - lower + 1)) + lower;
-      usleep(timeout);
-  }
-  if (bomb == 1) {
-      fprintf(stdout, "\n#PASSED: %s\n", desc);
-  } else {
-      fprintf(stdout, "\n#FAILED: %s\n", desc);
-  }
   int total = passed + failed + 1;
 
   fprintf(stdout, "\n%s%d%s%d\n", "Numero di test passati: ", passed + bomb, "/", total);
 
   free(s.ptr);
   curl_easy_cleanup(curl);
-  kill(pid, SIGINT);
+  //kill(pid, SIGINT);
   return 0;
 }

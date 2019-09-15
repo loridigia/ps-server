@@ -42,8 +42,6 @@ int main(int argc, char *argv[]) {
     SetStdHandle(STD_OUTPUT_HANDLE, hStdout);
     SetStdHandle(STD_ERROR_HANDLE, hStdout);
 
-    printf("receiver ON");
-
     WSADATA wsaData;
     WORD wVersionRequested = MAKEWORD( 2, 0 );
     WSAStartup( wVersionRequested, &wsaData );
