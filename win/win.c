@@ -38,7 +38,6 @@ void init(int argc, char *argv[]) {
 
     //mapping del config per renderlo globale
     LPCTSTR pBuf;
-    HANDLE hMapFile;
     hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, "Global\\Config");
     if (hMapFile == NULL){
         perror("Errore nel creare memory object");
@@ -78,18 +77,31 @@ void init(int argc, char *argv[]) {
 }
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
     if (fdwCtrlType == CTRL_BREAK_EVENT) {
-        printf("bau");
-        config->server_port = 9090;
         restart();
         return TRUE;
     }
 }
 
 void restart() {
-    printf("%d", config->server_port);
-    if (load_configuration(PORT_ONLY) != -1) {
-        start();
+
+    if (load_configuration(PORT_ONLY) == -1) {
+        printf("error");
     }
+
+    LPCTSTR pBuf;
+    pBuf = (LPTSTR) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
+    if (pBuf == NULL){
+        perror("Errore nel mappare la view del file");
+        CloseHandle(hMapFile);
+        exit(1);
+    }
+
+    CopyMemory((PVOID)pBuf, config, sizeof(configuration));
+    FlushViewOfFile(pBuf, sizeof(configuration));
+    UnmapViewOfFile(pBuf);
+
+    start();
+
 }
 
 
@@ -101,7 +113,6 @@ void start(){
             exit(1);
         }
     } else {
-        PROCESS_INFORMATION listener_info;
         char *arg = malloc(16);
         sprintf(arg, "%d", config->server_port);
 
@@ -133,8 +144,12 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
     struct sockaddr_in server;
     int addrlen;
 
+    printf("sono handle_request on port: %d", config->server_port);
+    //printf("confing: %p - port: %p", &config->server_port, &port);
+
+
     if (listen_on(port, &server, &addrlen, &sock)) {
-        fprintf(stderr, "Impossibile creare la socket su porta: %d", port);
+        printf("Impossibile creare la socket su porta: %d", port);
         return;
     }
 
@@ -148,6 +163,7 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
 
     fd_set read_fd_set;
     while(TRUE) {
+
         FD_ZERO(&read_fd_set);
         FD_SET(sock, &read_fd_set);
 
@@ -402,7 +418,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
             send_routine(args);
         } else if (equals(config->server_type, "process")) {
             send_routine(args);
-            // NON HO IDEA PERCHE NON FUNZIONA STO THREAD ( compilare prima Receiver e poi PS )
+            // NON HO IDEA PERCHE NON FUNZIONA STO THREAD
             /*
             if (CreateThread(NULL, 0, sender_routine, (HANDLE*)args, 0, NULL) == NULL) {
                 perror("Impossibile creare un nuovo thread di tipo 'listener'.\n");
@@ -565,6 +581,7 @@ void get_shared_config(configuration *configuration){
     handle_mapped_file = OpenFileMapping(FILE_MAP_READ, FALSE, "Global\\Config");
     if (handle_mapped_file == NULL){
         perror("Errore nell'aprire memory object listener");
+        CloseHandle(handle_mapped_file);
         exit(1);
     }
     config = MapViewOfFile(handle_mapped_file, FILE_MAP_READ, 0, 0, BUF_SIZE);
@@ -574,4 +591,5 @@ void get_shared_config(configuration *configuration){
         exit(1);
     }
 
+    CloseHandle(handle_mapped_file);
 }

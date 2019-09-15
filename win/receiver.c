@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <windows.h>
 #include "win.h"
 
 #define pipename "\\\\.\\pipe\\LogPipe"
