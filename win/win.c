@@ -139,9 +139,10 @@ DWORD WINAPI receiver_routine(void *args) {
     free(args);
 }
 
-DWORD WINAPI sender_routine(void *args){
-    thread_arg_sender *arg = (thread_arg_sender *) args;
+DWORD WINAPI sender_routine(void *args) {
+    thread_arg_sender *arg = (thread_arg_sender*)args;
     send_routine(arg);
+    free(args);
 }
 
 void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
@@ -422,15 +423,13 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
         if (equals(config->server_type, "thread")) {
             send_routine(args);
         } else if (equals(config->server_type, "process")) {
-            send_routine(args);
-            // NON HO IDEA PERCHE NON FUNZIONA STO THREAD
-            /*
-            if (CreateThread(NULL, 0, sender_routine, (HANDLE*)args, 0, NULL) == NULL) {
+            HANDLE handle = CreateThread(NULL, 0, sender_routine, (HANDLE*)args, 0, NULL);
+            if (handle == NULL) {
                 perror("Impossibile creare un nuovo thread di tipo 'listener'.\n");
                 free(args);
                 return -1;
             }
-             */
+            WaitForSingleObject(handle, INFINITE);
         }
         CloseHandle(handle);
     } else {
@@ -454,8 +453,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
     return (0);
 }
 
-void *send_routine(void *arg) {
-    thread_arg_sender *args = (thread_arg_sender *) arg;
+void *send_routine(thread_arg_sender *args) {
     if (send_file(args->client_socket, args->file_in_memory, args->size) < 0){
         fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
     } else {
