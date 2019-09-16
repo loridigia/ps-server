@@ -8,8 +8,9 @@
 #define COMPLETE 0
 #define PORT_ONLY 1
 #define CHUNK 32
+#define MIN_LOG_SIZE 50
 #define MAX_TYPE_LENGTH 10
-#define MAX_IP_SIZE 20
+#define MAX_IP_SIZE 16
 #define MAX_EXT_LENGTH 3
 #define MAX_PORT_LENGTH 6
 #define MAX_FILENAME_LENGTH 256

@@ -328,7 +328,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
     int n;
     u_long iMode = 1;
     ioctlsocket(socket, FIONBIO, &iMode);
-    char *client_buffer = get_client_buffer(socket, &n, 0);
+    char *client_buffer = get_client_buffer(socket, &n);
 
     if (n < 0 && WSAGetLastError() != EAGAIN && WSAGetLastError() != WSAEWOULDBLOCK) {
         err = "Errore nel ricevere i dati o richiesta mal posta.\n";

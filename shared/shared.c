@@ -117,9 +117,8 @@ int is_file(char *path) {
 }
 
 int is_daemon(int argc, char *argv[]) {
-    char *input;
     for (int i = 1; i < argc; i++) {
-        input = argv[i];
+        char *input = argv[i];
         if (strncmp(input, DAEMON_FLAG, strlen(DAEMON_FLAG)) == 0) {
             return 1;
         }
@@ -127,15 +126,29 @@ int is_daemon(int argc, char *argv[]) {
     return 0;
 }
 
-char *get_client_buffer(int socket, int *n, int flag) {
-    int size = 10, chunk = 10, len = 0, max_size = 512;
+char *get_client_buffer(int socket, int *n) {
+    int size = 32, chunk = 32, len = 0, max_size = 512;
     char *client_buffer = (char*)calloc(sizeof(char), size);
+    if (client_buffer == NULL) {
+        perror("Errore durante la malloc. (get_client_buffer)\n");
+        *n = -1;
+        return NULL;
+    }
 
-    while ((*n = _recv(socket, client_buffer + len, chunk, flag)) > 0 ) {
+    while ((*n = _recv(socket, client_buffer + len, chunk, 0)) > 0 ) {
+        if (strstr(client_buffer, "\r\n")) {
+            break;
+        }
+
         len += *n;
         if (len + chunk >= size) {
             size *= 2;
             client_buffer = (char*)realloc(client_buffer, size);
+            if (client_buffer == NULL) {
+                perror("Errore durante la realloc. (get_client_buffer)\n");
+                *n = -1;
+                return NULL;
+            }
         }
 
         if (len > max_size) {
