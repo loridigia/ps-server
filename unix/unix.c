@@ -153,19 +153,11 @@ int write_on_pipe(int size, char* name, int port, char *client_ip) {
     if (write(pipe_fd[1], buffer, strlen(buffer)) < 0) {
         return -1;
     }
-    pthread_cond_signal(condition);
+    if (pthread_cond_signal(condition) != 0) {
+        perror("Impossibile inviare il segnale. (write_on_pipe - pthread_cond_signal");
+    }
     pthread_mutex_unlock(mutex);
     return 0;
-}
-
-int send_file(int socket_fd, char *file, size_t file_size) {
-    int res = 0;
-    if (send(socket_fd, file, file_size, 0) == -1) {
-        res = -1;
-    }
-    if (file_size > 0) munmap(file, file_size);
-    close(socket_fd);
-    return res;
 }
 
 int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
@@ -354,12 +346,20 @@ void *receiver_routine(void *arg) {
 
 void *send_routine(void *arg) {
     thread_arg_sender *args = (thread_arg_sender *) arg;
-    if (send_file(args->client_socket, args->file_in_memory, args->size) < 0) {
+    if (send(args->client_socket, args->file_in_memory, args->size, 0) < 0) {
         fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
     } else {
         if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
             fprintf(stderr, "Errore scrittura su pipe. ('sender')\n");
         }
+    }
+    if (args->size > 0) {
+        if (munmap(args->file_in_memory, args->size) == -1) {
+            perror("Impossibile eseguire l'unmapping del file.\n");
+        }
+    }
+    if (close(args->client_socket) < 0) {
+        perror("Impossibile chiudere il file descriptor. (send_routine - client_socket)\n");
     }
     free(args->route);
     free(arg);
