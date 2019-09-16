@@ -323,7 +323,7 @@ int work_with_threads(SOCKET socket, char *client_ip, int port) {
     return 0;
 }
 
-int serve_client(SOCKET socket, char *client_ip, int port) {
+void serve_client(SOCKET socket, char *client_ip, int port) {
     char *err;
     int n;
     u_long iMode = 1;
@@ -335,7 +335,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
         fprintf(stderr,"%s",err);
         send_error(socket, err);
         closesocket(socket);
-        return -1;
+        return;
     }
 
     unsigned int end = index_of(client_buffer, '\r');
@@ -362,7 +362,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
             fprintf(stderr,"%s%s",err,path);
             send_error(socket, err);
             closesocket(socket);
-            return -1;
+            return;
         }
         DWORD size = GetFileSize(handle,NULL);
         char *view;
@@ -382,7 +382,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
             if (!success) {
                 perror("Impossibile lockare il file.\n");
                 closesocket(socket);
-                return -1;
+                return;
             }
 
             HANDLE file = CreateFileMappingA(handle,NULL,PAGE_READONLY,0,size,"file");
@@ -392,19 +392,19 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
             if (!success) {
                 perror("Impossibile unlockare il file.\n");
                 closesocket(socket);
-                return -1;
+                return;
             }
 
             if (file == NULL) {
                 perror("Impossibile mappare il file.\n");
                 closesocket(socket);
-                return -1;
+                return;
             }
 
             if (view == NULL) {
                 perror("Impossibile creare la view.\n");
                 closesocket(socket);
-                return -1;
+                return;
             }
         } else {
             view = "";
@@ -415,7 +415,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
         if (args < 0) {
             perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'sender'.\n");
             free(args);
-            return -1;
+            return;
         }
 
         args->client_ip = client_ip;
@@ -432,7 +432,7 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
             if (handle == NULL) {
                 perror("Impossibile creare un nuovo thread di tipo 'listener'.\n");
                 free(args);
-                return -1;
+                return;
             }
             WaitForSingleObject(handle, INFINITE);
         }
@@ -444,18 +444,17 @@ int serve_client(SOCKET socket, char *client_ip, int port) {
             fprintf(stderr,"%s",err);
             send_error(socket, err);
             closesocket(socket);
-            return -1;
+            return;
         }
         else {
             if (send(socket, listing_buffer, strlen(listing_buffer), 0) < 0) {
                 perror("Errore nel comunicare con la socket.\n");
                 closesocket(socket);
-                return -1;
+                return;
             }
             closesocket(socket);
         }
     }
-    return (0);
 }
 
 void *send_routine(thread_arg_sender *args) {
