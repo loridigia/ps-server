@@ -34,24 +34,14 @@ int main(int argc, char *argv[]) {
     SetEvent(logger_event);
 
     while (h_pipe != INVALID_HANDLE_VALUE){
-        if (ConnectNamedPipe(h_pipe, NULL) != FALSE)   // wait here for someone to connect to the pipe
+        if (ConnectNamedPipe(h_pipe, NULL) != FALSE)   // aspetta qui che qualcosa si connetta alla pipe
         {
             while (ReadFile(h_pipe, buffer, sizeof(buffer), &dw_read, NULL) != FALSE){
-
-                /* add terminating zero */
                 buffer[dw_read] = '\0';
-
-                /* write on file */
                 _log(buffer);
             }
         }
-
         DisconnectNamedPipe(h_pipe);
-    }
-}
-BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
-    if (fdwCtrlType == CTRL_BREAK_EVENT) {
-        return TRUE;
     }
 }
 
@@ -64,4 +54,10 @@ void _log(char *buffer) {
     }
     fprintf(file, "%s", buffer);
     fclose(file);
+}
+
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
+    if (fdwCtrlType == CTRL_BREAK_EVENT) {
+        return TRUE;
+    }
 }

@@ -49,15 +49,8 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
-    pBuf = (LPTSTR) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
-    if (pBuf == NULL){
-        perror("Errore nel mappare la view del file");
-        CloseHandle(hMapFile);
-        exit(1);
-    }
-
-    CopyMemory((PVOID)pBuf, config, sizeof(configuration));
-    UnmapViewOfFile(pBuf);
+    //copy config on shared memory
+    set_shared_config();
 
     //create pipe only for thread
     if (equals(config->server_type, "thread")){
@@ -67,8 +60,6 @@ void init(int argc, char *argv[]) {
             exit(1);
         }
     }
-
-    //mutex / condition variables
 
 
     //inizio
@@ -95,15 +86,20 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
 }
 
 void restart() {
-
     if (load_configuration(PORT_ONLY) == -1) {
         printf("error");
     }
 
+    set_shared_config();
+    start();
+
+}
+
+VOID set_shared_config(){
     LPCTSTR pBuf;
     pBuf = (LPTSTR) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
     if (pBuf == NULL){
-        perror("Errore nel mappare la view del file");
+        printf("Errore nel mappare la view del file");
         CloseHandle(hMapFile);
         exit(1);
     }
@@ -111,10 +107,8 @@ void restart() {
     CopyMemory((PVOID)pBuf, config, sizeof(configuration));
     FlushViewOfFile(pBuf, sizeof(configuration));
     UnmapViewOfFile(pBuf);
-
-    start();
-
 }
+
 
 
 void start(){

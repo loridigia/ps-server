@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include "win.h"
 
-DWORD WINAPI handler_routine();
 BOOL WINAPI CtrlHandlerListener(DWORD fdwCtrlType);
-
 extern configuration *config;
 
 
