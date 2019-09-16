@@ -135,20 +135,24 @@ void init(int argc, char *argv[]) {
 }
 
 void log_routine() {
-    char buffer[8192];
     while(1) {
-        bzero(buffer, sizeof buffer);
+        char buffer[MAX_FILENAME_LENGTH + MAX_IP_SIZE + MAX_PORT_LENGTH + MIN_LOG_SIZE];
         pthread_mutex_lock(mutex);
         pthread_cond_wait(condition, mutex);
-        read(pipe_fd[0], buffer, sizeof buffer);
-        _log(buffer);
+        if (read(pipe_fd[0], buffer, sizeof buffer) < 0) {
+            perror("Errore durante la read sulla pipe.\n");
+            continue;
+        }
+        if (_log(buffer) < 0) {
+            perror("Errore nell'operazione di scrittura sul log.\n");
+        }
         pthread_mutex_unlock(mutex);
     }
 }
 
-int write_on_pipe(int size, char* name, int port, char *client_ip) {
-    char buffer[MAX_FILENAME_LENGTH + MAX_IP_SIZE + MAX_PORT_LENGTH + MIN_LOG_SIZE];
-    sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
+int write_on_pipe(int size, char* route, int port, char *client_ip) {
+    char buffer[strlen(route) + MAX_IP_SIZE + MAX_PORT_LENGTH + MIN_LOG_SIZE];
+    sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", route, size, client_ip, port);
     pthread_mutex_lock(mutex);
     if (write(pipe_fd[1], buffer, strlen(buffer)) < 0) {
         return -1;
@@ -170,7 +174,7 @@ int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
         perror("Errore durante la creazione della socket.\n");
         return -1;
     } if (bind(*socket_fd, (struct sockaddr *)socket_addr, sizeof *socket_addr) == -1) {
-        perror("Errore durante il binding tra socket_fd e socket_address\n");
+        perror("Errore durante il binding tra socket_fd e socket_address.\n");
         return -1;
     } if (listen(*socket_fd, BACKLOG) == -1) {
         perror("Errore nel provare ad ascoltare sulla porta data in input.\n");
@@ -181,9 +185,21 @@ int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr) {
 
 char *get_server_ip() {
     struct ifaddrs *addrs;
-    getifaddrs(&addrs);
+    int res = getifaddrs(&addrs);
     struct ifaddrs *tmp = addrs;
-    char *ip = (char*) malloc(MAX_IP_SIZE);
+    char *ip = (char*)malloc(MAX_IP_SIZE);
+
+    if (ip == NULL) {
+        perror("Errore durante la malloc. (get_server_ip)\n");
+        freeifaddrs(addrs);
+        return ip;
+    }
+
+    if (res < 0) {
+        freeifaddrs(addrs);
+        return ip;
+    }
+
     while (tmp) {
         if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET) {
             struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
@@ -299,14 +315,10 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
     }
 }
 
-
 int work_with_threads(int fd, char *client_ip, int port) {
     thread_arg_receiver *args = (thread_arg_receiver *)malloc(sizeof(thread_arg_receiver));
     if (args == NULL) {
         perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'receiver'.\n");
-        if (close(fd) < 0) {
-            perror("Impossibile chiudere la socket. (work_with_threads)\n");
-        }
         free(args);
         return -1;
     }
@@ -326,13 +338,11 @@ int work_with_threads(int fd, char *client_ip, int port) {
 int work_with_processes(int fd, char *client_ip, int port) {
     pid_t pid_child = fork();
     if (pid_child < 0) {
-        perror("fork");
-        exit(0);
+        perror("Errore durante la fork. (work_with_processes)\n");
+        return -1;
     } else if (pid_child == 0) {
         serve_client(fd, client_ip, port);
         exit(0);
-    } else {
-        close(fd);
     }
     return 0;
 }
@@ -525,15 +535,15 @@ void serve_client(int client_fd, char *client_ip, int port) {
     }
 }
 
-void _log(char *buffer) {
+int _log(char *buffer) {
     FILE *file = fopen(LOG_PATH, "a");
     if (file == NULL) {
-        perror("Errore nell'operazione di scrittura sul log.\n");
         fclose(file);
-        return;
+        return -1;
     }
     fprintf(file, "%s", buffer);
     fclose(file);
+    return 0;
 }
 
 size_t _getline(char **lineptr, size_t *n, FILE *stream) {

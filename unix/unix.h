@@ -15,7 +15,7 @@ pthread_attr_t pthread_attr;
 pthread_mutex_t *mutex;
 pthread_cond_t *condition;
 
-void _log(char *buffer);
+int _log(char *buffer);
 void daemon_skeleton();
 void *listener_routine(void *arg);
 void *receiver_routine(void *arg);

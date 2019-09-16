@@ -7,10 +7,8 @@
 configuration *config = &conf;
 
 int load_arguments(int argc, char *argv[]) {
-    char *input;
     for (int i = 1; i < argc; i++) {
-        input = argv[i];
-        char *endptr;
+        char *endptr, *input = argv[i];
         if (strncmp(input, PORT_FLAG, strlen(PORT_FLAG)) == 0) {
             config->server_port = strtol(input + strlen(PORT_FLAG), &endptr, 10);
             if (config->server_port < MIN_PORT || config->server_port > MAX_PORT || *endptr != '\0' || endptr == (input + strlen(PORT_FLAG))) {
@@ -44,8 +42,7 @@ int load_configuration(int mode) {
         return -1;
     }
 
-    char *port_param = get_parameter(line,stream);
-    char *endptr;
+    char *endptr, *port_param = get_parameter(line,stream);
     config->server_port = strtol(port_param, &endptr, 10);
     if (config->server_port < MIN_PORT || config->server_port > MAX_PORT || *endptr != '\0' || endptr == port_param) {
         fprintf(stderr,"Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
@@ -57,6 +54,7 @@ int load_configuration(int mode) {
         fclose(stream);
         return 0;
     }
+
     char *type_param = get_parameter(line,stream);
     strcpy(config->server_type, type_param);
     if (!(equals(config->server_type, "thread") || equals(config->server_type, "process"))) {
@@ -67,7 +65,7 @@ int load_configuration(int mode) {
     char *ip = get_server_ip();
     strcpy(config->server_ip, ip);
     if (ip == NULL) {
-        perror("Impossibile ottenere l'ip del server.\n");
+        fprintf(stderr,"Impossibile ottenere l'ip del server.\n");
         fclose(stream);
         return -1;
     }
@@ -99,15 +97,25 @@ int index_of(char *values, char find) {
 
 char *get_parameter(char *line, FILE *stream) {
     size_t len;
-    char *ptr = (char*)malloc(10);
     if (_getline(&line, &len, stream) != -1) {
-        strtok(line, ":");
+        char *ptr = (char*)malloc(len+1);
+        if (ptr == NULL) {
+            perror("Errore durante la malloc. (get_parameter)\n");
+            free(line);
+            return ptr;
+        }
+        if (strtok(line, ":") == NULL) {
+            perror("Errore nella struttura del file di configurazione. (get_parameter)\n");
+            free(line);
+            return ptr;
+        }
         sprintf(ptr, "%s",strtok(NULL, "\n"));
         free(line);
         return ptr;
     }
     return NULL;
 }
+
 int is_file(char *path) {
     struct stat path_stat;
     if (stat(path, &path_stat) != 0) {
@@ -160,13 +168,32 @@ char *get_client_buffer(int socket, int *n) {
     return client_buffer;
 }
 
+int write_infos() {
+    char data[MAX_INFOS_SIZE];
+    FILE *file = fopen(INFO_PATH, "w");
+    if(file == NULL) {
+        fprintf(stderr,"Impossibile leggere il file di infos.\n");
+        return -1;
+    }
+    sprintf(data, "%s:%d", config->server_type, config->main_pid);
+    if (fputs(data, file) == EOF) {
+        perror("Impossibile scrivere sul file: infos.txt.\n");
+    }
+    fclose(file);
+    return 0;
+}
+
 char *get_file_listing(char *route, char *path) {
     DIR *d;
     struct dirent *dir;
     int len = 0;
-    int row_size = MAX_EXT_LENGTH + MAX_FILENAME_LENGTH + strlen(route) + strlen(config->server_ip) + MAX_PORT_LENGTH + 20;
+    int row_size = MAX_EXT_LENGTH + MAX_FILENAME_LENGTH + strlen(route) + MAX_IP_SIZE + MAX_PORT_LENGTH + 1;
     int size = row_size;
     char *buffer = (char*)calloc(row_size,sizeof(char));
+    if (buffer == NULL) {
+        perror("Errore durante la calloc del buffer. (get_file_listing)\n");
+        return buffer;
+    }
     if ((d = opendir (path)) != NULL) {
         while ((dir = readdir (d)) != NULL) {
             if (equals(dir->d_name, ".") || equals(dir->d_name, "..")) {
@@ -179,9 +206,15 @@ char *get_file_listing(char *route, char *path) {
                            route,
                            config->server_ip,
                            config->server_port);
-            if (size - len < row_size) {
+            if (len + row_size >= size) {
                 size *= 2;
                 buffer = (char *)realloc(buffer, size);
+                if (buffer == NULL) {
+                    perror("Errore durante la realloc del buffer. (get_file_listing)\n");
+                    rewinddir(d);
+                    closedir (d);
+                    return buffer;
+                }
             }
         }
         strcat(buffer + len, ".\n");
@@ -193,17 +226,4 @@ char *get_file_listing(char *route, char *path) {
         return NULL;
     }
     return buffer;
-}
-
-int write_infos() {
-    char data[64];
-    FILE *file = fopen(INFO_PATH, "w");
-    if(file == NULL) {
-        fprintf(stderr,"Impossibile leggere il file di infos.\n");
-        return -1;
-    }
-    sprintf(data, "%s:%d", config->server_type, config->main_pid);
-    fputs(data, file);
-    fclose(file);
-    return 0;
 }
