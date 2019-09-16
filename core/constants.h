@@ -19,3 +19,4 @@
 #define PORT_FLAG "--port="
 #define TYPE_FLAG "--type="
 #define HELP_FLAG "--help"
+#define DAEMON_FLAG "--daemon"

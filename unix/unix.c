@@ -1,5 +1,4 @@
 #include "unix.h"
-
 extern configuration *config;
 
 void restart() {
@@ -9,21 +8,34 @@ void restart() {
 }
 
 void daemon_skeleton() {
-    pid_t pid;
-    pid = fork();
+    pid_t pid = fork();
     if (pid < 0) {
+        perror("Errore durante la fork. (daemon_skeleton)\n");
         exit(1);
     } else if (pid > 0) {
         exit(0);
     }
-    umask(0);
+    if (umask(0) < 0) {
+        perror("Errore umask(0).\n");
+        exit(1);
+    }
     if (setsid() < 0) {
+        perror("Errore setsid().\n");
         exit(1);
     }
 
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);
+    if (close(STDIN_FILENO) < 0) {
+        perror("Impossibile chiudere il file descriptor: standard input. \n");
+        exit(1);
+    }
+    if (close(STDOUT_FILENO) < 0) {
+        perror("Impossibile chiudere il file descriptor: standard output. \n");
+        exit(1);
+    }
+    if (close(STDERR_FILENO) < 0) {
+        perror("Impossibile chiudere il file descriptor: standard error. \n");
+        exit(1);
+    }
 }
 
 void init(int argc, char *argv[]) {
@@ -32,18 +44,27 @@ void init(int argc, char *argv[]) {
     }
 
     if (pipe(pipe_fd) == -1) {
-        perror("Errore nel creare la pipe.\n");
+        perror("Errore durante l'inizializzazione della pipe.\n");
         exit(1);
     }
 
-    config = mmap(NULL, sizeof config, PROT_READ | PROT_WRITE,
-                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    config = mmap(NULL, sizeof config, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    if (config == MAP_FAILED) {
+        perror("Errore nell'operazione di mapping del file di configurazione.\n");
+        exit(1);
+    }
 
-    mutex = mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE,
-                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    mutex = mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    if (mutex == MAP_FAILED) {
+        perror("Errore nell'operazione di mapping del mutex.\n");
+        exit(1);
+    }
 
-    condition = mmap(NULL, sizeof(pthread_cond_t), PROT_READ | PROT_WRITE,
-                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    condition = mmap(NULL, sizeof(pthread_cond_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    if (condition == MAP_FAILED) {
+        perror("Errore nell'operazione di mapping della condition variable.\n");
+        exit(1);
+    }
 
     if (pthread_attr_init(&pthread_attr) != 0) {
         perror("Errore nell'inizializzazione degli attributi del thread.\n");
@@ -60,18 +81,37 @@ void init(int argc, char *argv[]) {
     } config->main_pid = getpid();
 
     pthread_mutexattr_t mutexAttr = {};
-    pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
-    pthread_mutex_init(mutex, &mutexAttr);
+    if (pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED)) {
+        /*
+        perror("Impossibile impostare l'attributo del mutex: PTHREAD_SHARED.\n");
+        exit(1);
+        */
+    }
+    if (pthread_mutex_init(mutex, &mutexAttr)) {
+        /*
+        perror("Impossibile inizializzare l'attributo del mutex.\n");
+        exit(1);
+        */
+    }
 
     pthread_condattr_t condAttr = {};
-    pthread_condattr_setpshared(&condAttr, PTHREAD_PROCESS_SHARED);
-    pthread_cond_init(condition, &condAttr);
+    if (pthread_condattr_setpshared(&condAttr, PTHREAD_PROCESS_SHARED)) {
+        /*
+        perror("Impossibile impostare l'attributo della condition variable: PTHREAD_SHARED.\n");
+        exit(1);
+        */
+    }
+    if (pthread_cond_init(condition, &condAttr)) {
+        /*
+        perror("Impossibile inizializzare l'attributo della condition variable.\n");
+        exit(1);
+        */
+    }
 
     pid_t pid_child = fork();
-
     if (pid_child < 0) {
-        perror("Errore durante la fork.\n");
-        exit(0);
+        perror("Errore durante la fork. (log routine)\n");
+        exit(1);
     } else if (pid_child == 0) {
         log_routine();
         exit(0);
@@ -81,11 +121,16 @@ void init(int argc, char *argv[]) {
 
     fprintf(stdout,"Server started...\n"
                    "Listening on port: %d\n"
-                   "Type: multi%s\n"
+                   "Type: multi-%s\n"
                    "Process ID: %d\n\n",
             config->server_port,config->server_type, config->main_pid);
-    write_infos();
-    signal(SIGHUP, restart);
+    if (write_infos() == -1) {
+        exit(0);
+    }
+
+    if (signal(SIGHUP, restart) == SIG_ERR) {
+        perror("Impossibile catturare il segnale SIGHUP. (restart)\n");
+    }
     while(1) sleep(1);
 }
 
@@ -168,18 +213,19 @@ int send_error(int socket_fd, char *err) {
 
 void start() {
     if (equals(config->server_type, "thread")) {
+        pthread_t thread;
         if (pthread_create(
-                &pthread,
+                &thread,
                 &pthread_attr,
                 listener_routine,
                 (void *) &config->server_port) != 0) {
-            perror("Impossibile creare un nuovo thread.\n");
+            perror("Impossibile creare il thread. (listener)\n");
             exit(1);
         }
     } else {
         pid_t pid_child = fork();
         if (pid_child < 0) {
-            perror("Errore durante la fork.\n");
+            perror("Errore durante la fork. (start)\n");
             exit(1);
         } else if (pid_child == 0) {
             handle_requests(config->server_port, work_with_processes);
@@ -203,14 +249,10 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
     int server_socket;
     fd_set active_fd_set, read_fd_set;
     struct sockaddr_in server_addr, client_addr;
-    socklen_t size;
 
     if (listen_on(port, &server_socket, &server_addr) != 0) {
-        fprintf(stderr, "Impossibile creare la socket su porta: %d", port);
         return;
     }
-
-    config->server_socket = server_socket;
 
     struct timeval timeout;
     timeout.tv_sec = 1;
@@ -223,36 +265,42 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
         read_fd_set = active_fd_set;
 
         int selected;
-        if ((selected = select (FD_SETSIZE, &read_fd_set, NULL, NULL, &timeout)) < 0) {
+        if ((selected = select(FD_SETSIZE, &read_fd_set, NULL, NULL, &timeout)) < 0) {
             perror("Errore durante l'operazione di select.\n");
-            break;
+            return;
         }
 
         if(config->server_port != port) {
-            printf("Chiusura socket su porta %d. \n", port);
-            close(server_socket);
+            printf("Chiusura socket su porta %d.\n", port);
+            if (close(server_socket) < 0) {
+                perror("Impossibile chiudere il file descriptor. (server_socket)\n");
+            }
             return;
         }
 
         if (selected == 0) continue;
 
-        for (int fd = 0; fd < FD_SETSIZE; ++fd) {
+        for (int fd = 0; fd < FD_SETSIZE; fd++) {
             if (FD_ISSET (fd, &read_fd_set)) {
                 if (fd == server_socket) {
-                    size = sizeof(client_addr);
+                    socklen_t size = sizeof(client_addr);
                     int new = accept(server_socket, (struct sockaddr *) &client_addr, &size);
                     if (new < 0) {
-                        perror("Errore nell'accettare la richiesta del client\n");
+                        perror("Errore durante l'accept del client.\n");
                         continue;
                     }
                     FD_SET (new, &active_fd_set);
                 } else {
                     char client_ip[INET_ADDRSTRLEN];
-                    inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
+                    if (inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN) == NULL) {
+                        perror("Impossibile ottenere l'indirizzo IP del client. \n");
+                    }
                     if (handle(fd, client_ip, port) == -1) {
                         FD_CLR (fd, &read_fd_set);
-                        close(fd);
-                        fprintf(stderr, "Errore nel comunicare con la socket %d. Client-ip: %s", fd, client_ip);
+                        if (close(fd) < 0) {
+                            perror("Impossibile chiudere il file descriptor. (client_socket)\n");
+                        }
+                        fprintf(stderr, "Errore nel comunicare con la socket %d. Client-ip: %s\n", fd, client_ip);
                         continue;
                     }
                     FD_CLR (fd, &active_fd_set);
@@ -264,8 +312,7 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
 
 
 int work_with_threads(int fd, char *client_ip, int port) {
-    thread_arg_receiver *args =
-            (thread_arg_receiver *)malloc(sizeof (thread_arg_receiver));
+    thread_arg_receiver *args = (thread_arg_receiver *)malloc(sizeof(thread_arg_receiver));
     if (args < 0) {
         perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'receiver'.\n");
         free(args);
@@ -275,7 +322,8 @@ int work_with_threads(int fd, char *client_ip, int port) {
     args->port = port;
     args->client_ip = client_ip;
 
-    if (pthread_create(&pthread, &pthread_attr, receiver_routine, (void *) args) != 0) {
+    pthread_t thread;
+    if (pthread_create(&thread, &pthread_attr, receiver_routine, (void *)args) != 0) {
         perror("Impossibile creare un nuovo thread di tipo 'receiver'.\n");
         free(args);
         return -1;
@@ -317,7 +365,7 @@ void *send_routine(void *arg) {
     return NULL;
 }
 
-int serve_client(int client_fd, char *client_ip, int port) {
+void serve_client(int client_fd, char *client_ip, int port) {
     char *err;
     int n;
 
@@ -326,8 +374,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
         fprintf(stderr,"%s",err);
         send_error(client_fd, err);
         close(client_fd);
-
-        return -1;
+        return;
     }
 
     char *client_buffer = get_client_buffer(client_fd, &n, 0);
@@ -337,9 +384,8 @@ int serve_client(int client_fd, char *client_ip, int port) {
         fprintf(stderr,"%s",err);
         send_error(client_fd, err);
         close(client_fd);
-
         free(client_buffer);
-        return -1;
+        return;
     }
 
     unsigned int end = index_of(client_buffer, '\r');
@@ -357,19 +403,17 @@ int serve_client(int client_fd, char *client_ip, int port) {
             err = "Errore nell'apertura del file. \n";
             fprintf(stderr,"%s%s",err,path);
             send_error(client_fd, err);
-
             free(client_buffer);
             close(client_fd);
-            return -1;
+            return;
         }
 
         struct stat v;
         if (stat(path,&v) == -1) {
             perror("Errore nel prendere la grandezza del file.\n");
-
             free(client_buffer);
             close(client_fd);
-            return -1;
+            return;
         }
 
         char *file_in_memory;
@@ -378,19 +422,19 @@ int serve_client(int client_fd, char *client_ip, int port) {
             if (flock(file_fd, LOCK_EX) < 0) {
                 perror("Impossibile lockare il file.\n");
                 close(client_fd);
-                return -1;
+                return;
             }
             file_in_memory = mmap(NULL, size, PROT_READ, MAP_PRIVATE, file_fd, 0);
             if (flock(file_fd, LOCK_UN) < 0) {
                 perror("Impossibile unlockare il file.\n");
                 close(client_fd);
-                return -1;
+                return;
             }
 
             if (file_in_memory == MAP_FAILED) {
                 perror("Errore nell'operazione di mapping del file.\n");
                 close(client_fd);
-                return -1;
+                return;
             }
         } else {
             file_in_memory = "";
@@ -404,7 +448,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
         if (args < 0) {
             perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'sender'.\n");
             free(args);
-            return -1;
+            return;
         }
 
         args->client_ip = client_ip;
@@ -417,14 +461,13 @@ int serve_client(int client_fd, char *client_ip, int port) {
         if (equals(config->server_type, "thread")) {
             send_routine(args);
         } else if (equals(config->server_type, "process")) {
-            pthread_t t;
-            if (pthread_create(&t, NULL, send_routine, (void *) args) != 0) {
+            pthread_t thread;
+            if (pthread_create(&thread, NULL, send_routine, (void *) args) != 0) {
                 perror("Impossibile creare un nuovo thread di tipo 'sender'.\n");
                 free(args);
-                //pthread_cancel
-                return -1;
+                return;
             }
-            pthread_join(t,NULL);
+            pthread_join(thread,NULL);
             exit(0);
         }
 
@@ -436,7 +479,7 @@ int serve_client(int client_fd, char *client_ip, int port) {
             send_error(client_fd, err);
             close(client_fd);
             free(client_buffer);
-            return -1;
+            return;
         }
         else {
             if (send(client_fd, listing_buffer, strlen(listing_buffer), 0) < 0) {
@@ -444,14 +487,13 @@ int serve_client(int client_fd, char *client_ip, int port) {
                 close(client_fd);
                 free(listing_buffer);
                 free(client_buffer);
-                return -1;
+                return;
             }
         }
         free(listing_buffer);
         free(client_buffer);
         close(client_fd);
     }
-    return 0;
 }
 
 void _log(char *buffer) {

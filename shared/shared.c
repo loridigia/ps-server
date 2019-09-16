@@ -117,11 +117,10 @@ int is_file(char *path) {
 }
 
 int is_daemon(int argc, char *argv[]) {
-    const char *flag = "--daemon";
     char *input;
     for (int i = 1; i < argc; i++) {
         input = argv[i];
-        if (strncmp(input, flag, strlen(flag)) == 0) {
+        if (strncmp(input, DAEMON_FLAG, strlen(DAEMON_FLAG)) == 0) {
             return 1;
         }
     }
@@ -129,7 +128,7 @@ int is_daemon(int argc, char *argv[]) {
 }
 
 char *get_client_buffer(int socket, int *n, int flag) {
-    int size = 10, chunk = 10, len = 0;
+    int size = 10, chunk = 10, len = 0, max_size = 512;
     char *client_buffer = (char*)calloc(sizeof(char), size);
 
     while ((*n = _recv(socket, client_buffer + len, chunk, flag)) > 0 ) {
@@ -139,7 +138,7 @@ char *get_client_buffer(int socket, int *n, int flag) {
             client_buffer = (char*)realloc(client_buffer, size);
         }
 
-        if (len > 512) {
+        if (len > max_size) {
             *n = -1;
             return client_buffer;
         }
@@ -184,16 +183,13 @@ char *get_file_listing(char *route, char *path) {
 }
 
 int write_infos() {
-    int size = 128;
-    char data[size];
+    char data[64];
     FILE *file = fopen(INFO_PATH, "w");
-
     if(file == NULL) {
-        fprintf(stderr,"Impossibile creare il file di infos.\n");
+        fprintf(stderr,"Impossibile leggere il file di infos.\n");
         return -1;
     }
     sprintf(data, "%s:%d", config->server_type, config->main_pid);
-
     fputs(data, file);
     fclose(file);
     return 0;

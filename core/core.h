@@ -6,7 +6,6 @@
 int listen_on();
 int send_error();
 int send_file();
-int serve_client();
 int work_with_threads();
 int work_with_processes();
 int write_on_pipe();
@@ -15,6 +14,7 @@ void start();
 void restart();
 void log_routine();
 void init();
+void serve_client();
 void handle_requests();
 void *send_routine();
 size_t _getline(char **lineptr, size_t *n, FILE *stream);
