@@ -12,12 +12,17 @@ void init(int argc, char *argv[]) {
         perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
         exit(1);
     }
+    //catch CTRL signal
+    SetConsoleCtrlHandler(CtrlHandler, TRUE);
 
     //mutex global
     mutex = CreateMutex(NULL,FALSE,"Global\\Mutex");
 
     //logger event
     logger_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Process_Event"));
+
+    //listener event
+    listener_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Listener_Event"));
 
     //creazione processo per log routine
     PROCESS_INFORMATION logger_info;
@@ -76,9 +81,11 @@ void init(int argc, char *argv[]) {
             config->server_port,config->server_type, config->main_pid);
     write_infos();
 
-    SetConsoleCtrlHandler(CtrlHandler, TRUE);
-    while(1) Sleep(1000);
-    //Sleep(3000);
+
+    while(1) {
+        sleep(10);
+    }
+
 }
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
     if (fdwCtrlType == CTRL_BREAK_EVENT) {
@@ -150,9 +157,6 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
     struct sockaddr_in server;
     int addrlen;
 
-    printf("sono handle_request on port: %d", config->server_port);
-    //printf("confing: %p - port: %p", &config->server_port, &port);
-
 
     if (listen_on(port, &server, &addrlen, &sock)) {
         printf("Impossibile creare la socket su porta: %d", port);
@@ -178,6 +182,7 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
             perror("Errore durante l'operazione di select.\n");
             exit(EXIT_FAILURE);
         }
+
 
         if(config->server_port != port) {
             printf("Chiusura socket su porta %d. \n", port);
@@ -223,12 +228,12 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
 int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) {
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
-        printf("Failed. Error Code : %d",WSAGetLastError());
+        printf("Failed. Error Code : %d", WSAGetLastError());
         return -1;
     }
 
     if ((*sock = socket(AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET) {
-        printf("Could not create socket : %d" , WSAGetLastError());
+        printf("Could not create socket : %d", WSAGetLastError());
         return -1;
     }
 

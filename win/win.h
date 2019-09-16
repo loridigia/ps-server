@@ -21,9 +21,11 @@ STARTUPINFO info;
 PROCESS_INFORMATION listener_info;
 
 HANDLE logger_event;
+HANDLE listener_event;
 HANDLE h_pipe;
 HANDLE mutex;
 HANDLE hMapFile;
+
 
 VOID get_shared_config(configuration *config);
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType);
