@@ -382,9 +382,8 @@ void serve_client(int client_fd, char *client_ip, int port) {
     int n;
 
     char *client_buffer = get_client_buffer(client_fd, &n);
-    int end = index_of(client_buffer,'\r');
 
-    if (n < 0 || end == -1) {
+    if (n < 0) {
         char *err = "Errore nel ricevere i dati o richiesta mal posta.\n";
         fprintf(stderr,"%s",err);
         if (send_error(client_fd, err) < 0) {
@@ -395,8 +394,6 @@ void serve_client(int client_fd, char *client_ip, int port) {
         }
         return;
     }
-
-    client_buffer[end] = '\0';
 
     char path[strlen(PUBLIC_PATH) + strlen(client_buffer) + 1];
     sprintf(path,"%s%s", PUBLIC_PATH, client_buffer);
@@ -499,9 +496,7 @@ void serve_client(int client_fd, char *client_ip, int port) {
                 return;
             }
             pthread_join(thread,NULL);
-            exit(0);
         }
-
     } else {
         char *listing_buffer;
         if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {

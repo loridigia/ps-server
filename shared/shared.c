@@ -146,11 +146,15 @@ char *get_client_buffer(int socket, int *n) {
     }
 
     while ((*n = _recv(socket, client_buffer + len, chunk, 0)) > 0 ) {
-        if (strstr(client_buffer, "\r\n") != NULL) {
-            break;
+        for (int i = len; i < len + *n -1; i++) {
+            if (client_buffer[i] == '\r' && client_buffer[i+1] == '\n') {
+                client_buffer[i] = '\0';
+                return client_buffer;
+            }
         }
 
         len += *n;
+
         if (len + chunk >= size) {
             size *= 2;
             client_buffer = (char*)realloc(client_buffer, size);
