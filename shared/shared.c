@@ -91,6 +91,7 @@ char *get_extension_code(const char *filename) {
 }
 
 int index_of(char *values, char find) {
+    if (values == NULL) return -1;
     const char *ptr = strchr(values, find);
     return ptr ? ptr-values : -1;
 }
@@ -136,15 +137,16 @@ int is_daemon(int argc, char *argv[]) {
 
 char *get_client_buffer(int socket, int *n) {
     int size = 32, chunk = 32, len = 0, max_size = 512;
-    char *client_buffer = (char*)calloc(sizeof(char), size);
+    char *client_buffer = (char*)calloc(size, sizeof(char));
     if (client_buffer == NULL) {
+        free(client_buffer);
         perror("Errore durante la malloc. (get_client_buffer)\n");
         *n = -1;
         return NULL;
     }
 
     while ((*n = _recv(socket, client_buffer + len, chunk, 0)) > 0 ) {
-        if (strstr(client_buffer, "\r\n")) {
+        if (strstr(client_buffer, "\r\n") != NULL) {
             break;
         }
 
@@ -153,6 +155,7 @@ char *get_client_buffer(int socket, int *n) {
             size *= 2;
             client_buffer = (char*)realloc(client_buffer, size);
             if (client_buffer == NULL) {
+                free(client_buffer);
                 perror("Errore durante la realloc. (get_client_buffer)\n");
                 *n = -1;
                 return NULL;
@@ -160,11 +163,11 @@ char *get_client_buffer(int socket, int *n) {
         }
 
         if (len > max_size) {
+            free(client_buffer);
             *n = -1;
-            return client_buffer;
+            return NULL;
         }
     }
-
     return client_buffer;
 }
 
@@ -176,10 +179,16 @@ int write_infos() {
         return -1;
     }
     sprintf(data, "%s:%d", config->server_type, config->main_pid);
+    char *err = "Impossibile scrivere sul file: infos.txt.\n";
     if (fputs(data, file) == EOF) {
-        perror("Impossibile scrivere sul file: infos.txt.\n");
+        perror(err);
+        fclose(file);
+        return -1;
     }
-    fclose(file);
+    if (fclose(file) == EOF) {
+        perror(err);
+        return -1;
+    }
     return 0;
 }
 

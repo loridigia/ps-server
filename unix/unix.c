@@ -135,8 +135,10 @@ void init(int argc, char *argv[]) {
 }
 
 void log_routine() {
+    int size = MAX_FILENAME_LENGTH + MAX_IP_SIZE + MAX_PORT_LENGTH + MIN_LOG_SIZE;
+    char buffer[size];
     while(1) {
-        char buffer[MAX_FILENAME_LENGTH + MAX_IP_SIZE + MAX_PORT_LENGTH + MIN_LOG_SIZE];
+        bzero(buffer, size);
         pthread_mutex_lock(mutex);
         pthread_cond_wait(condition, mutex);
         if (read(pipe_fd[0], buffer, sizeof buffer) < 0) {
@@ -380,7 +382,7 @@ void serve_client(int client_fd, char *client_ip, int port) {
     int n;
 
     char *client_buffer = get_client_buffer(client_fd, &n);
-    unsigned int end = index_of(client_buffer, '\r');
+    int end = index_of(client_buffer,'\r');
 
     if (n < 0 || end == -1) {
         char *err = "Errore nel ricevere i dati o richiesta mal posta.\n";
@@ -391,7 +393,6 @@ void serve_client(int client_fd, char *client_ip, int port) {
         if (close(client_fd) < 0) {
             perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
         }
-        free(client_buffer);
         return;
     }
 
