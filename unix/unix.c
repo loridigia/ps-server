@@ -345,6 +345,8 @@ int work_with_processes(int fd, char *client_ip, int port) {
     } else if (pid_child == 0) {
         serve_client(fd, client_ip, port);
         exit(0);
+    } else {
+        close(fd);
     }
     return 0;
 }
