@@ -7,24 +7,20 @@ HANDLE g_hChildStd_IN_Wr = NULL;
 extern configuration *config;
 
 void init(int argc, char *argv[]) {
-    //daemon check
     if (is_daemon(argc, argv)) {
-        perror("La modalità daemon è disponibile solo sotto sistemi UNIX.");
+        fprintf(stderr, "%s", "La modalità daemon è disponibile solo sotto sistemi UNIX.");
         exit(1);
     }
-    //catch CTRL signal
+
     SetConsoleCtrlHandler(CtrlHandler, TRUE);
 
-    //mutex global
-    mutex = CreateMutex(NULL,FALSE,"Global\\Mutex");
+    mutex = CreateMutex(NULL,FALSE, GLOBAL_MUTEX);
 
-    //logger event
-    logger_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Process_Event"));
+    logger_event = CreateEvent(NULL, TRUE, FALSE, LOGGER_EVENT);
 
     //listener event
-    listener_event = CreateEvent(NULL, TRUE, FALSE, TEXT("Listener_Event"));
+    //listener_event = CreateEvent(NULL, TRUE, FALSE, LISTENER_EVENT);
 
-    //creazione processo per log routine
     PROCESS_INFORMATION logger_info;
 
     if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &logger_info) == 0){
@@ -32,37 +28,20 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
-    //wait initialization of logger process
     WaitForSingleObject(logger_event, INFINITE);
 
-    //loading configuration
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
-        perror("Errore nel caricare la configurazione");
         exit(1);
     } config->main_pid = GetCurrentProcessId();
 
-    //mapping del config per renderlo globale
     LPCTSTR pBuf;
-    hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, "Global\\Config");
+    hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, GLOBAL_CONFIG);
     if (hMapFile == NULL){
         perror("Errore nel creare memory object");
         exit(1);
     }
 
-    //copy config on shared memory
     set_shared_config();
-
-    //create pipe only for thread
-    if (equals(config->server_type, "thread")){
-        h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-        if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY) {
-            perror("Errore nella creazione della pipe");
-            exit(1);
-        }
-    }
-
-
-    //inizio
     start();
 
     fprintf(stdout,"Server started...\n"
@@ -113,6 +92,12 @@ VOID set_shared_config(){
 
 void start(){
     if (equals(config->server_type, "thread")) {
+        h_pipe = CreateFile(PIPENAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+        if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY) {
+            perror("Errore nella creazione della pipe");
+            exit(1);
+        }
+
         HANDLE thread = CreateThread(NULL, 0, listener_routine, &config->server_port, 0, NULL);
         if (thread == NULL) {
             perror("Errore nel creare il thread listener");
@@ -162,8 +147,8 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
     }
 
     struct timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 100000;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
 
     fd_set read_fd_set;
     while(TRUE) {
@@ -579,7 +564,7 @@ int _recv(int s,char *buf,int len,int flags) {
 void get_shared_config(configuration *configuration){
     HANDLE handle_mapped_file;
 
-    handle_mapped_file = OpenFileMapping(FILE_MAP_READ, FALSE, "Global\\Config");
+    handle_mapped_file = OpenFileMapping(FILE_MAP_READ, FALSE, GLOBAL_CONFIG);
     if (handle_mapped_file == NULL){
         perror("Errore nell'aprire memory object listener");
         CloseHandle(handle_mapped_file);

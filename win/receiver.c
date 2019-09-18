@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "win.h"
 
-#define pipename "\\\\.\\pipe\\LogPipe"
+#define PIPENAME "\\\\.\\pipe\\LogPipe"
 
 extern configuration *config;
 
@@ -18,9 +18,9 @@ int main(int argc, char *argv[]) {
     get_shared_config(config);
 
     //get handles of mutex and pipe
-    mutex = CreateMutex(NULL,FALSE,"Global\\Mutex");
+    mutex = CreateMutex(NULL,FALSE, GLOBAL_MUTEX);
 
-    h_pipe = CreateFile(pipename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    h_pipe = CreateFile(PIPENAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY){
         perror("Errore nella creazione della pipe");
         exit(1);

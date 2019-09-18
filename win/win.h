@@ -11,11 +11,12 @@
 #include CORE_PATH
 
 #pragma comment(lib,"ws2_32.lib")
-#define pipename "\\\\.\\pipe\\LogPipe"
-
-//memory object stuff
 #define BUF_SIZE 256
-
+#define PIPENAME "\\\\.\\pipe\\LogPipe"
+#define GLOBAL_MUTEX "Global\\Mutex"
+#define GLOBAL_CONFIG "Global\\Config"
+#define LOGGER_EVENT   "Logger_Event"
+#define LISTENER_EVENT "Listener_Event"
 
 STARTUPINFO info;
 PROCESS_INFORMATION listener_info;
