@@ -303,13 +303,11 @@ int work_with_threads(SOCKET socket, char *client_ip, int port) {
 }
 
 void serve_client(SOCKET socket, char *client_ip, int port) {
-    char *err;
-    int n;
-    u_long iMode = 1;
-    ioctlsocket(socket, FIONBIO, &iMode);
+    int n; char *err;
+
     char *client_buffer = get_client_buffer(socket, &n);
 
-    if (n < 0 && WSAGetLastError() != EAGAIN && WSAGetLastError() != WSAEWOULDBLOCK) {
+    if (n < 0) {
         err = "Errore nel ricevere i dati o richiesta mal posta.\n";
         fprintf(stderr,"%s",err);
         send_error(socket, err);
@@ -317,17 +315,11 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
         return;
     }
 
-    unsigned int end = index_of(client_buffer, '\r');
-    if (end == -1) {
-        end = strlen(client_buffer);
-    }
-    client_buffer[end] = '\0';
-
-    char path[strlen(PUBLIC_PATH) + strlen(client_buffer)];
+    char path[strlen(PUBLIC_PATH) + strlen(client_buffer) + 1];
     sprintf(path,"%s%s", PUBLIC_PATH, client_buffer);
 
     BOOL success = FALSE;
-    if (is_file(path)) {
+    if (is_file(path) != 0) {
         HANDLE handle = CreateFile(TEXT(path),
                                    GENERIC_READ | GENERIC_WRITE,
                                    0,
@@ -365,7 +357,18 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
             }
 
             HANDLE file = CreateFileMappingA(handle,NULL,PAGE_READONLY,0,size,"file");
+            if (file == NULL) {
+                perror("Impossibile mappare il file.\n");
+                closesocket(socket);
+                return;
+            }
+
             view = (char*)MapViewOfFile(file, FILE_MAP_READ, 0, 0, 0);
+            if (view == NULL) {
+                perror("Impossibile creare la view.\n");
+                closesocket(socket);
+                return;
+            }
 
             success = UnlockFileEx(handle,0,size,0,&sOverlapped);
             if (!success) {
@@ -374,17 +377,6 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
                 return;
             }
 
-            if (file == NULL) {
-                perror("Impossibile mappare il file.\n");
-                closesocket(socket);
-                return;
-            }
-
-            if (view == NULL) {
-                perror("Impossibile creare la view.\n");
-                closesocket(socket);
-                return;
-            }
         } else {
             view = "";
         }
