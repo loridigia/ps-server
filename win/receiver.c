@@ -10,14 +10,17 @@ int main(int argc, char *argv[]) {
     DWORD dwRead;
     HANDLE hStdin, hStdout;
 
-    // Load argv
-    int port = atoi(argv[0]);
+
+    char *endptr;
+    int port = strtol(argv[0], &endptr, 10);
+    if (*endptr != '\0' || endptr == argv[0]) {
+        fprintf(stderr,"Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
+        return -1;
+    }
     char *ip = argv[1];
 
-    //READ_ONLY from shared mem config
     get_shared_config(config);
 
-    //get handles of mutex and pipe
     mutex = CreateMutex(NULL,FALSE, GLOBAL_MUTEX);
 
     h_pipe = CreateFile(PIPENAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
@@ -26,11 +29,9 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    //Open STDERR / STDOUT
     freopen("CONOUT$", "w", stderr);
     freopen("CONOUT$", "w", stdout);
 
-    //Get handles
     hStdout = CreateFile("CONOUT$",  GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     hStdin = GetStdHandle(STD_INPUT_HANDLE);
     if ((hStdout == INVALID_HANDLE_VALUE) || (hStdin == INVALID_HANDLE_VALUE)){
@@ -38,7 +39,6 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    //Redirect STDOUT/ERR to ConsoleSTD
     SetStdHandle(STD_OUTPUT_HANDLE, hStdout);
     SetStdHandle(STD_ERROR_HANDLE, hStdout);
 

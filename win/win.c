@@ -18,9 +18,6 @@ void init(int argc, char *argv[]) {
 
     logger_event = CreateEvent(NULL, TRUE, FALSE, LOGGER_EVENT);
 
-    //listener event
-    //listener_event = CreateEvent(NULL, TRUE, FALSE, LISTENER_EVENT);
-
     PROCESS_INFORMATION logger_info;
 
     if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &logger_info) == 0){
@@ -34,7 +31,6 @@ void init(int argc, char *argv[]) {
         exit(1);
     } config->main_pid = GetCurrentProcessId();
 
-    LPCTSTR pBuf;
     hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, GLOBAL_CONFIG);
     if (hMapFile == NULL){
         perror("Errore nel creare memory object");
@@ -46,16 +42,12 @@ void init(int argc, char *argv[]) {
 
     fprintf(stdout,"Server started...\n"
                    "Listening on port: %d\n"
-                   "Type: multi%s\n"
+                   "Type: multi-%s\n"
                    "Process ID: %d\n\n",
             config->server_port,config->server_type, config->main_pid);
     write_infos();
 
-
-    while(1) {
-        sleep(10);
-    }
-
+    while(1) Sleep(1000);
 }
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
     if (fdwCtrlType == CTRL_BREAK_EVENT) {
@@ -104,7 +96,7 @@ void start(){
             exit(1);
         }
     } else {
-        char *arg = malloc(16);
+        char *arg = malloc(MAX_PORT_LENGTH);
         sprintf(arg, "%d", config->server_port);
 
         if (CreateProcess("listener.exe", arg, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &listener_info) == 0){
@@ -231,10 +223,9 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
 }
 
 int work_with_processes(SOCKET socket, char *client_ip, int port){
-    char *args = malloc(64);
+    char *args = malloc(MAX_PORT_LENGTH + MAX_IP_SIZE + 2);
     sprintf(args, "%d %s", port, client_ip);
 
-    //creazione processo receiver per gestire la richiesta
     SECURITY_ATTRIBUTES saAttr;
 
     // Set the bInheritHandle flag so pipe handles are inherited.
@@ -257,7 +248,6 @@ int work_with_processes(SOCKET socket, char *client_ip, int port){
 
     child_id = create_receiver_process(args);
 
-    // Duplicate and write socket on pipe
     WSADuplicateSocketA(socket, child_id, &protocol_info);
     if (! WriteFile(g_hChildStd_IN_Wr, &protocol_info, sizeof(protocol_info), &dwWrite, NULL)){
         perror("errore nello scrivere su pipe STD_IN");
@@ -273,13 +263,12 @@ DWORD create_receiver_process(char *args){
 
     ZeroMemory( &receiver_info, sizeof(PROCESS_INFORMATION) );
 
-    // STDIN and STDOUT handles for redirection.
     ZeroMemory( &si_start_info, sizeof(STARTUPINFO) );
     si_start_info.cb = sizeof(STARTUPINFO);
     si_start_info.hStdInput = g_hChildStd_IN_Rd;
     si_start_info.dwFlags |= STARTF_USESTDHANDLES;
 
-    if (CreateProcess("receiver.exe", args, NULL, NULL, TRUE, 0, NULL, NULL, &si_start_info, &receiver_info) == 0){
+    if (CreateProcess("receiver.exe", args, NULL, NULL, TRUE, 0, NULL, NULL, &si_start_info, &receiver_info) == 0) {
         printf("-%lu-", GetLastError());
         perror("Errore nell'eseguire il processo receiver");
         exit(1);

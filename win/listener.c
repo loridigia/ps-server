@@ -8,18 +8,15 @@ extern configuration *config;
 int main(int argc, char *argv[]) {
 
     SetConsoleCtrlHandler(CtrlHandlerListener, TRUE);
+    char *endptr;
+    int port = strtol(argv[0], &endptr, 10);
+    if (*endptr != '\0' || endptr == argv[0]) {
+        fprintf(stderr,"Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
+        return -1;
+    }
 
-    int port = atoi(argv[0]);
-
-    printf("listener ON port: %d\n", port);
-
-    //READ_ONLY from shared mem config
     get_shared_config(config);
-
     handle_requests(port, work_with_processes);
-
-    printf("listener di %d out\n", port);
-
 }
 
 BOOL WINAPI CtrlHandlerListener(DWORD fdwCtrlType){
