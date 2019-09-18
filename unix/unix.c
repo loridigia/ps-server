@@ -537,10 +537,6 @@ int _log(char *buffer) {
     return 0;
 }
 
-size_t _getline(char **lineptr, size_t *n, FILE *stream) {
-    return getline(lineptr, n, stream);
-}
-
 int _recv(int s,char *buf,int len,int flags) {
     return recv(s,buf,len,flags);
 }

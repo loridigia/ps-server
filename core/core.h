@@ -17,5 +17,4 @@ void init();
 void serve_client();
 void handle_requests();
 void *send_routine();
-size_t _getline(char **lineptr, size_t *n, FILE *stream);
 int _recv();

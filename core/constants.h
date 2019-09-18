@@ -9,14 +9,15 @@
 #define PORT_ONLY 1
 #define CHUNK 32
 #define MIN_LOG_SIZE 50
-#define MAX_TYPE_LENGTH 10
 #define MAX_IP_SIZE 16
 #define MAX_INFOS_SIZE 15
 #define MAX_EXT_LENGTH 3
-#define MAX_PORT_LENGTH 6
+#define MAX_PORT_LENGTH 5
+#define MAX_TYPE_LENGTH 7
 #define MAX_FILENAME_LENGTH 256
 #define MIN_PORT 1024
 #define MAX_PORT 65535
+#define CONFIG_PREFIX_LENGTH 12
 
 #define PORT_FLAG "--port="
 #define TYPE_FLAG "--type="

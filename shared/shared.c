@@ -33,16 +33,20 @@ int load_arguments(int argc, char *argv[]) {
 }
 
 int load_configuration(int mode) {
-    FILE *stream;
-    char *line = NULL;
-    stream = fopen(CONFIG_PATH, "r");
+    char line[CONFIG_PREFIX_LENGTH+MAX_TYPE_LENGTH];
+    FILE *stream = fopen(CONFIG_PATH, "r");
     if (stream == NULL) {
         perror("Impossibile aprire il file di configurazione.\n");
         fclose(stream);
         return -1;
     }
 
-    char *endptr, *port_param = get_parameter(line,stream);
+    char port_param[MAX_PORT_LENGTH+1];
+    fgets(line,CONFIG_PREFIX_LENGTH+MAX_PORT_LENGTH+1, stream);
+    line[index_of(line, '\n')] = '\0';
+    strcpy(port_param, line + CONFIG_PREFIX_LENGTH);
+
+    char *endptr;
     config->server_port = strtol(port_param, &endptr, 10);
     if (config->server_port < MIN_PORT || config->server_port > MAX_PORT || *endptr != '\0' || endptr == port_param) {
         fprintf(stderr,"Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
@@ -50,13 +54,14 @@ int load_configuration(int mode) {
         return -1;
     }
     if (mode == PORT_ONLY) {
-        free(port_param);
         fclose(stream);
         return 0;
     }
 
-    char *type_param = get_parameter(line,stream);
-    strcpy(config->server_type, type_param);
+    fgets(line,CONFIG_PREFIX_LENGTH+MAX_TYPE_LENGTH+1, stream);
+    line[index_of(line, '\n')] = '\0';
+    strcpy(config->server_type, line + CONFIG_PREFIX_LENGTH);
+
     if (!(equals(config->server_type, "thread") || equals(config->server_type, "process"))) {
         fprintf(stderr,"Seleziona una modalità corretta di avvio (thread o process).\n");
         fclose(stream);
@@ -69,10 +74,7 @@ int load_configuration(int mode) {
         fclose(stream);
         return -1;
     }
-
     free(ip);
-    free(port_param);
-    free(type_param);
     fclose(stream);
     return 0;
 }
@@ -94,27 +96,6 @@ int index_of(char *values, char find) {
     if (values == NULL) return -1;
     const char *ptr = strchr(values, find);
     return ptr ? ptr-values : -1;
-}
-
-char *get_parameter(char *line, FILE *stream) {
-    size_t len;
-    if (_getline(&line, &len, stream) != -1) {
-        char *ptr = (char*)malloc(len+1);
-        if (ptr == NULL) {
-            perror("Errore durante la malloc. (get_parameter)\n");
-            free(line);
-            return ptr;
-        }
-        if (strtok(line, ":") == NULL) {
-            perror("Errore nella struttura del file di configurazione. (get_parameter)\n");
-            free(line);
-            return ptr;
-        }
-        sprintf(ptr, "%s",strtok(NULL, "\n"));
-        free(line);
-        return ptr;
-    }
-    return NULL;
 }
 
 int is_file(char *path) {
