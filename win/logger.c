@@ -5,7 +5,8 @@
 #include "../core/constants.h"
 #include CORE_PATH
 
-#define pipename "\\\\.\\pipe\\LogPipe"
+#define PIPENAME "\\\\.\\pipe\\LogPipe"
+#define LOGGER_EVENT   "Logger_Event"
 
 void _log(char *buffer);
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType);
@@ -18,7 +19,7 @@ int main(int argc, char *argv[]) {
     DWORD dw_read;
 
     //init pipe
-    h_pipe = CreateNamedPipe(pipename,
+    h_pipe = CreateNamedPipe(PIPENAME,
                              PIPE_ACCESS_DUPLEX,
                             PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
                              1,
@@ -28,7 +29,7 @@ int main(int argc, char *argv[]) {
                              NULL);
 
     //prendi l'handle dell'evento
-    logger_event = OpenEvent(EVENT_MODIFY_STATE, FALSE, TEXT("Process_Event"));
+    logger_event = OpenEvent(EVENT_MODIFY_STATE, FALSE, LOGGER_EVENT);
 
     //cambia lo stato dell'evento quando la pipe è creata
     SetEvent(logger_event);
