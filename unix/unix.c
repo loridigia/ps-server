@@ -82,30 +82,22 @@ void init(int argc, char *argv[]) {
 
     pthread_mutexattr_t mutexAttr = {};
     if (pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED)) {
-        /*
         perror("Impossibile impostare l'attributo del mutex: PTHREAD_SHARED.\n");
         exit(1);
-        */
     }
     if (pthread_mutex_init(mutex, &mutexAttr)) {
-        /*
         perror("Impossibile inizializzare l'attributo del mutex.\n");
         exit(1);
-        */
     }
 
     pthread_condattr_t condAttr = {};
     if (pthread_condattr_setpshared(&condAttr, PTHREAD_PROCESS_SHARED)) {
-        /*
         perror("Impossibile impostare l'attributo della condition variable: PTHREAD_SHARED.\n");
         exit(1);
-        */
     }
     if (pthread_cond_init(condition, &condAttr)) {
-        /*
         perror("Impossibile inizializzare l'attributo della condition variable.\n");
         exit(1);
-        */
     }
 
     pid_t pid_child = fork();
@@ -143,6 +135,7 @@ void log_routine() {
         pthread_cond_wait(condition, mutex);
         if (read(pipe_fd[0], buffer, sizeof buffer) < 0) {
             perror("Errore durante la read sulla pipe.\n");
+            pthread_mutex_unlock(mutex);
             continue;
         }
         if (_log(buffer) < 0) {
