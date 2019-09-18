@@ -56,5 +56,4 @@ int main(int argc, char *argv[]) {
 
     serve_client(socket, ip, port);
     closesocket(socket);
-
 }

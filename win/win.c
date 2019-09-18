@@ -428,39 +428,26 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
     }
 }
 
-void *send_routine(thread_arg_sender *args) {
-    if (send_file(args->client_socket, args->file_in_memory, args->size) < 0){
+void *send_routine(void *arg) {
+    thread_arg_sender *args = (thread_arg_sender *) arg;
+    if (send(args->client_socket, args->file_in_memory, args->size,0) < 0){
         fprintf(stderr, "Errore nel comunicare con la socket. ('sender')\n");
     } else {
-        WaitForSingleObject(mutex,INFINITE);
         if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
             fprintf(stderr, "Errore nello scrivere sulla pipe LOG.\n");
             return NULL;
         }
-        if (!ReleaseMutex(mutex)) {
-            fprintf(stderr, "Impossibile rilasciare il mutex.\n");
-        }
-    } if (equals(config->server_type,"process")) {
-        closesocket(args->client_socket);
-        exit(0);
     }
+
+    if (args->size > 0) {
+        UnmapViewOfFile(args->file_in_memory);
+    }
+    closesocket(args->client_socket);
     return NULL;
 }
 
-int send_file(int socket_fd, char *file, int size){
-    char new[strlen(file)+2];
-    sprintf(new, "%s\n", file);
-    int res = 0;
-    if (send(socket_fd, new, strlen(new), 0) == -1) {
-        res = -1;
-    }
-    if (size > 0) UnmapViewOfFile(file);
-    closesocket(socket_fd);
-    return res;
-}
-
-
 int write_on_pipe(int size, char* name, int port, char *client_ip) {
+    WaitForSingleObject(mutex,INFINITE);
     DWORD dw_written;
     char *buffer = malloc(strlen(name) + sizeof(size) + strlen(client_ip) + sizeof(port) + CHUNK);
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", name, size, client_ip, port);
@@ -468,6 +455,9 @@ int write_on_pipe(int size, char* name, int port, char *client_ip) {
         if (WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL) == FALSE ){
             printf("ERRORE WRITEFILE %lu", GetLastError());
         }
+    }
+    if (!ReleaseMutex(mutex)) {
+        fprintf(stderr, "Impossibile rilasciare il mutex.\n");
     }
 }
 
