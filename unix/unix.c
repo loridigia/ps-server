@@ -122,7 +122,7 @@ void init(int argc, char *argv[]) {
     start();
 
     if (write_infos() == -1) {
-        exit(0);
+        exit(1);
     }
 
     if (signal(SIGHUP, restart) == SIG_ERR) {

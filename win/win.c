@@ -6,37 +6,57 @@ HANDLE g_hChildStd_IN_Wr = NULL;
 extern configuration *config;
 
 void init(int argc, char *argv[]) {
-    SetConsoleCtrlHandler(CtrlHandler, TRUE);
-
-    mutex = CreateMutex(NULL,FALSE, GLOBAL_MUTEX);
-
-    logger_event = CreateEvent(NULL, TRUE, FALSE, LOGGER_EVENT);
-
-    PROCESS_INFORMATION logger_info;
-
-    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &logger_info) == 0){
-        perror("Errore nell'eseguire il processo logger");
+    if (SetConsoleCtrlHandler(CtrlHandler, TRUE) == 0) {
+        perror("Impossibile aggiungere la funzione di handling per CTRL+BREAK. \n");
         exit(1);
     }
 
-    WaitForSingleObject(logger_event, INFINITE);
+    mutex = CreateMutexA(NULL,FALSE, GLOBAL_MUTEX);
+    if (mutex == NULL) {
+        perror("Errore nell'operazione di creazione del mutex. \n");
+        exit(1);
+    }
+
+    logger_event = CreateEventA(NULL, TRUE, FALSE, LOGGER_EVENT);
+    if (logger_event == NULL) {
+        perror("Errore nell'operazione di creazione del logger_event. \n");
+        exit(1);
+    }
+
+    PROCESS_INFORMATION logger_info;
+    if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &logger_info) == 0){
+        perror("Errore durante l'esecuzione del processo logger. \n");
+        exit(1);
+    }
+
+    if (WaitForSingleObject(logger_event, INFINITE) == WAIT_FAILED) {
+        perror("Errore durante l'attesa della creazione del processo logger. \n");
+        exit(1);
+    }
 
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
         exit(1);
     } config->main_pid = GetCurrentProcessId();
 
-    hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, GLOBAL_CONFIG);
-    if (hMapFile == NULL){
-        perror("Errore nel creare memory object");
+    map_handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, GLOBAL_CONFIG);
+    if (map_handle == NULL){
+        perror("Errore nel creare memory object. \n");
         exit(1);
     }
 
-    set_shared_config();
+    if (set_shared_config() == -1) {
+        exit(1);
+    }
+
     start();
-    write_infos();
+
+    if (write_infos() == -1) {
+        exit(1);
+    }
 
     while(1) Sleep(1000);
 }
+
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
     if (fdwCtrlType == CTRL_BREAK_EVENT) {
         restart();
@@ -48,24 +68,27 @@ void restart() {
     if (load_configuration(PORT_ONLY) == -1) {
         printf("error");
     }
-
+<
     set_shared_config();
     start();
 
 }
 
-VOID set_shared_config(){
-    LPCTSTR pBuf;
-    pBuf = (LPTSTR) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
+int set_shared_config(){
+    LPCTSTR pBuf = (LPTSTR) MapViewOfFile(map_handle, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
     if (pBuf == NULL){
-        printf("Errore nel mappare la view del file");
-        CloseHandle(hMapFile);
-        exit(1);
+        perror("Errore nel mappare la view del file. (init) \n");
+        CloseHandle(map_handle);
+        return -1;
     }
 
     CopyMemory((PVOID)pBuf, config, sizeof(configuration));
-    FlushViewOfFile(pBuf, sizeof(configuration));
-    UnmapViewOfFile(pBuf);
+    if ((FlushViewOfFile(pBuf, sizeof(configuration)) && UnmapViewOfFile(pBuf)) == 0) {
+        perror("Errore durante l'operazione di flushing / unmapping della view del file. \n");
+        return -1;
+    }
+
+    return 0;
 }
 
 
