@@ -6,11 +6,6 @@ HANDLE g_hChildStd_IN_Wr = NULL;
 extern configuration *config;
 
 void init(int argc, char *argv[]) {
-    if (is_daemon(argc, argv)) {
-        fprintf(stderr, "%s", "La modalità daemon è disponibile solo sotto sistemi UNIX.");
-        exit(1);
-    }
-
     SetConsoleCtrlHandler(CtrlHandler, TRUE);
 
     mutex = CreateMutex(NULL,FALSE, GLOBAL_MUTEX);
@@ -38,12 +33,6 @@ void init(int argc, char *argv[]) {
 
     set_shared_config();
     start();
-
-    fprintf(stdout,"Server started...\n"
-                   "Listening on port: %d\n"
-                   "Type: multi-%s\n"
-                   "Process ID: %d\n\n",
-            config->server_port,config->server_type, config->main_pid);
     write_infos();
 
     while(1) Sleep(1000);

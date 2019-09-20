@@ -7,6 +7,16 @@ void restart() {
     }
 }
 
+int is_daemon(int argc, char *argv[]) {
+    for (int i = 1; i < argc; i++) {
+        char *input = argv[i];
+        if (strncmp(input, DAEMON_FLAG, strlen(DAEMON_FLAG)) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void daemon_skeleton() {
     pid_t pid = fork();
     if (pid < 0) {
@@ -111,11 +121,6 @@ void init(int argc, char *argv[]) {
 
     start();
 
-    fprintf(stdout,"Server started...\n"
-                   "Listening on port: %d\n"
-                   "Type: multi-%s\n"
-                   "Process ID: %d\n\n",
-            config->server_port,config->server_type, config->main_pid);
     if (write_infos() == -1) {
         exit(0);
     }

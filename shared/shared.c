@@ -106,16 +106,6 @@ int is_file(char *path) {
     return S_ISREG(path_stat.st_mode);
 }
 
-int is_daemon(int argc, char *argv[]) {
-    for (int i = 1; i < argc; i++) {
-        char *input = argv[i];
-        if (strncmp(input, DAEMON_FLAG, strlen(DAEMON_FLAG)) == 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 char *get_client_buffer(int socket, int *n) {
     int size = 32, chunk = 32, len = 0, max_size = 512;
     char *client_buffer = (char*)calloc(size, sizeof(char));
@@ -174,6 +164,12 @@ int write_infos() {
         perror(err);
         return -1;
     }
+    fprintf(stdout,"Server started...\n"
+                   "Listening on port: %d\n"
+                   "Type: multi-%s\n"
+                   "Process ID: %d\n\n",
+            config->server_port,config->server_type, config->main_pid);
+
     return 0;
 }
 
