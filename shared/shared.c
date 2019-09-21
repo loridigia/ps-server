@@ -177,7 +177,7 @@ char *get_file_listing(char *route, char *path) {
     DIR *d;
     struct dirent *dir;
     int len = 0;
-    int row_size = MAX_EXT_LENGTH + MAX_FILENAME_LENGTH + strlen(route) + MAX_IP_SIZE + MAX_PORT_LENGTH + 1;
+    int row_size = MAX_EXT_LENGTH + MAX_FILENAME_LENGTH + strlen(route) + MAX_IP_SIZE + MAX_PORT_LENGTH + 5;
     int size = row_size;
     char *buffer = (char*)calloc(row_size,sizeof(char));
     if (buffer == NULL) {

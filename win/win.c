@@ -444,15 +444,15 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
         if (equals(config->server_type, "thread")) {
             send_routine(args);
         } else if (equals(config->server_type, "process")) {
-            HANDLE handle = CreateThread(NULL, 0, sender_routine, (HANDLE*)args, 0, NULL);
-            if (handle == NULL) {
+            HANDLE thread_handle = CreateThread(NULL, 0, sender_routine, (HANDLE*)args, 0, NULL);
+            if (thread_handle == NULL) {
                 print_error("Impossibile creare un nuovo thread di tipo 'sender'");
                 free(args);
                 return;
             }
-            if (WaitForSingleObject(handle, INFINITE) == WAIT_FAILED) {
+            if (WaitForSingleObject(thread_handle, INFINITE) == WAIT_FAILED) {
                 print_error("Errore durante l'attesa del thread sender");
-                return -1;
+                return;
             }
         }
         if (CloseHandle(handle) == 0) {
