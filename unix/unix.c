@@ -1,10 +1,14 @@
 #include "unix.h"
 extern configuration *config;
 
-void restart() {
+int restart() {
     if (load_configuration(PORT_ONLY) != -1) {
-        start();
+        if (start() < 0) {
+            perror("Impossibile fare il restart del server. \n");
+            return -1;
+        }
     }
+    return 0;
 }
 
 int is_daemon(int argc, char *argv[]) {
@@ -119,7 +123,10 @@ void init(int argc, char *argv[]) {
         exit(0);
     }
 
-    start();
+    if (start() < 0) {
+        perror("Impossibile avviare il server. \n");
+        exit(1);
+    }
 
     if (write_infos() == -1) {
         exit(1);
@@ -216,27 +223,24 @@ int send_error(int socket_fd, char *err) {
     return send(socket_fd, err, strlen(err), 0);
 }
 
-void start() {
+int start() {
     if (equals(config->server_type, "thread")) {
         pthread_t thread;
-        if (pthread_create(
-                &thread,
-                &pthread_attr,
-                listener_routine,
-                (void *) &config->server_port) != 0) {
+        if (pthread_create(&thread,&pthread_attr,listener_routine, (void *) &config->server_port) != 0) {
             perror("Impossibile creare il thread. (listener)\n");
-            exit(1);
+            return -1;
         }
     } else {
         pid_t pid_child = fork();
         if (pid_child < 0) {
             perror("Errore durante la fork. (start)\n");
-            exit(1);
+            return -1;
         } else if (pid_child == 0) {
             handle_requests(config->server_port, work_with_processes);
             exit(0);
         }
     }
+    return 0;
 }
 
 void release() {
@@ -380,7 +384,6 @@ void *send_routine(void *arg) {
 
 void serve_client(int client_fd, char *client_ip, int port) {
     int n;
-
     char *client_buffer = get_client_buffer(client_fd, &n);
 
     if (n < 0) {
