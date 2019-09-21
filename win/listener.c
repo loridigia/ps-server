@@ -4,10 +4,10 @@
 BOOL WINAPI CtrlHandlerListener(DWORD fdwCtrlType);
 extern configuration *config;
 
-
 int main(int argc, char *argv[]) {
 
     SetConsoleCtrlHandler(CtrlHandlerListener, TRUE);
+
     char *endptr;
     int port = strtol(argv[0], &endptr, 10);
     if (*endptr != '\0' || endptr == argv[0]) {

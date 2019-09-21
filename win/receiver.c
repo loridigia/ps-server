@@ -22,6 +22,10 @@ int main(int argc, char *argv[]) {
     get_shared_config(config);
 
     mutex = CreateMutex(NULL,FALSE, GLOBAL_MUTEX);
+    if (mutex == NULL){
+        fprintf(stderr,"Errore nell'apertura del mutex. \n");
+        exit(1);
+    }
 
     h_pipe = CreateFile(PIPENAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY){
@@ -49,7 +53,7 @@ int main(int argc, char *argv[]) {
     ReadFile(hStdin, &protocolInfo, sizeof(protocolInfo), &dwRead, NULL);
     SOCKET socket = WSASocket(protocolInfo.iAddressFamily, protocolInfo.iSocketType, protocolInfo.iProtocol, &protocolInfo, 0, WSA_FLAG_OVERLAPPED);
 
-    if( socket == INVALID_SOCKET) {
+    if (socket == INVALID_SOCKET) {
         printf("errore socket: %lu", WSAGetLastError());
         exit(1);
     }
