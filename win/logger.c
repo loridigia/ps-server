@@ -12,7 +12,9 @@ void _log(char *buffer);
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType);
 
 int main(int argc, char *argv[]) {
+
     SetConsoleCtrlHandler(CtrlHandler, TRUE);
+
     HANDLE logger_event;
     HANDLE h_pipe;
     char buffer[8192];
@@ -30,6 +32,10 @@ int main(int argc, char *argv[]) {
 
     //prendi l'handle dell'evento
     logger_event = OpenEvent(EVENT_MODIFY_STATE, FALSE, LOGGER_EVENT);
+    if (logger_event == NULL) {
+        fprintf(stderr, "Errore nell'aprire evento logger");
+        exit(1);
+    }
 
     //cambia lo stato dell'evento quando la pipe è creata
     SetEvent(logger_event);
@@ -44,6 +50,9 @@ int main(int argc, char *argv[]) {
         }
         DisconnectNamedPipe(h_pipe);
     }
+
+    CloseHandle(logger_event);
+    CloseHandle(h_pipe);
 }
 
 void _log(char *buffer) {
