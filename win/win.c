@@ -68,7 +68,6 @@ void restart() {
     if (load_configuration(PORT_ONLY) == -1) {
         printf("error");
     }
-<
     set_shared_config();
     start();
 
