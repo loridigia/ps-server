@@ -461,19 +461,23 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
     } else {
         char *listing_buffer;
         if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {
-            err = "File o directory non esistente.\n";
-            fprintf(stderr,"%s",err);
-            send_error(socket, err);
-            closesocket(socket);
+            send_error(socket, "File o directory non esistente.");
+            if (closesocket(socket) == SOCKET_ERROR) {
+                print_error("Impossibile chiudere la socket (listing failed)");
+            }
             return;
         }
         else {
             if (send(socket, listing_buffer, strlen(listing_buffer), 0) < 0) {
-                perror("Errore nel comunicare con la socket.\n");
-                closesocket(socket);
+                print_WSA_error("Errore nel comunicare con la socket");
+                if (closesocket(socket) == SOCKET_ERROR) {
+                    print_error("Impossibile chiudere la socket (send failed)");
+                }
                 return;
             }
-            closesocket(socket);
+            if (closesocket(socket) == SOCKET_ERROR) {
+                print_error("Impossibile chiudere la socket");
+            }
         }
     }
 }
