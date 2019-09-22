@@ -584,9 +584,9 @@ int get_shared_config() {
 }
 
 void print_error(char *err) {
-    fprintf(stderr, "%s : %s\n", err, strerror(GetLastError()));
+    fprintf(stderr, "%s : %lu\n", err,  GetLastError());
 }
 
 void print_WSA_error(char *err) {
-    fprintf(stderr,"%s : %s\n",err,strerror(WSAGetLastError()));
+    fprintf(stderr,"%s : %d\n",err, WSAGetLastError());
 }

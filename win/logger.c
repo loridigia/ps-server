@@ -6,7 +6,7 @@
 #include CORE_PATH
 
 #define PIPENAME "\\\\.\\pipe\\LogPipe"
-#define LOGGER_EVENT   "Logger_Event"
+#define LOGGER_EVENT "Logger_Event"
 
 void _log(char *buffer);
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType);
