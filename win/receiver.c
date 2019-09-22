@@ -10,12 +10,7 @@ int main(int argc, char *argv[]) {
     DWORD dwRead;
     HANDLE hStdin, hStdout;
 
-    char *endptr;
-    int port = strtol(argv[0], &endptr, 10);
-    if (*endptr != '\0' || endptr == argv[0]) {
-        fprintf(stderr,"Controllare che la porta sia scritta correttamente o che non sia well-known. \n");
-        return -1;
-    }
+    int port = atoi(argv[0]);
     char *ip = argv[1];
 
     if (get_shared_config() < 0) {

@@ -39,8 +39,8 @@ void init(int argc, char *argv[]) {
     } config->main_pid = GetCurrentProcessId();
 
     map_handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, GLOBAL_CONFIG);
-    if (map_handle == NULL){
-        print_error("Errore nel creare memory object");
+    if (map_handle == NULL) {
+        print_error("Errore durante il mapping del file config");
         exit(1);
     }
 
