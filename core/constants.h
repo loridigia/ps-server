@@ -7,10 +7,9 @@
 #define BACKLOG 128
 #define COMPLETE 0
 #define PORT_ONLY 1
-#define CHUNK 32
-#define MIN_LOG_SIZE 50
-#define MAX_IP_SIZE 16
-#define MAX_INFOS_SIZE 15
+#define MIN_LOG_LENGTH 50
+#define MAX_IP_LENGTH 16
+#define MAX_INFOS_LENGTH 15
 #define MAX_EXT_LENGTH 3
 #define MAX_PORT_LENGTH 5
 #define MAX_TYPE_LENGTH 7

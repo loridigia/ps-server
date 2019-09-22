@@ -81,14 +81,18 @@ int set_shared_config(){
     LPCTSTR p_buf = (LPTSTR) MapViewOfFile(map_handle, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
     if (p_buf == NULL) {
         print_error("Errore nel mappare la view del file. (set_shared_config)");
-        CloseHandle(map_handle);
+        if (CloseHandle(map_handle) == 0) {
+            print_error("Impossibile chiudere l'handle del file (set_shared_config)");
+        }
         return -1;
     }
 
     CopyMemory((PVOID)p_buf, config, sizeof(configuration));
     if ((FlushViewOfFile(p_buf, sizeof(configuration)) && UnmapViewOfFile(p_buf)) == 0) {
         print_error("Errore durante l'operazione di flushing / unmapping della view del file. (set_shared_config)");
-        CloseHandle(map_handle);
+        if (CloseHandle(map_handle) == 0) {
+            print_error("Impossibile chiudere l'handle del file (set_shared_config)");
+        }
         return -1;
     }
 
@@ -244,7 +248,7 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
 }
 
 int work_with_processes(SOCKET socket, char *client_ip, int port) {
-    char *args = malloc(MAX_PORT_LENGTH + MAX_IP_SIZE + 2);
+    char *args = malloc(MAX_PORT_LENGTH + MAX_IP_LENGTH + 2);
     if (args == NULL) {
         print_error("Impossibile allocare memoria per gli argomenti del processo receiver");
         return -1;
@@ -470,7 +474,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
             }
         }
         if (CloseHandle(handle) == 0) {
-            print_error("Impossibile chiudere l'handle del file");
+            print_error("Impossibile chiudere l'handle del file (serve_client)");
         }
     } else {
         char *listing_buffer;
@@ -523,9 +527,9 @@ int write_on_pipe(int size, char* route, int port, char *client_ip) {
         return -1;
     }
     DWORD dw_written;
-    char buffer[strlen(route) + MAX_IP_SIZE + MAX_PORT_LENGTH + MIN_LOG_SIZE];
+    char buffer[strlen(route) + MAX_IP_LENGTH + MAX_PORT_LENGTH + MIN_LOG_LENGTH];
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", route, size, client_ip, port);
-    if (h_pipe != INVALID_HANDLE_VALUE ) {
+    if (h_pipe != INVALID_HANDLE_VALUE) {
         if (WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL) == FALSE) {
             print_error("Errore durante la scrittura su pipe (write_on_pipe)");
         }
@@ -568,18 +572,24 @@ int get_shared_config() {
     HANDLE handle = OpenFileMapping(FILE_MAP_READ, FALSE, GLOBAL_CONFIG);
     if (handle == NULL) {
         print_error("Errore nell'aprire memory object listener (get_shared_config)");
-        CloseHandle(handle);
+        if (CloseHandle(handle) == 0) {
+            print_error("Impossibile chiudere l'handle del file (get_shared_config)");
+        }
         return -1;
     }
 
     config = MapViewOfFile(handle, FILE_MAP_READ, 0, 0, BUF_SIZE);
     if (config == NULL) {
         print_error("Errore nel mappare la view del file (get_shared_config)");
-        CloseHandle(handle);
+        if (CloseHandle(handle) == 0) {
+            print_error("Impossibile chiudere l'handle del file (get_shared_config)");
+        }
         return -1;
     }
 
-    CloseHandle(handle);
+    if (CloseHandle(handle) == 0) {
+        print_error("Impossibile chiudere l'handle del file (get_shared_config)");
+    }
     return 0;
 }
 

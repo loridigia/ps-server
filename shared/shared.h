@@ -22,7 +22,7 @@
 
 typedef struct configuration {
     char server_type[MAX_TYPE_LENGTH+1];
-    char server_ip[MAX_IP_SIZE+1];
+    char server_ip[MAX_IP_LENGTH + 1];
     unsigned int server_port;
     int main_pid;
 } configuration;

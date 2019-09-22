@@ -147,7 +147,7 @@ char *get_client_buffer(int socket, int *n) {
 }
 
 int write_infos() {
-    char data[MAX_INFOS_SIZE];
+    char data[MAX_INFOS_LENGTH];
     FILE *file = fopen(INFO_PATH, "w");
     if(file == NULL) {
         fprintf(stderr,"Impossibile leggere il file di infos.\n");
@@ -177,7 +177,7 @@ char *get_file_listing(char *route, char *path) {
     DIR *d;
     struct dirent *dir;
     int len = 0;
-    int row_size = MAX_EXT_LENGTH + MAX_FILENAME_LENGTH + strlen(route) + MAX_IP_SIZE + MAX_PORT_LENGTH + 5;
+    int row_size = MAX_EXT_LENGTH + MAX_FILENAME_LENGTH + strlen(route) + MAX_IP_LENGTH + MAX_PORT_LENGTH + 5;
     int size = row_size;
     char *buffer = (char*)calloc(row_size,sizeof(char));
     if (buffer == NULL) {

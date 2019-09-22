@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include "win.h"
 
-BOOL WINAPI CtrlHandlerListener(DWORD fdwCtrlType);
 extern configuration *config;
+BOOL WINAPI CtrlHandler2(DWORD fdwCtrlType);
 
 int main(int argc, char *argv[]) {
 
-    SetConsoleCtrlHandler(CtrlHandlerListener, TRUE);
+    if (SetConsoleCtrlHandler(CtrlHandler2, TRUE) == 0) {
+        print_error("Impossibile aggiungere la funzione di handling per CTRL+BREAK");
+        exit(1);
+    }
 
     int port = atoi(argv[0]);
 
@@ -16,7 +19,7 @@ int main(int argc, char *argv[]) {
     handle_requests(port, work_with_processes);
 }
 
-BOOL WINAPI CtrlHandlerListener(DWORD fdwCtrlType){
+BOOL WINAPI CtrlHandler2(DWORD fdwCtrlType){
     if (fdwCtrlType == CTRL_BREAK_EVENT) {
         return TRUE;
     }
