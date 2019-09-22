@@ -44,20 +44,20 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
-    if (set_shared_config() == -1) {
+    if (set_shared_config() < 0) {
         exit(1);
     }
 
     start();
 
-    if (write_infos() == -1) {
+    if (write_infos() < 0) {
         exit(1);
     }
 
     while(1) Sleep(1000);
 }
 
-BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType) {
     if (fdwCtrlType == CTRL_BREAK_EVENT) {
         restart();
         return TRUE;
@@ -66,28 +66,29 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType){
 
 int restart() {
     if (load_configuration(PORT_ONLY) == -1) {
-        printf("error");
         return -1;
     }
-    set_shared_config();
+    if (set_shared_config() < 0) {
+        return -1;
+    }
     if (start() < 0) {
-        perror("Impossibile fare il restart del server. \n");
         return -1;
     }
     return 0;
 }
 
 int set_shared_config(){
-    LPCTSTR pBuf = (LPTSTR) MapViewOfFile(map_handle, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
-    if (pBuf == NULL){
-        perror("Errore nel mappare la view del file. (init) \n");
+    LPCTSTR p_buf = (LPTSTR) MapViewOfFile(map_handle, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
+    if (p_buf == NULL) {
+        print_error("Errore nel mappare la view del file. (set_shared_config)");
         CloseHandle(map_handle);
         return -1;
     }
 
-    CopyMemory((PVOID)pBuf, config, sizeof(configuration));
-    if ((FlushViewOfFile(pBuf, sizeof(configuration)) && UnmapViewOfFile(pBuf)) == 0) {
-        perror("Errore durante l'operazione di flushing / unmapping della view del file. \n");
+    CopyMemory((PVOID)p_buf, config, sizeof(configuration));
+    if ((FlushViewOfFile(p_buf, sizeof(configuration)) && UnmapViewOfFile(p_buf)) == 0) {
+        print_error("Errore durante l'operazione di flushing / unmapping della view del file. (set_shared_config)");
+        CloseHandle(map_handle);
         return -1;
     }
 
@@ -169,7 +170,7 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
         if(config->server_port != port) {
             printf("Chiusura socket su porta: %d", port);
             if (closesocket(sock) == SOCKET_ERROR) {
-                print_error("Impossibile chiudere la socket (cambio porta)");
+                print_WSA_error("Impossibile chiudere la socket (cambio porta)");
             }
             return;
         }
@@ -203,7 +204,7 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
                 if (handle(s, client_ip, port) < 0) {
                     print_error("Errore nel comunicare con la socket");
                     if (closesocket(sock) == SOCKET_ERROR) {
-                        print_error("Impossibile chiudere la socket (handle failed)");
+                        print_WSA_error("Impossibile chiudere la socket (handle failed)");
                     }
                 }
                 FD_CLR(s, &read_fd_set);
@@ -242,56 +243,69 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
     return 0;
 }
 
-int work_with_processes(SOCKET socket, char *client_ip, int port){
+int work_with_processes(SOCKET socket, char *client_ip, int port) {
     char *args = malloc(MAX_PORT_LENGTH + MAX_IP_SIZE + 2);
+    if (args == NULL) {
+        print_error("Impossibile allocare memoria per gli argomenti del processo receiver");
+        return -1;
+    }
     sprintf(args, "%d %s", port, client_ip);
 
-    SECURITY_ATTRIBUTES saAttr;
+    SECURITY_ATTRIBUTES attrs;
 
-    // Set the bInheritHandle flag so pipe handles are inherited.
-    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
-    saAttr.bInheritHandle = TRUE;
-    saAttr.lpSecurityDescriptor = NULL;
+    attrs.nLength = sizeof(SECURITY_ATTRIBUTES);
+    attrs.bInheritHandle = TRUE;
+    attrs.lpSecurityDescriptor = NULL;
 
-    // Create a pipe for the child process's STDIN.
-    if (! CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0))
-        perror("Errore creazione pipe STDIN");
-
-    // Ensure the write handle to the pipe for STDIN is not inherited.
-    if (! SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0) )
-        perror("Stdin SetHandleInformation");
-
-
-    WSAPROTOCOL_INFO protocol_info;
-    DWORD dwWrite;
-    DWORD child_id;
-
-    child_id = create_receiver_process(args);
-
-    WSADuplicateSocketA(socket, child_id, &protocol_info);
-    if (! WriteFile(g_hChildStd_IN_Wr, &protocol_info, sizeof(protocol_info), &dwWrite, NULL)){
-        perror("errore nello scrivere su pipe STD_IN");
-        exit(1);
+    if (!CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &attrs, 0)) {
+        print_error("Errore creazione pipe STDIN (work_with_processes)");
+        return -1;
     }
 
-    closesocket(socket);
+    if (!SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0)) {
+        print_error("Errore SetHandleInformation function (work_with_processes)");
+        return -1;
+    }
+
+    WSAPROTOCOL_INFO protocol_info;
+    DWORD dw_write;
+    DWORD child_id = create_receiver_process(args);
+
+    if (child_id == -1) {
+        return -1;
+    }
+
+    if (WSADuplicateSocketA(socket, child_id, &protocol_info) == SOCKET_ERROR) {
+        print_WSA_error("Errore durante l'operazione di duplicazione della socket");
+        return -1;
+    }
+
+    if (!WriteFile(g_hChildStd_IN_Wr, &protocol_info, sizeof(protocol_info), &dw_write, NULL)){
+        print_error("Errore nello scrivere su pipe STD_IN");
+        return -1;
+    }
+
+    if (closesocket(socket) == SOCKET_ERROR) {
+        print_WSA_error("Impossibile chiudere la socket (work_with_processes)");
+    }
+
+    return 0;
 }
 
 DWORD create_receiver_process(char *args){
     PROCESS_INFORMATION receiver_info;
     STARTUPINFO si_start_info;
 
-    ZeroMemory( &receiver_info, sizeof(PROCESS_INFORMATION) );
+    ZeroMemory( &receiver_info, sizeof(PROCESS_INFORMATION));
+    ZeroMemory( &si_start_info, sizeof(STARTUPINFO));
 
-    ZeroMemory( &si_start_info, sizeof(STARTUPINFO) );
     si_start_info.cb = sizeof(STARTUPINFO);
     si_start_info.hStdInput = g_hChildStd_IN_Rd;
     si_start_info.dwFlags |= STARTF_USESTDHANDLES;
 
     if (CreateProcess("receiver.exe", args, NULL, NULL, TRUE, 0, NULL, NULL, &si_start_info, &receiver_info) == 0) {
-        printf("-%lu-", GetLastError());
-        perror("Errore nell'eseguire il processo receiver");
-        exit(1);
+        print_error("Errore durante l'esecuzione del processo receiver");
+        return -1;
     }
 
     return receiver_info.dwProcessId;
@@ -325,7 +339,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
         print_WSA_error(err);
         send_error(socket, err);
         if (closesocket(socket) == SOCKET_ERROR) {
-            print_error("Impossibile chiudere la socket (get_client_buffer check)");
+            print_WSA_error("Impossibile chiudere la socket (get_client_buffer check)");
         }
         return;
     }
@@ -348,7 +362,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
             print_error(err);
             send_error(socket, err);
             if (closesocket(socket) == SOCKET_ERROR) {
-                print_error("Impossibile chiudere la socket (file opening)");
+                print_WSA_error("Impossibile chiudere la socket (file opening)");
             }
             return;
         }
@@ -358,7 +372,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
             print_error("Impossibile prendere la size del file");
             send_error("Impossibile gestire la richiesta.\n");
             if (closesocket(socket) == SOCKET_ERROR) {
-                print_error("Impossibile chiudere la socket (getting size)");
+                print_WSA_error("Impossibile chiudere la socket (getting size)");
             }
             return;
         }
@@ -380,7 +394,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
             if (!success) {
                 print_error("Impossibile lockare il file");
                 if (closesocket(socket) == SOCKET_ERROR) {
-                    print_error("Impossibile chiudere la socket (locking check)");
+                    print_WSA_error("Impossibile chiudere la socket (locking check)");
                 }
                 return;
             }
@@ -389,7 +403,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
             if (file == NULL) {
                 print_error("Impossibile mappare il file");
                 if (closesocket(socket) == SOCKET_ERROR) {
-                    print_error("Impossibile chiudere la socket (mapping check)");
+                    print_WSA_error("Impossibile chiudere la socket (mapping check)");
                 }
                 success = UnlockFileEx(handle,0,size,0,&sOverlapped);
                 if (!success) {
@@ -402,7 +416,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
             if (view == NULL) {
                 print_error("Impossibile creare la view");
                 if (closesocket(socket) == SOCKET_ERROR) {
-                    print_error("Impossibile chiudere la socket (view check)");
+                    print_WSA_error("Impossibile chiudere la socket (view check)");
                 }
                 if (UnmapViewOfFile(file) == 0) {
                     print_error("Impossibile unmappare il file (view check)");
@@ -417,7 +431,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
             if (!success) {
                 print_error("Impossibile unlockare il file");
                 if (closesocket(socket) == SOCKET_ERROR) {
-                    print_error("Impossibile chiudere la socket (unlocking check)");
+                    print_WSA_error("Impossibile chiudere la socket (unlocking check)");
                 }
                 return;
             }
@@ -463,7 +477,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
         if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {
             send_error(socket, "File o directory non esistente.");
             if (closesocket(socket) == SOCKET_ERROR) {
-                print_error("Impossibile chiudere la socket (listing failed)");
+                print_WSA_error("Impossibile chiudere la socket (listing failed)");
             }
             return;
         }
@@ -471,12 +485,12 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
             if (send(socket, listing_buffer, strlen(listing_buffer), 0) < 0) {
                 print_WSA_error("Errore nel comunicare con la socket");
                 if (closesocket(socket) == SOCKET_ERROR) {
-                    print_error("Impossibile chiudere la socket (send failed)");
+                    print_WSA_error("Impossibile chiudere la socket (send failed)");
                 }
                 return;
             }
             if (closesocket(socket) == SOCKET_ERROR) {
-                print_error("Impossibile chiudere la socket");
+                print_WSA_error("Impossibile chiudere la socket");
             }
         }
     }
@@ -485,25 +499,27 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
 void *send_routine(void *arg) {
     thread_arg_sender *args = (thread_arg_sender *) arg;
     if (send(args->client_socket, args->file_in_memory, args->size,0) < 0) {
-        print_WSA_error("Errore nel comunicare con la socket. (sender)");
+        print_WSA_error("Errore nel comunicare con la socket. (send routine)");
     } else {
         if (write_on_pipe(args->size, args->route, args->port, args->client_ip) < 0) {
-            print_error("Errore nello scrivere sulla pipe LOG");
+            print_error("Errore nello scrivere sulla pipe LOG. (send routine)");
         }
     }
 
     if (args->size > 0) {
-        UnmapViewOfFile(args->file_in_memory);
+        if (UnmapViewOfFile(args->file_in_memory) < 0) {
+            print_error("Errore durante l'operazione di unmapping del file (send_routine)");
+        }
     }
     if (closesocket(args->client_socket) == SOCKET_ERROR) {
-        print_error("Impossibile chiudere la socket (send routine)");
+        print_WSA_error("Impossibile chiudere la socket. (send routine)");
     }
     return NULL;
 }
 
 int write_on_pipe(int size, char* route, int port, char *client_ip) {
     if (WaitForSingleObject(mutex, INFINITE) == WAIT_FAILED) {
-        print_error("Errore durante l'attesa per l'acquisizione del mutex in scrittura");
+        print_error("Errore durante l'attesa per l'acquisizione del mutex in scrittura (write_on_pipe)");
         return -1;
     }
     DWORD dw_written;
@@ -511,11 +527,11 @@ int write_on_pipe(int size, char* route, int port, char *client_ip) {
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", route, size, client_ip, port);
     if (h_pipe != INVALID_HANDLE_VALUE ) {
         if (WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL) == FALSE) {
-            print_error("Errore durante la scrittura su pipe");
+            print_error("Errore durante la scrittura su pipe (write_on_pipe)");
         }
     }
     if (!ReleaseMutex(mutex)) {
-        print_error("Impossibile rilasciare il mutex");
+        print_error("Impossibile rilasciare il mutex (write_on_pipe)");
     }
 }
 
@@ -548,23 +564,23 @@ int _recv(int s,char *buf,int len,int flags) {
     return recv(s,buf,len,flags);
 }
 
-void get_shared_config(configuration *configuration){
-    HANDLE handle_mapped_file;
-
-    handle_mapped_file = OpenFileMapping(FILE_MAP_READ, FALSE, GLOBAL_CONFIG);
-    if (handle_mapped_file == NULL){
-        perror("Errore nell'aprire memory object listener");
-        CloseHandle(handle_mapped_file);
-        exit(1);
-    }
-    config = MapViewOfFile(handle_mapped_file, FILE_MAP_READ, 0, 0, BUF_SIZE);
-    if (config == NULL){
-        perror("Errore nel mappare la view del file");
-        CloseHandle(handle_mapped_file);
-        exit(1);
+int get_shared_config() {
+    HANDLE handle = OpenFileMapping(FILE_MAP_READ, FALSE, GLOBAL_CONFIG);
+    if (handle == NULL) {
+        print_error("Errore nell'aprire memory object listener (get_shared_config)");
+        CloseHandle(handle);
+        return -1;
     }
 
-    CloseHandle(handle_mapped_file);
+    config = MapViewOfFile(handle, FILE_MAP_READ, 0, 0, BUF_SIZE);
+    if (config == NULL) {
+        print_error("Errore nel mappare la view del file (get_shared_config)");
+        CloseHandle(handle);
+        return -1;
+    }
+
+    CloseHandle(handle);
+    return 0;
 }
 
 void print_error(char *err) {

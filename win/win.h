@@ -28,12 +28,11 @@ HANDLE mutex;
 HANDLE map_handle;
 
 int set_shared_config();
-VOID get_shared_config(configuration *config);
+int get_shared_config();
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType);
 DWORD WINAPI listener_routine(void *args);
 DWORD WINAPI receiver_routine(void *args);
 DWORD WINAPI sender_routine(void *args);
 DWORD create_receiver_process(char *args);
-size_t getline(char **lineptr, size_t *n, FILE *stream);
 void print_error(char *err);
 void print_WSA_error(char *err);

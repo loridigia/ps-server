@@ -15,7 +15,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    get_shared_config(config);
+    if (get_shared_config() < 0) {
+        exit(1);
+    }
     handle_requests(port, work_with_processes);
 }
 

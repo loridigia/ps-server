@@ -18,7 +18,9 @@ int main(int argc, char *argv[]) {
     }
     char *ip = argv[1];
 
-    get_shared_config(config);
+    if (get_shared_config() < 0) {
+        exit(1);
+    }
 
     mutex = CreateMutex(NULL,FALSE, GLOBAL_MUTEX);
     if (mutex == NULL){
