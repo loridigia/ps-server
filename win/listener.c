@@ -5,6 +5,11 @@ extern configuration *config;
 BOOL WINAPI CtrlHandler2(DWORD fdwCtrlType);
 
 int main(int argc, char *argv[]) {
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
+        print_WSA_error("Impossibile avviare la Winsock DLL");
+        exit(1);
+    }
 
     if (SetConsoleCtrlHandler(CtrlHandler2, TRUE) == 0) {
         print_error("Impossibile aggiungere la funzione di handling per CTRL+BREAK");
