@@ -285,7 +285,8 @@ int work_with_processes(SOCKET socket, char *client_ip, int port) {
 
     WSAPROTOCOL_INFO protocol_info;
     DWORD dw_write;
-    DWORD child_id = create_receiver_process(args);
+    PROCESS_INFORMATION receiver_info = create_receiver_process(args);
+    DWORD child_id = receiver_info.dwProcessId;
 
     if (child_id == -1) {
         return -1;
@@ -301,14 +302,36 @@ int work_with_processes(SOCKET socket, char *client_ip, int port) {
         return -1;
     }
 
-    if (closesocket(socket) == SOCKET_ERROR) {
-        print_WSA_error("Impossibile chiudere la socket (work_with_processes)");
+    thread_arg_controller *arguments = (thread_arg_controller *)malloc(sizeof(thread_arg_controller));
+    if (arguments == NULL) {
+        print_error("Impossibile allocare memoria per gli argomenti del thread di tipo 'controller'");
+        free(args);
+        return -1;
+    }
+
+    arguments->socket = socket;
+    arguments->hProcess = receiver_info.hProcess;
+    
+    if (CreateThread(NULL, 0, controller_routine, (HANDLE*)arguments, 0, NULL) == NULL) {
+        print_error("Impossibile creare un nuovo thread di tipo 'controller'");
+        free(args);
+        return -1;
     }
 
     return 0;
 }
 
-DWORD create_receiver_process(char *args){
+DWORD WINAPI controller_routine(void *args) {
+    thread_arg_controller *arg = (thread_arg_controller *) args;
+    if (WaitForSingleObject(arg->hProcess, INFINITE) == WAIT_FAILED) {
+        print_error("Errore durante l'attesa del thread sender");
+    }
+    if (closesocket(arg->socket) == SOCKET_ERROR) {
+        print_WSA_error("Impossibile chiudere la socket (work_with_processes)");
+    }
+}
+
+PROCESS_INFORMATION create_receiver_process(char *args){
     PROCESS_INFORMATION receiver_info;
     STARTUPINFO si_start_info;
 
@@ -321,10 +344,9 @@ DWORD create_receiver_process(char *args){
 
     if (CreateProcess("receiver.exe", args, NULL, NULL, TRUE, 0, NULL, NULL, &si_start_info, &receiver_info) == 0) {
         print_error("Errore durante l'esecuzione del processo receiver");
-        return -1;
     }
 
-    return receiver_info.dwProcessId;
+    return receiver_info;
 }
 
 int work_with_threads(SOCKET socket, char *client_ip, int port) {

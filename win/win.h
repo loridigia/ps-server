@@ -27,13 +27,19 @@ HANDLE h_pipe;
 HANDLE mutex;
 HANDLE map_handle;
 
+typedef struct thread_arg_controller {
+    SOCKET socket;
+    HANDLE hProcess;
+} thread_arg_controller;
+
 int set_shared_config();
 int get_shared_config();
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType);
 DWORD WINAPI listener_routine(void *args);
 DWORD WINAPI receiver_routine(void *args);
 DWORD WINAPI sender_routine(void *args);
-DWORD create_receiver_process(char *args);
+DWORD WINAPI controller_routine(void *args);
+PROCESS_INFORMATION create_receiver_process(char *args);
 int restart();
 void print_error(char *err);
 void print_WSA_error(char *err);
