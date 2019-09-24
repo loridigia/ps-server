@@ -42,7 +42,11 @@ int load_configuration(int mode) {
     }
 
     char port_param[MAX_PORT_LENGTH+1];
-    fgets(line,CONFIG_PREFIX_LENGTH+MAX_PORT_LENGTH+1, stream);
+    if (fgets(line,CONFIG_PREFIX_LENGTH+MAX_PORT_LENGTH+1, stream) == NULL) {
+        perror("Errore durante la chiamata a fgets.\n");
+        fclose(stream);
+        return -1;
+    }
     line[index_of(line, '\n')] = '\0';
     strcpy(port_param, line + CONFIG_PREFIX_LENGTH);
 
@@ -58,7 +62,11 @@ int load_configuration(int mode) {
         return 0;
     }
 
-    fgets(line,CONFIG_PREFIX_LENGTH+MAX_TYPE_LENGTH+1, stream);
+    if (fgets(line,CONFIG_PREFIX_LENGTH+MAX_TYPE_LENGTH+1, stream) == NULL) {
+        perror("Errore durante la chiamata a fgets.\n");
+        fclose(stream);
+        return -1;
+    }
     line[index_of(line, '\n')] = '\0';
     strcpy(config->server_type, line + CONFIG_PREFIX_LENGTH);
 
