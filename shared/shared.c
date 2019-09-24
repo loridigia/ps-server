@@ -165,11 +165,10 @@ int write_infos() {
         return -1;
     }
     fprintf(stdout,"Server started...\n"
-                   "Server ip: %s\n"
                    "Listening on port: %d\n"
                    "Type: multi-%s\n"
                    "Process ID: %d\n\n",
-            config->server_ip,config->server_port,config->server_type, config->main_pid);
+            config->server_port,config->server_type, config->main_pid);
 
     return 0;
 }

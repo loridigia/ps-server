@@ -1,14 +1,12 @@
 #include "unix.h"
 extern configuration *config;
 
-int restart() {
+void restart() {
     if (load_configuration(PORT_ONLY) != -1) {
         if (start() < 0) {
             perror("Impossibile fare il restart del server. \n");
-            return -1;
         }
     }
-    return 0;
 }
 
 int is_daemon(int argc, char *argv[]) {
@@ -139,7 +137,7 @@ void init(int argc, char *argv[]) {
 }
 
 void log_routine() {
-    int size = MAX_FILENAME_LENGTH + MAX_IP_SIZE + MAX_PORT_LENGTH + MIN_LOG_SIZE;
+    int size = MAX_FILENAME_LENGTH + MAX_IP_LENGTH + MAX_PORT_LENGTH + MIN_LOG_LENGTH;
     char buffer[size];
     while(1) {
         bzero(buffer, size);
@@ -158,7 +156,7 @@ void log_routine() {
 }
 
 int write_on_pipe(int size, char* route, int port, char *client_ip) {
-    char buffer[strlen(route) + MAX_IP_SIZE + MAX_PORT_LENGTH + MIN_LOG_SIZE];
+    char buffer[strlen(route) + MAX_IP_LENGTH + MAX_PORT_LENGTH + MIN_LOG_LENGTH];
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", route, size, client_ip, port);
     pthread_mutex_lock(mutex);
     if (write(pipe_fd[1], buffer, strlen(buffer)) < 0) {
@@ -194,7 +192,7 @@ char *get_server_ip() {
     struct ifaddrs *addrs;
     int res = getifaddrs(&addrs);
     struct ifaddrs *tmp = addrs;
-    char *ip = (char*)malloc(MAX_IP_SIZE);
+    char *ip = (char*)malloc(MAX_IP_LENGTH);
 
     if (ip == NULL) {
         perror("Errore durante la malloc. (get_server_ip)\n");
@@ -504,7 +502,6 @@ void serve_client(int client_fd, char *client_ip, int port) {
         char *listing_buffer;
         if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {
             char *err = "File o directory non esistente.\n";
-            fprintf(stderr,"%s",err);
             if (send_error(client_fd, err) < 0) {
                 perror("Impossibile mandare errore al client. (serve_client - send_error)\n");
             }

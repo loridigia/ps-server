@@ -34,5 +34,6 @@ DWORD WINAPI listener_routine(void *args);
 DWORD WINAPI receiver_routine(void *args);
 DWORD WINAPI sender_routine(void *args);
 DWORD create_receiver_process(char *args);
+void restart();
 void print_error(char *err);
 void print_WSA_error(char *err);

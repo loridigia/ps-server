@@ -16,6 +16,7 @@ pthread_mutex_t *mutex;
 pthread_cond_t *condition;
 
 int _log(char *buffer);
+void restart();
 void daemon_skeleton();
 void *listener_routine(void *arg);
 void *receiver_routine(void *arg);
