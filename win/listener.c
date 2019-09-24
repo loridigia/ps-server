@@ -16,7 +16,10 @@ int main(int argc, char *argv[]) {
     if (get_shared_config() < 0) {
         exit(1);
     }
+
     handle_requests(port, work_with_processes);
+    WSACleanup();
+
 }
 
 BOOL WINAPI CtrlHandler2(DWORD fdwCtrlType){
