@@ -7,52 +7,69 @@ HANDLE g_hChildStd_IN_Wr = NULL;
 extern configuration *config;
 
 void init(int argc, char *argv[]) {
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
+        print_WSA_error("Impossibile avviare la Winsock DLL");
+        exit(1);
+    }
 
     if (SetConsoleCtrlHandler(CtrlHandler, TRUE) == 0) {
         print_error("Impossibile aggiungere la funzione di handling per CTRL+BREAK");
+        WSACleanup();
         exit(1);
     }
 
     mutex = CreateMutexA(NULL,FALSE, GLOBAL_MUTEX);
     if (mutex == NULL) {
         print_error("Errore nell'operazione di creazione del mutex");
+        WSACleanup();
         exit(1);
     }
 
     logger_event = CreateEventA(NULL, TRUE, FALSE, LOGGER_EVENT);
     if (logger_event == NULL) {
         print_error("Errore nell'operazione di creazione del logger_event");
+        WSACleanup();
         exit(1);
     }
 
     PROCESS_INFORMATION logger_info;
     if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &logger_info) == 0){
         print_error("Errore durante l'esecuzione del processo logger");
+        WSACleanup();
         exit(1);
     }
 
     if (WaitForSingleObject(logger_event, INFINITE) == WAIT_FAILED) {
         print_error("Errore durante l'attesa della creazione del processo logger");
+        WSACleanup();
         exit(1);
     }
 
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
+        WSACleanup();
         exit(1);
     } config->main_pid = GetCurrentProcessId();
 
     map_handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, GLOBAL_CONFIG);
     if (map_handle == NULL) {
         print_error("Errore durante il mapping del file config");
+        WSACleanup();
         exit(1);
     }
 
     if (set_shared_config() < 0) {
+        WSACleanup();
         exit(1);
     }
 
-    start();
+    if (start() < 0) {
+        WSACleanup();
+        exit(1);
+    }
 
     if (write_infos() < 0) {
+        WSACleanup();
         exit(1);
     }
 
@@ -221,13 +238,6 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
 }
 
 int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) {
-
-    WSADATA wsa;
-    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
-        print_WSA_error("Impossibile avviare la Winsock DLL");
-        return -1;
-    }
-
     if ((*sock = socket(AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET) {
         print_WSA_error("Impossibile creare la server socket");
         return -1;
@@ -542,36 +552,28 @@ int write_on_pipe(int size, char* route, int port, char *client_ip) {
 }
 
 char *get_server_ip() {
-    WSADATA wsa;
-    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
-        print_WSA_error("Impossibile avviare la Winsock DLL");
+    char name[32];
+    char *ip = (char*)malloc(MAX_IP_LENGTH + 1);
+    if (ip == NULL) {
+        print_error("Errore durante la malloc (get_server_ip)");
         return NULL;
     }
 
-    char name[32];
-    char *ip = (char*) malloc(MAX_IP_LENGTH + 1);
-    if (ip == NULL) {
-        print_error("Errore durante la malloc (get_server_ip)");
-        WSACleanup();
-        return NULL;
-    }
     PHOSTENT hostinfo;
     if(gethostname(name, sizeof(name)) != SOCKET_ERROR) {
         if((hostinfo = gethostbyname(name)) != NULL) {
             strcpy(ip,inet_ntoa (*(struct in_addr *)*hostinfo->h_addr_list));
         } else {
             print_WSA_error("Impossibile ottenere l'hostname della macchina (gethostbyname)");
-            WSACleanup();
             free(ip);
             return NULL;
         }
     } else {
         print_WSA_error("Impossibile ottenere l'hostname della macchina (gethostname)");
-        WSACleanup();
         free(ip);
         return NULL;
     }
-    WSACleanup();
+
     return ip;
 }
 
