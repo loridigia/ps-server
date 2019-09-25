@@ -17,6 +17,7 @@ int main(int argc, char *argv[]) {
     }
 
     int port = atoi(argv[0]);
+    free(argv);
 
     if (get_shared_config() < 0) {
         exit(1);

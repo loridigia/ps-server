@@ -12,7 +12,7 @@ void print_error(char *err);
 void print_WSA_error(char *err);
 
 int main(int argc, char *argv[]) {
-    const int BUFFER_SIZE = 1024 * 16;
+    const int PIPE_SIZE = 1024 * 16;
     HANDLE logger_event, h_pipe;
     DWORD dw_read;
     int size = MAX_FILENAME_LENGTH + MAX_IP_LENGTH + MAX_PORT_LENGTH + MIN_LOG_LENGTH;
@@ -27,8 +27,8 @@ int main(int argc, char *argv[]) {
                              PIPE_ACCESS_DUPLEX,
                              PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
                              1,
-                             BUFFER_SIZE,
-                             BUFFER_SIZE,
+                             PIPE_SIZE,
+                             PIPE_SIZE,
                              NMPWAIT_USE_DEFAULT_WAIT,
                              NULL);
     if (h_pipe == INVALID_HANDLE_VALUE) {

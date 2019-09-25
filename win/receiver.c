@@ -11,6 +11,7 @@ int main(int argc, char *argv[]) {
 
     int port = atoi(argv[0]);
     char *ip = argv[1];
+    free(argv);
 
     if (freopen("CONOUT$", "w", stderr) == NULL) {
         print_error("Impossibile riaprire stderr");

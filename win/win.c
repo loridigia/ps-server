@@ -329,6 +329,7 @@ DWORD WINAPI controller_routine(void *args) {
     if (closesocket(arg->socket) == SOCKET_ERROR) {
         print_WSA_error("Impossibile chiudere la socket (work_with_processes)");
     }
+    free(args);
 }
 
 PROCESS_INFORMATION create_receiver_process(char *args){
@@ -510,6 +511,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
         if (CloseHandle(handle) == 0) {
             print_error("Impossibile chiudere l'handle del file (serve_client)");
         }
+        free(args);
     } else {
         char *listing_buffer;
         if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {
