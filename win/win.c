@@ -9,67 +9,90 @@ extern configuration *config;
 void init(int argc, char *argv[]) {
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
-        print_WSA_error("Impossibile avviare la Winsock DLL");
+        print_WSA_error("Impossibile avviare la Winsock DLL (init - WSAstartup)");
+        if (WSACleanup() == SOCKET_ERROR) {
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - WSAstartup)");
+        }
         exit(1);
     }
 
     if (SetConsoleCtrlHandler(CtrlHandler, TRUE) == 0) {
-        print_error("Impossibile aggiungere la funzione di handling per CTRL+BREAK");
-        WSACleanup();
+        print_error("Impossibile aggiungere la funzione di handling per CTRL+BREAK (init - SetConsoleCtrlHandler)");
+        if (WSACleanup() == SOCKET_ERROR) {
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - SetConsoleCtrlHandler)");
+        }
         exit(1);
     }
 
     mutex = CreateMutexA(NULL,FALSE, GLOBAL_MUTEX);
     if (mutex == NULL) {
-        print_error("Errore nell'operazione di creazione del mutex");
-        WSACleanup();
+        print_error("Errore nell'operazione di creazione del mutex (init - CreateMutexA)");
+        if (WSACleanup() == SOCKET_ERROR) {
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - CreateMutexA)");
+        }
         exit(1);
     }
 
     logger_event = CreateEventA(NULL, TRUE, FALSE, LOGGER_EVENT);
     if (logger_event == NULL) {
-        print_error("Errore nell'operazione di creazione del logger_event");
-        WSACleanup();
+        print_error("Errore nell'operazione di creazione del logger_event (init - CreateEventA)");
+        if (WSACleanup() == SOCKET_ERROR) {
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - CreateEventA)");
+        }
         exit(1);
     }
 
     PROCESS_INFORMATION logger_info;
     if (CreateProcess("logger.exe", NULL, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &logger_info) == 0){
-        print_error("Errore durante l'esecuzione del processo logger");
-        WSACleanup();
+        print_error("Errore durante l'esecuzione del processo logger (init - CreateProcess)");
+        if (WSACleanup() == SOCKET_ERROR) {
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - CreateProcess)");
+        }
         exit(1);
     }
 
     if (WaitForSingleObject(logger_event, INFINITE) == WAIT_FAILED) {
-        print_error("Errore durante l'attesa della creazione del processo logger");
-        WSACleanup();
+        print_error("Errore durante l'attesa della creazione del processo logger (init - WaitForSingleObject)");
+        if (WSACleanup() == SOCKET_ERROR) {
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - WaitForSingleObject)");
+        }
         exit(1);
     }
 
     if (load_configuration(COMPLETE) == -1 || load_arguments(argc,argv) == -1) {
-        WSACleanup();
+        if (WSACleanup() == SOCKET_ERROR) {
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - load_configuration)");
+        }
         exit(1);
     } config->main_pid = GetCurrentProcessId();
 
     map_handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, GLOBAL_CONFIG);
     if (map_handle == NULL) {
-        print_error("Errore durante il mapping del file config");
-        WSACleanup();
+        print_error("Errore durante il mapping del file config (init - config mapping)");
+        if (WSACleanup() == SOCKET_ERROR) {
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - config mapping)");
+        }
         exit(1);
     }
 
     if (set_shared_config() < 0) {
-        WSACleanup();
+        if (WSACleanup() == SOCKET_ERROR) {
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - set_shared_config())");
+        }
         exit(1);
     }
 
     if (start() < 0) {
-        WSACleanup();
+        if (WSACleanup() == SOCKET_ERROR) {
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - start())");
+        }
         exit(1);
     }
 
     if (write_infos() < 0) {
-        WSACleanup();
+        if (WSACleanup() == SOCKET_ERROR) {
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - write_infos())");
+        }
         exit(1);
     }
 
@@ -122,21 +145,25 @@ int start(){
     if (equals(config->server_type, "thread")) {
         h_pipe = CreateFile(PIPENAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
         if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY) {
-            print_error("Errore nella creazione della pipe");
+            print_error("Errore nella creazione della pipe (start())");
             return -1;
         }
 
         HANDLE thread = CreateThread(NULL, 0, listener_routine, &config->server_port, 0, NULL);
         if (thread == NULL) {
-            print_error("Errore durante la creazione del thread listener");
+            print_error("Errore durante la creazione del thread listener (start())");
             return -1;
         }
     } else {
         char *arg = (char*) malloc(MAX_PORT_LENGTH);
+        if (arg == NULL) {
+            print_error("Impossibile allocare memoria per lo start (start())");
+            return -1;
+        }
         sprintf(arg, "%d", config->server_port);
 
         if (CreateProcess("listener.exe", arg, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &listener_info) == 0) {
-            print_error("Errore nell'eseguire il processo listener");
+            print_error("Errore nell'eseguire il processo listener (start())");
             return -1;
         }
     }
@@ -146,7 +173,9 @@ int start(){
 DWORD WINAPI listener_routine(void *args) {
     int port = *((int*)args);
     handle_requests(port, work_with_threads);
-    WSACleanup();
+    if (WSACleanup() == SOCKET_ERROR) {
+        print_WSA_error("Errore durante l'operazione di cleanup WSA (listener_routine)");
+    }
 }
 
 DWORD WINAPI receiver_routine(void *arg) {
@@ -186,14 +215,14 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
 
         int selected;
         if ((selected = select(0 , &read_fd_set , NULL , NULL , &timeout)) == SOCKET_ERROR) {
-            print_WSA_error("Errore durante l'operazione di select");
+            print_WSA_error("Errore durante l'operazione di select (handle_requests)");
             return;
         }
 
         if(config->server_port != port) {
             printf("Chiusura socket su porta: %d", port);
             if (closesocket(sock) == SOCKET_ERROR) {
-                print_WSA_error("Impossibile chiudere la socket (cambio porta)");
+                print_WSA_error("Impossibile chiudere la socket (cambio porta) (handle_requests)");
             }
             return;
         }
@@ -204,7 +233,7 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
         SOCKET new_socket;
         if (FD_ISSET(sock , &read_fd_set)) {
             if ((new_socket = accept(sock , (struct sockaddr *)&address, (int *)&addrlen)) < 0) {
-                print_WSA_error("Errore nell'accettare la richiesta del client");
+                print_WSA_error("Errore nell'accettare la richiesta del client (handle_requests)");
                 return;
             }
 
@@ -221,13 +250,13 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
             SOCKET s = client_socket[i];
             if (FD_ISSET(s, &read_fd_set)) {
                 if (getpeername(s , (struct sockaddr*)&address , (int*)&addrlen) < 0) {
-                    print_WSA_error("Impossibile ottenere l'ip del client");
+                    print_WSA_error("Impossibile ottenere l'ip del client (handle_requests)");
                 }
                 char *client_ip = inet_ntoa(address.sin_addr);
                 if (handle(s, client_ip, port) < 0) {
                     print_error("Errore nel comunicare con la socket");
                     if (closesocket(sock) == SOCKET_ERROR) {
-                        print_WSA_error("Impossibile chiudere la socket (handle failed)");
+                        print_WSA_error("Impossibile chiudere la socket (handle_requests)");
                     }
                 }
                 FD_CLR(s, &read_fd_set);
@@ -239,7 +268,7 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
 
 int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) {
     if ((*sock = socket(AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET) {
-        print_WSA_error("Impossibile creare la server socket");
+        print_WSA_error("Impossibile creare la server socket (listen_on)");
         return -1;
     }
 
@@ -248,12 +277,13 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
     server->sin_port = htons(port);
 
     if (bind(*sock , (struct sockaddr *)server , sizeof(*server)) == SOCKET_ERROR) {
-        print_WSA_error("Errore durante il binding tra socket_fd e socket_address");
+        print_WSA_error("Errore durante il binding tra socket_fd e socket_address (listen_on)");
         return -1;
     }
 
     if (listen(*sock , BACKLOG) == -1) {
-        print_WSA_error("Errore nel provare ad ascoltare sulla porta data in input");
+        print_WSA_error("Errore nel provare ad ascoltare sulla porta data in input (listen_on)");
+        return -1;
     }
     *addrlen = sizeof(struct sockaddr_in);
     return 0;
@@ -262,7 +292,7 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
 int work_with_processes(SOCKET socket, char *client_ip, int port) {
     char *args = malloc(MAX_PORT_LENGTH + MAX_IP_LENGTH + 2);
     if (args == NULL) {
-        print_error("Impossibile allocare memoria per gli argomenti del processo receiver");
+        print_error("Impossibile allocare memoria per gli argomenti del processo receiver (work_with_processes)");
         return -1;
     }
     sprintf(args, "%d %s", port, client_ip);
@@ -293,27 +323,26 @@ int work_with_processes(SOCKET socket, char *client_ip, int port) {
     }
 
     if (WSADuplicateSocketA(socket, child_id, &protocol_info) == SOCKET_ERROR) {
-        print_WSA_error("Errore durante l'operazione di duplicazione della socket");
+        print_WSA_error("Errore durante l'operazione di duplicazione della socket (work_with_processes)");
         return -1;
     }
 
     if (!WriteFile(g_hChildStd_IN_Wr, &protocol_info, sizeof(protocol_info), &dw_write, NULL)){
-        print_error("Errore nello scrivere su pipe STD_IN");
+        print_error("Errore nello scrivere su pipe STD_IN (work_with_processes)");
         return -1;
     }
 
     thread_arg_controller *arguments = (thread_arg_controller *)malloc(sizeof(thread_arg_controller));
     if (arguments == NULL) {
-        print_error("Impossibile allocare memoria per gli argomenti del thread di tipo 'controller'");
-        free(args);
+        print_error("Impossibile allocare memoria per gli argomenti del thread di tipo 'controller' (work_with_processes)");
         return -1;
     }
 
     arguments->socket = socket;
     arguments->hProcess = receiver_info.hProcess;
-    
+
     if (CreateThread(NULL, 0, controller_routine, (HANDLE*)arguments, 0, NULL) == NULL) {
-        print_error("Impossibile creare un nuovo thread di tipo 'controller'");
+        print_error("Impossibile creare un nuovo thread di tipo 'controller' (work_with_processes)");
         free(args);
         return -1;
     }
@@ -324,10 +353,10 @@ int work_with_processes(SOCKET socket, char *client_ip, int port) {
 DWORD WINAPI controller_routine(void *args) {
     thread_arg_controller *arg = (thread_arg_controller *) args;
     if (WaitForSingleObject(arg->hProcess, INFINITE) == WAIT_FAILED) {
-        print_error("Errore durante l'attesa del thread sender");
+        print_error("Errore durante l'attesa del thread sender (controller_routine)");
     }
     if (closesocket(arg->socket) == SOCKET_ERROR) {
-        print_WSA_error("Impossibile chiudere la socket (work_with_processes)");
+        print_WSA_error("Impossibile chiudere la socket (controller_routine)");
     }
     free(args);
 }
@@ -344,7 +373,7 @@ PROCESS_INFORMATION create_receiver_process(char *args){
     si_start_info.dwFlags |= STARTF_USESTDHANDLES;
 
     if (CreateProcess("receiver.exe", args, NULL, NULL, TRUE, 0, NULL, NULL, &si_start_info, &receiver_info) == 0) {
-        print_error("Errore durante l'esecuzione del processo receiver");
+        print_error("Errore durante l'esecuzione del processo receiver (create_receiver_process)");
     }
 
     return receiver_info;
@@ -353,8 +382,7 @@ PROCESS_INFORMATION create_receiver_process(char *args){
 int work_with_threads(SOCKET socket, char *client_ip, int port) {
     thread_arg_receiver *args = (thread_arg_receiver *)malloc(sizeof(thread_arg_receiver));
     if (args == NULL) {
-        print_error("Impossibile allocare memoria per gli argomenti del thread di tipo 'receiver'");
-        free(args);
+        print_error("Impossibile allocare memoria per gli argomenti del thread di tipo 'receiver' (work_with_threads)");
         return -1;
     }
     args->client_socket = socket;
@@ -362,7 +390,7 @@ int work_with_threads(SOCKET socket, char *client_ip, int port) {
     args->client_ip = client_ip;
 
     if (CreateThread(NULL, 0, receiver_routine, (HANDLE*)args, 0, NULL) == NULL) {
-        print_error("Impossibile creare un nuovo thread di tipo 'receiver'");
+        print_error("Impossibile creare un nuovo thread di tipo 'receiver' (work_with_threads)");
         free(args);
         return -1;
     }
@@ -413,10 +441,13 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
             if (closesocket(socket) == SOCKET_ERROR) {
                 print_WSA_error("Impossibile chiudere la socket (getting size)");
             }
+            if (CloseHandle(handle) == 0) {
+                print_error("Impossibile chiudere l'handle di 'handle' (serve_client)");
+            }
             return;
         }
 
-        char *view;
+        char *view, *file;
         if (size > 0) {
             OVERLAPPED sOverlapped;
             sOverlapped.Offset = 0;
@@ -431,37 +462,48 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
                                  &sOverlapped);
 
             if (!success) {
-                print_error("Impossibile lockare il file");
+                print_error("Impossibile lockare il file (serve_client)");
                 if (closesocket(socket) == SOCKET_ERROR) {
                     print_WSA_error("Impossibile chiudere la socket (locking check)");
+                }
+                if (CloseHandle(handle) == 0) {
+                    print_error("Impossibile chiudere l'handle del file (locking file)");
                 }
                 return;
             }
 
-            HANDLE file = CreateFileMappingA(handle,NULL,PAGE_READONLY,0,size,"file");
+            file = CreateFileMappingA(handle,NULL,PAGE_READONLY,0,size,"file");
             if (file == NULL) {
-                print_error("Impossibile mappare il file");
-                if (closesocket(socket) == SOCKET_ERROR) {
-                    print_WSA_error("Impossibile chiudere la socket (mapping check)");
-                }
+                print_error("Impossibile mappare il file (serve_client)");
                 success = UnlockFileEx(handle,0,size,0,&sOverlapped);
                 if (!success) {
-                    print_error("Impossibile unlockare il file");
+                    print_error("Impossibile unlockare il file (server_client - file mapping)");
+                }
+                if (closesocket(socket) == SOCKET_ERROR) {
+                    print_WSA_error("Impossibile chiudere la socket. (server_client - file mapping)");
+                }
+                if (CloseHandle(handle) == 0) {
+                    print_error("Impossibile chiudere l'handle di 'handle' (server_client - file mapping)");
                 }
                 return;
             }
 
             view = (char*)MapViewOfFile(file, FILE_MAP_READ, 0, 0, 0);
             if (view == NULL) {
-                print_error("Impossibile creare la view");
-                if (closesocket(socket) == SOCKET_ERROR) {
-                    print_WSA_error("Impossibile chiudere la socket (view check)");
-                }
-                if (UnmapViewOfFile(file) == 0) {
-                    print_error("Impossibile unmappare il file (view check)");
-                }
+                print_error("Impossibile creare la view (serve_client - view)");
                 if (!UnlockFileEx(handle,0,size,0,&sOverlapped)) {
-                    print_error("Impossibile unlockare il file");
+                    print_error("Impossibile unlockare il file (serve_client - view)");
+                }
+                if (closesocket(socket) == SOCKET_ERROR) {
+                    print_WSA_error("Impossibile chiudere la socket. (serve_client - view)");
+                }
+                if (CloseHandle(handle) == 0) {
+                    print_error("Impossibile chiudere l'handle di 'handle' (serve_client - view)");
+                }
+                if (size > 0) {
+                    if (CloseHandle(file) == 0) {
+                        print_error("Impossibile chiudere l'handle di 'file' (serve_client - view)");
+                    }
                 }
                 return;
             }
@@ -470,7 +512,18 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
             if (!success) {
                 print_error("Impossibile unlockare il file");
                 if (closesocket(socket) == SOCKET_ERROR) {
-                    print_WSA_error("Impossibile chiudere la socket (unlocking check)");
+                    print_WSA_error("Impossibile chiudere la socket. (unlock)");
+                }
+                if (CloseHandle(handle) == 0) {
+                    print_error("Impossibile chiudere l'handle di 'handle' (serve_client)");
+                }
+                if (size > 0) {
+                    if (CloseHandle(file) == 0) {
+                        print_error("Impossibile chiudere l'handle di 'file' (serve_client)");
+                    }
+                    if (UnmapViewOfFile(view) < 0) {
+                        print_error("Errore durante l'operazione di unmapping del file (send_routine)");
+                    }
                 }
                 return;
             }
@@ -480,10 +533,22 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
         }
 
         thread_arg_sender *args = (thread_arg_sender *)malloc(sizeof(thread_arg_sender));
-
         if (args == NULL) {
-            print_error("Impossibile allocare memoria per gli argomenti del thread di tipo 'sender'");
-            free(args);
+            print_error("Impossibile allocare memoria per gli argomenti del thread di tipo 'sender' (serve_client - args malloc)");
+            if (closesocket(socket) == SOCKET_ERROR) {
+                print_WSA_error("Impossibile chiudere la socket. (serve_client - args malloc)");
+            }
+            if (CloseHandle(handle) == 0) {
+                print_error("Impossibile chiudere l'handle di 'handle' (serve_client - args malloc)");
+            }
+            if (size > 0) {
+                if (CloseHandle(file) == 0) {
+                    print_error("Impossibile chiudere l'handle di 'file' (serve_client - args malloc)");
+                }
+                if (UnmapViewOfFile(view) < 0) {
+                    print_error("Errore durante l'operazione di unmapping del file (serve_client - args malloc)");
+                }
+            }
             return;
         }
 
@@ -499,39 +564,39 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
         } else if (equals(config->server_type, "process")) {
             HANDLE thread_handle = CreateThread(NULL, 0, sender_routine, (HANDLE*)args, 0, NULL);
             if (thread_handle == NULL) {
-                print_error("Impossibile creare un nuovo thread di tipo 'sender'");
-                free(args);
-                return;
+                print_error("Impossibile creare un nuovo thread di tipo 'sender' (server_client - sender_routine)");
             }
             if (WaitForSingleObject(thread_handle, INFINITE) == WAIT_FAILED) {
-                print_error("Errore durante l'attesa del thread sender");
-                return;
+                print_error("Errore durante l'attesa del thread sender (server_client - sender_routine)");
             }
         }
-        if (CloseHandle(handle) == 0) {
-            print_error("Impossibile chiudere l'handle del file (serve_client)");
-        }
         free(args);
+        if (closesocket(socket) == SOCKET_ERROR) {
+            print_WSA_error("Impossibile chiudere la socket. (serve_client - end of function)");
+        }
+        if (CloseHandle(handle) == 0) {
+            print_error("Impossibile chiudere l'handle di 'handle' (serve_client - end of function)");
+        }
+        if (size > 0) {
+            if (CloseHandle(file) == 0) {
+                print_error("Impossibile chiudere l'handle di 'file' (serve_client - end of function)");
+            }
+            if (UnmapViewOfFile(args->file_in_memory) < 0) {
+                print_error("Errore durante l'operazione di unmapping del file (server_client - end of function)");
+            }
+        }
+
     } else {
         char *listing_buffer;
         if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {
             send_error(socket, "File o directory non esistente.");
-            if (closesocket(socket) == SOCKET_ERROR) {
-                print_WSA_error("Impossibile chiudere la socket (listing failed)");
-            }
-            return;
-        }
-        else {
+        } else {
             if (send(socket, listing_buffer, strlen(listing_buffer), 0) < 0) {
-                print_WSA_error("Errore nel comunicare con la socket");
-                if (closesocket(socket) == SOCKET_ERROR) {
-                    print_WSA_error("Impossibile chiudere la socket (send failed)");
-                }
-                return;
+                print_WSA_error("Errore nel comunicare con la socket (serve_client - listing buffer)");
             }
-            if (closesocket(socket) == SOCKET_ERROR) {
-                print_WSA_error("Impossibile chiudere la socket");
-            }
+        }
+        if (closesocket(socket) == SOCKET_ERROR) {
+            print_WSA_error("Impossibile chiudere la socket (serve_client - listing buffer)");
         }
     }
 }
@@ -545,15 +610,6 @@ void *send_routine(void *arg) {
             print_error("Errore nello scrivere sulla pipe LOG. (send routine)");
         }
     }
-
-    if (args->size > 0) {
-        if (UnmapViewOfFile(args->file_in_memory) < 0) {
-            print_error("Errore durante l'operazione di unmapping del file (send_routine)");
-        }
-    }
-    if (closesocket(args->client_socket) == SOCKET_ERROR) {
-        print_WSA_error("Impossibile chiudere la socket. (send routine)");
-    }
     return NULL;
 }
 
@@ -563,7 +619,7 @@ int write_on_pipe(int size, char* route, int port, char *client_ip) {
         return -1;
     }
     DWORD dw_written;
-    char buffer[strlen(route) + MAX_IP_LENGTH + MAX_PORT_LENGTH + MIN_LOG_LENGTH];
+    char buffer[MAX_IP_LENGTH + MAX_PORT_LENGTH + MIN_LOG_LENGTH + MAX_FILENAME_LENGTH];
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", route, size, client_ip, port);
     if (h_pipe != INVALID_HANDLE_VALUE) {
         if (WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL) == FALSE) {
@@ -577,7 +633,7 @@ int write_on_pipe(int size, char* route, int port, char *client_ip) {
 
 char *get_server_ip() {
     char name[32];
-    char *ip = (char*)malloc(MAX_IP_LENGTH + 1);
+    char *ip = (char*) malloc(MAX_IP_LENGTH + 1);
     if (ip == NULL) {
         print_error("Errore durante la malloc (get_server_ip)");
         return NULL;

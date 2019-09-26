@@ -192,8 +192,7 @@ char *get_server_ip() {
     struct ifaddrs *addrs;
     int res = getifaddrs(&addrs);
     struct ifaddrs *tmp = addrs;
-    char *ip = (char*)malloc(MAX_IP_LENGTH);
-
+    char *ip = (char*)malloc(MAX_IP_LENGTH + 1);
     if (ip == NULL) {
         perror("Errore durante la malloc. (get_server_ip)\n");
         freeifaddrs(addrs);
@@ -321,7 +320,6 @@ int work_with_threads(int fd, char *client_ip, int port) {
     thread_arg_receiver *args = (thread_arg_receiver *)malloc(sizeof(thread_arg_receiver));
     if (args == NULL) {
         perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'receiver'.\n");
-        free(args);
         return -1;
     }
     args->client_socket = fd;
@@ -472,7 +470,6 @@ void serve_client(int client_fd, char *client_ip, int port) {
                 perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
             }
             free(client_buffer);
-            free(args);
             return;
         }
 

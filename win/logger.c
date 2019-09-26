@@ -16,10 +16,9 @@ int main(int argc, char *argv[]) {
     HANDLE logger_event, h_pipe;
     DWORD dw_read;
     int size = MAX_FILENAME_LENGTH + MAX_IP_LENGTH + MAX_PORT_LENGTH + MIN_LOG_LENGTH;
-    char buffer[size];
 
     if (SetConsoleCtrlHandler(CtrlHandler2, TRUE) == 0) {
-        print_error("Impossibile aggiungere la funzione di handling per CTRL+BREAK");
+        print_error("Impossibile aggiungere la funzione di handling per CTRL+BREAK (logger - SetConsoleCtrlHandler)");
         exit(1);
     }
 
@@ -32,22 +31,24 @@ int main(int argc, char *argv[]) {
                              NMPWAIT_USE_DEFAULT_WAIT,
                              NULL);
     if (h_pipe == INVALID_HANDLE_VALUE) {
-        print_error("Errore durante la creazione della named pipe (logger)");
+        print_error("Errore durante la creazione della named pipe (logger - CreateNamedPipe)");
         exit(1);
     }
 
     logger_event = OpenEvent(EVENT_MODIFY_STATE, FALSE, LOGGER_EVENT);
     if (logger_event == NULL) {
-        print_error("Errore durante l'apertura dell'evento logger");
+        print_error("Errore durante l'apertura dell'evento logger (logger - OpenEvent)");
         exit(1);
     }
 
     if (SetEvent(logger_event) == 0) {
-        print_error("Impossibile settare il logger event (logger)");
+        print_error("Impossibile settare il logger event (logger - SetEvent)");
         exit(1);
     }
 
+    char buffer[size];
     while (TRUE) {
+        memset(buffer, 0, size);
         if (ConnectNamedPipe(h_pipe, NULL)) {
             while (ReadFile(h_pipe, buffer, sizeof(buffer), &dw_read, NULL)) {
                 buffer[dw_read] = '\0';
@@ -55,15 +56,15 @@ int main(int argc, char *argv[]) {
             }
         }
         if (DisconnectNamedPipe(h_pipe) == 0) {
-            print_error("Errore durante la disconnessione dalla named pipe (lettura)");
+            print_error("Errore durante la disconnessione dalla named pipe (logger - DisconnectNamedPipe)");
             break;
         }
     }
     if (CloseHandle(logger_event) == 0) {
-        print_error("Impossibile chiudere l'handle del logger event (logger)");
+        print_error("Impossibile chiudere l'handle del logger event (logger - CloseHandle(logger_event)");
     }
     if (CloseHandle(h_pipe) == 0) {
-        print_error("Impossibile chiudere l'handle della pipe (logger)");
+        print_error("Impossibile chiudere l'handle della pipe (logger - CloseHandle(h_pipe)");
     }
 }
 
