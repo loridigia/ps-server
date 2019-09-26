@@ -137,6 +137,7 @@ int start(){
 
         if (CreateProcess("listener.exe", arg, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &listener_info) == 0) {
             print_error("Errore nell'eseguire il processo listener");
+            free(arg);
             return -1;
         }
     }
@@ -263,6 +264,7 @@ int work_with_processes(SOCKET socket, char *client_ip, int port) {
     char *args = malloc(MAX_PORT_LENGTH + MAX_IP_LENGTH + 2);
     if (args == NULL) {
         print_error("Impossibile allocare memoria per gli argomenti del processo receiver");
+        free(args);
         return -1;
     }
     sprintf(args, "%d %s", port, client_ip);
@@ -580,6 +582,7 @@ char *get_server_ip() {
     char *ip = (char*)malloc(MAX_IP_LENGTH + 1);
     if (ip == NULL) {
         print_error("Errore durante la malloc (get_server_ip)");
+        free(ip);
         return NULL;
     }
 
