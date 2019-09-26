@@ -164,6 +164,7 @@ int start(){
 
         if (CreateProcess("listener.exe", arg, NULL, NULL, TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &info, &listener_info) == 0) {
             print_error("Errore nell'eseguire il processo listener (start())");
+            free(arg);
             return -1;
         }
     }
@@ -636,6 +637,7 @@ char *get_server_ip() {
     char *ip = (char*) malloc(MAX_IP_LENGTH + 1);
     if (ip == NULL) {
         print_error("Errore durante la malloc (get_server_ip)");
+        free(ip);
         return NULL;
     }
 
