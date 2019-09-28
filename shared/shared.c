@@ -107,11 +107,15 @@ int index_of(char *values, char find) {
 }
 
 int is_file(char *path) {
-    struct stat path_stat;
-    if (stat(path, &path_stat) != 0) {
+    struct stat info;
+    if (stat(path, &info) != 0 ) {
+        perror("Impossibile ottenere informazioni sul file.\n");
+        return -1;
+    }
+    else if (info.st_mode & S_IFDIR) {
         return 0;
     }
-    return S_ISREG(path_stat.st_mode);
+    return 1;
 }
 
 char *get_client_buffer(int socket, int *n) {

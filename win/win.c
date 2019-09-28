@@ -416,7 +416,8 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
     sprintf(path,"%s%s", PUBLIC_PATH, client_buffer);
 
     BOOL success = FALSE;
-    if (is_file(path) != 0) {
+    int file_type = is_file(path);
+    if (file_type) {
         HANDLE handle = CreateFile(TEXT(path),
                                    GENERIC_READ | GENERIC_WRITE,
                                    0,
@@ -450,7 +451,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
 
         char *view, *file;
         if (size > 0) {
-            OVERLAPPED sOverlapped;
+            OVERLAPPED sOverlapped = {0};
             sOverlapped.Offset = 0;
             sOverlapped.OffsetHigh = 0;
 
@@ -543,10 +544,10 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
                 print_error("Impossibile chiudere l'handle di 'handle' (serve_client - args malloc)");
             }
             if (size > 0) {
-                if (CloseHandle(file) == 0) {
+                if (file && CloseHandle(file) == 0) {
                     print_error("Impossibile chiudere l'handle di 'file' (serve_client - args malloc)");
                 }
-                if (UnmapViewOfFile(view) < 0) {
+                if (view && UnmapViewOfFile(view) < 0) {
                     print_error("Errore durante l'operazione di unmapping del file (serve_client - args malloc)");
                 }
             }
@@ -579,15 +580,15 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
             print_error("Impossibile chiudere l'handle di 'handle' (serve_client - end of function)");
         }
         if (size > 0) {
-            if (CloseHandle(file) == 0) {
+            if (file && CloseHandle(file) == 0) {
                 print_error("Impossibile chiudere l'handle di 'file' (serve_client - end of function)");
             }
-            if (UnmapViewOfFile(args->file_in_memory) < 0) {
+            if (view && UnmapViewOfFile(view) < 0) {
                 print_error("Errore durante l'operazione di unmapping del file (server_client - end of function)");
             }
         }
 
-    } else {
+    } else if (file_type == 0) {
         char *listing_buffer;
         if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {
             send_error(socket, "File o directory non esistente.");
@@ -599,6 +600,8 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
         if (closesocket(socket) == SOCKET_ERROR) {
             print_WSA_error("Impossibile chiudere la socket (serve_client - listing buffer)");
         }
+    } else {
+        free(client_buffer);
     }
 }
 

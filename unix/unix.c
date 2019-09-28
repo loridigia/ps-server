@@ -397,7 +397,8 @@ void serve_client(int client_fd, char *client_ip, int port) {
     char path[strlen(PUBLIC_PATH) + strlen(client_buffer) + 1];
     sprintf(path,"%s%s", PUBLIC_PATH, client_buffer);
 
-    if (is_file(path) != 0) {
+    int file_type = is_file(path);
+    if (file_type) {
         int file_fd = open(path, O_RDONLY);
         char *err = "Errore nell'apertura del file richiesto.\n";
         if (file_fd == -1) {
@@ -495,7 +496,7 @@ void serve_client(int client_fd, char *client_ip, int port) {
             }
             pthread_join(thread,NULL);
         }
-    } else {
+    } else if (file_type == 0){
         char *listing_buffer;
         if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {
             char *err = "File o directory non esistente.\n";
@@ -525,6 +526,8 @@ void serve_client(int client_fd, char *client_ip, int port) {
         if (close(client_fd) < 0) {
             perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
         }
+    } else {
+        free(client_buffer);
     }
 }
 
