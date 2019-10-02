@@ -221,7 +221,7 @@ void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
         }
 
         if(config->server_port != port) {
-            printf("Chiusura socket su porta: %d", port);
+            printf("Chiusura socket su porta: %d\n", port);
             if (closesocket(sock) == SOCKET_ERROR) {
                 print_WSA_error("Impossibile chiudere la socket (cambio porta) (handle_requests)");
             }
@@ -417,7 +417,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
 
     BOOL success = FALSE;
     int file_type = is_file(path);
-    if (file_type) {
+    if (file_type > 0) {
         HANDLE handle = CreateFile(TEXT(path),
                                    GENERIC_READ | GENERIC_WRITE,
                                    0,
@@ -591,7 +591,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
     } else if (file_type == 0) {
         char *listing_buffer;
         if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {
-            send_error(socket, "File o directory non esistente.");
+            send_error(socket, "Impossibile ottenere la lista dei file.\n");
         } else {
             if (send(socket, listing_buffer, strlen(listing_buffer), 0) < 0) {
                 print_WSA_error("Errore nel comunicare con la socket (serve_client - listing buffer)");
@@ -602,6 +602,12 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
         }
     } else {
         free(client_buffer);
+        if (send_error(socket, "File o directory non esistente.\n") < 0) {
+            print_WSA_error("Impossibile comunicare con il client. (file not found)");
+        }
+        if (closesocket(socket) == SOCKET_ERROR) {
+            print_WSA_error("Impossibile chiudere la socket. (serve_client - file not found)");
+        }
     }
 }
 
