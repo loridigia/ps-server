@@ -82,16 +82,16 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
-    if (start() < 0) {
+    if (write_infos() < 0) {
         if (WSACleanup() == SOCKET_ERROR) {
-            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - start())");
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - write_infos())");
         }
         exit(1);
     }
 
-    if (write_infos() < 0) {
+    if (start() < 0) {
         if (WSACleanup() == SOCKET_ERROR) {
-            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - write_infos())");
+            print_WSA_error("Errore durante l'operazione di cleanup WSA (init - start())");
         }
         exit(1);
     }
@@ -174,9 +174,6 @@ int start(){
 DWORD WINAPI listener_routine(void *args) {
     int port = *((int*)args);
     handle_requests(port, work_with_threads);
-    if (WSACleanup() == SOCKET_ERROR) {
-        print_WSA_error("Errore durante l'operazione di cleanup WSA (listener_routine)");
-    }
 }
 
 DWORD WINAPI receiver_routine(void *arg) {
