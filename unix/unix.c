@@ -148,7 +148,7 @@ void log_routine() {
             pthread_mutex_unlock(mutex);
             continue;
         }
-        if (_log(buffer) < 0) {
+        if (log(buffer) < 0) {
             perror("Errore nell'operazione di scrittura sul log.\n");
         }
         pthread_mutex_unlock(mutex);
@@ -531,12 +531,9 @@ void serve_client(int client_fd, char *client_ip, int port) {
     }
 }
 
-int _log(char *buffer) {
+int log(char *buffer) {
     FILE *file = fopen(LOG_PATH, "a");
     if (file == NULL) {
-        if (fclose(file) == EOF) {
-            perror("Errore durante la chiusura del file di log.\n");
-        }
         return -1;
     }
     fprintf(file, "%s", buffer);
