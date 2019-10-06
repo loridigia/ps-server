@@ -148,7 +148,7 @@ void log_routine() {
             pthread_mutex_unlock(mutex);
             continue;
         }
-        if (log(buffer) < 0) {
+        if (_log(buffer) < 0) {
             perror("Errore nell'operazione di scrittura sul log.\n");
         }
         pthread_mutex_unlock(mutex);
@@ -156,7 +156,8 @@ void log_routine() {
 }
 
 int write_on_pipe(int size, char* route, int port, char *client_ip) {
-    char buffer[strlen(route) + MAX_IP_LENGTH + MAX_PORT_LENGTH + MIN_LOG_LENGTH];
+    int min_size = strlen("name: ") + strlen(" | size: ") + strlen(" | ip: ") + strlen(" | server_port: ") + 2;
+    char buffer[strlen(route) + strlen(client_ip) + MAX_PORT_LENGTH + min_size];
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", route, size, client_ip, port);
     pthread_mutex_lock(mutex);
     if (write(pipe_fd[1], buffer, strlen(buffer)) < 0) {
@@ -531,7 +532,7 @@ void serve_client(int client_fd, char *client_ip, int port) {
     }
 }
 
-int log(char *buffer) {
+int _log(char *buffer) {
     FILE *file = fopen(LOG_PATH, "a");
     if (file == NULL) {
         return -1;

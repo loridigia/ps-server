@@ -621,13 +621,15 @@ void *send_routine(void *arg) {
 }
 
 int write_on_pipe(int size, char* route, int port, char *client_ip) {
+    DWORD dw_written;
+    int min_size = strlen("name: ") + strlen(" | size: ") + strlen(" | ip: ") + strlen(" | server_port: ") + 2;
+    char buffer[strlen(route) + strlen(client_ip) + MAX_PORT_LENGTH + min_size];
+    sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", route, size, client_ip, port);
+
     if (WaitForSingleObject(mutex, INFINITE) == WAIT_FAILED) {
         print_error("Errore durante l'attesa per l'acquisizione del mutex in scrittura (write_on_pipe)");
         return -1;
     }
-    DWORD dw_written;
-    char buffer[MAX_IP_LENGTH + MAX_PORT_LENGTH + MIN_LOG_LENGTH + MAX_FILENAME_LENGTH];
-    sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", route, size, client_ip, port);
     if (h_pipe != INVALID_HANDLE_VALUE) {
         if (WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL) == FALSE) {
             print_error("Errore durante la scrittura su pipe (write_on_pipe)");

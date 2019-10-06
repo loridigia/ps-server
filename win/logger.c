@@ -6,7 +6,7 @@
 #define PIPENAME "\\\\.\\pipe\\LogPipe"
 #define LOGGER_EVENT "Logger_Event"
 
-void log(char *buffer);
+void _log(char *buffer);
 BOOL WINAPI CtrlHandler2(DWORD fdwCtrlType);
 void print_error(char *err);
 void print_WSA_error(char *err);
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
         if (ConnectNamedPipe(h_pipe, NULL)) {
             while (ReadFile(h_pipe, buffer, sizeof(buffer), &dw_read, NULL)) {
                 buffer[dw_read] = '\0';
-                log(buffer);
+                _log(buffer);
             }
         }
         if (DisconnectNamedPipe(h_pipe) == 0) {
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
     }
 }
 
-void log(char *buffer) {
+void _log(char *buffer) {
     FILE *file = fopen(LOG_PATH, "a");
     if (file == NULL) {
         print_error("Errore nell'operazione di scrittura sul log");
