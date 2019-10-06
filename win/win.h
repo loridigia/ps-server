@@ -38,6 +38,7 @@ DWORD WINAPI receiver_routine(void *args);
 DWORD WINAPI sender_routine(void *args);
 DWORD WINAPI controller_routine(void *args);
 PROCESS_INFORMATION create_receiver_process(char *args);
+int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock);
 int restart();
 void print_error(char *err);
 void print_WSA_error(char *err);

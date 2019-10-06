@@ -20,3 +20,5 @@ void restart();
 void daemon_skeleton();
 void *listener_routine(void *arg);
 void *receiver_routine(void *arg);
+void log_routine();
+int listen_on(int port, int *socket_fd, struct sockaddr_in *socket_addr);

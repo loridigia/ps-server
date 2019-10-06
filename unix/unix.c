@@ -217,8 +217,8 @@ char *get_server_ip() {
     return ip;
 }
 
-int send_error(int socket_fd, char *err) {
-    return send(socket_fd, err, strlen(err), 0);
+int send_error(int socket, char *err) {
+    return send(socket, err, strlen(err), 0);
 }
 
 int start() {
@@ -252,7 +252,7 @@ void *listener_routine(void *arg) {
     return NULL;
 }
 
-void handle_requests(int port, int (*handle)(int, char*, int)){
+void handle_requests(int port, int (*handle)(int, char*, int)) {
     int server_socket;
     fd_set active_fd_set, read_fd_set;
     struct sockaddr_in server_addr, client_addr;
@@ -317,13 +317,13 @@ void handle_requests(int port, int (*handle)(int, char*, int)){
     }
 }
 
-int work_with_threads(int fd, char *client_ip, int port) {
+int work_with_threads(int socket, char *client_ip, int port) {
     thread_arg_receiver *args = (thread_arg_receiver *)malloc(sizeof(thread_arg_receiver));
     if (args == NULL) {
         perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'receiver'.\n");
         return -1;
     }
-    args->client_socket = fd;
+    args->client_socket = socket;
     args->port = port;
     args->client_ip = client_ip;
 
@@ -336,16 +336,16 @@ int work_with_threads(int fd, char *client_ip, int port) {
     return 0;
 }
 
-int work_with_processes(int fd, char *client_ip, int port) {
+int work_with_processes(int socket, char *client_ip, int port) {
     pid_t pid_child = fork();
     if (pid_child < 0) {
         perror("Errore durante la fork. (work_with_processes)\n");
         return -1;
     } else if (pid_child == 0) {
-        serve_client(fd, client_ip, port);
+        serve_client(socket, client_ip, port);
         exit(0);
     } else {
-        close(fd);
+        close(socket);
     }
     return 0;
 }
@@ -379,18 +379,18 @@ void *send_routine(void *arg) {
     return NULL;
 }
 
-void serve_client(int client_fd, char *client_ip, int port) {
+void serve_client(int socket, char *client_ip, int port) {
     int n;
-    char *client_buffer = get_client_buffer(client_fd, &n);
+    char *client_buffer = get_client_buffer(socket, &n);
 
     if (n < 0) {
         char *err = "Errore nel ricevere i dati o richiesta mal posta.\n";
         fprintf(stderr,"%s",err);
-        if (send_error(client_fd, err) < 0) {
+        if (send_error(socket, err) < 0) {
             perror("Impossibile mandare errore al client. (serve_client - send_error)\n");
         }
-        if (close(client_fd) < 0) {
-            perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
+        if (close(socket) < 0) {
+            perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
         }
         return;
     }
@@ -404,11 +404,11 @@ void serve_client(int client_fd, char *client_ip, int port) {
         char *err = "Errore nell'apertura del file richiesto.\n";
         if (file_fd == -1) {
             fprintf(stderr,"%s%s",err,path);
-            if (send_error(client_fd, err) < 0) {
+            if (send_error(socket, err) < 0) {
                 perror("Impossibile mandare errore al client. (serve_client - send_error)\n");
             }
-            if (close(client_fd) < 0) {
-                perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
+            if (close(socket) < 0) {
+                perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
             }
             free(client_buffer);
             return;
@@ -417,11 +417,11 @@ void serve_client(int client_fd, char *client_ip, int port) {
         struct stat v;
         if (stat(path,&v) == -1) {
             perror("Errore nel prendere la grandezza del file.\n");
-            if (send_error(client_fd,err) < 0) {
+            if (send_error(socket,err) < 0) {
                 perror("Impossibile mandare errore al client. (serve_client - send_error)\n");
             }
-            if (close(client_fd) < 0) {
-                perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
+            if (close(socket) < 0) {
+                perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
             }
             free(client_buffer);
             return;
@@ -433,8 +433,8 @@ void serve_client(int client_fd, char *client_ip, int port) {
             if (flock(file_fd, LOCK_EX) < 0) {
                 perror("Impossibile lockare il file.\n");
                 free(client_buffer);
-                if (close(client_fd) < 0) {
-                    perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
+                if (close(socket) < 0) {
+                    perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
                 }
                 return;
             }
@@ -442,8 +442,8 @@ void serve_client(int client_fd, char *client_ip, int port) {
             if (flock(file_fd, LOCK_UN) < 0) {
                 perror("Impossibile unlockare il file.\n");
                 free(client_buffer);
-                if (close(client_fd) < 0) {
-                    perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
+                if (close(socket) < 0) {
+                    perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
                 }
                 return;
             }
@@ -451,8 +451,8 @@ void serve_client(int client_fd, char *client_ip, int port) {
             if (file_in_memory == MAP_FAILED) {
                 perror("Errore nell'operazione di mapping del file.\n");
                 free(client_buffer);
-                if (close(client_fd) < 0) {
-                    perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
+                if (close(socket) < 0) {
+                    perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
                 }
                 return;
             }
@@ -468,15 +468,15 @@ void serve_client(int client_fd, char *client_ip, int port) {
 
         if (args == NULL) {
             perror("Impossibile allocare memoria per gli argomenti del thread di tipo 'sender'.\n");
-            if (close(client_fd) < 0) {
-                perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
+            if (close(socket) < 0) {
+                perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
             }
             free(client_buffer);
             return;
         }
 
         args->client_ip = client_ip;
-        args->client_socket = client_fd;
+        args->client_socket = socket;
         args->port = port;
         args->file_in_memory = file_in_memory;
         args->route = client_buffer;
@@ -488,8 +488,8 @@ void serve_client(int client_fd, char *client_ip, int port) {
             pthread_t thread;
             if (pthread_create(&thread, NULL, send_routine, (void *) args) != 0) {
                 perror("Impossibile creare un nuovo thread di tipo 'sender'.\n");
-                if (close(client_fd) < 0) {
-                    perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
+                if (close(socket) < 0) {
+                    perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
                 }
                 free(client_buffer);
                 free(args);
@@ -501,21 +501,21 @@ void serve_client(int client_fd, char *client_ip, int port) {
         char *listing_buffer;
         if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {
             char *err = "File o directory non esistente.\n";
-            if (send_error(client_fd, err) < 0) {
+            if (send_error(socket, err) < 0) {
                 perror("Impossibile mandare errore al client. (serve_client - send_error)\n");
             }
-            if (close(client_fd) < 0) {
-                perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
+            if (close(socket) < 0) {
+                perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
             }
             free(listing_buffer);
             free(client_buffer);
             return;
         }
         else {
-            if (send(client_fd, listing_buffer, strlen(listing_buffer), 0) < 0) {
+            if (send(socket, listing_buffer, strlen(listing_buffer), 0) < 0) {
                 perror("Errore nel comunicare con la socket.\n");
-                if (close(client_fd) < 0) {
-                    perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
+                if (close(socket) < 0) {
+                    perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
                 }
                 free(listing_buffer);
                 free(client_buffer);
@@ -524,8 +524,8 @@ void serve_client(int client_fd, char *client_ip, int port) {
         }
         free(listing_buffer);
         free(client_buffer);
-        if (close(client_fd) < 0) {
-            perror("Impossibile chiudere il file descriptor. (serve_client - client_fd)\n");
+        if (close(socket) < 0) {
+            perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
         }
     } else {
         free(client_buffer);
