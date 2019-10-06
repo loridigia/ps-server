@@ -1,19 +1,15 @@
 /*
- * INTERFACCIA.
- * I parametri della funzione sono specificati nell'implementazione. (variano a seconda del SO)
+ * INTERFACCIA
  */
 
-int listen_on();
-int send_error();
-int send_file();
-int work_with_threads();
-int work_with_processes();
-int write_on_pipe();
+int send_error(int socket, char *err);
+int work_with_threads(int socket, char *client_ip, int port);
+int work_with_processes(int socket, char *client_ip, int port);
+int write_on_pipe(int size, char* route, int port, char *client_ip);
 int start();
 char *get_server_ip();
-void log_routine();
-void init();
-void serve_client();
-void handle_requests();
-void *send_routine();
-int _recv();
+void init(int argc, char *argv[]);
+void serve_client(int socket, char *client_ip, int port);
+void handle_requests(int port, int (*handle)(int, char*, int));
+void *send_routine(void *arg);
+int _recv(int s,char *buf,int len,int flags);
