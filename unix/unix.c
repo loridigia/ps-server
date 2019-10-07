@@ -399,11 +399,11 @@ void serve_client(int socket, char *client_ip, int port) {
     sprintf(path,"%s%s", PUBLIC_PATH, client_buffer);
 
     int file_type = is_file(path);
-    if (file_type) {
+    if (file_type > 0) {
         int file_fd = open(path, O_RDONLY);
         char *err = "Errore nell'apertura del file richiesto.\n";
         if (file_fd == -1) {
-            fprintf(stderr,"%s%s",err,path);
+            fprintf(stderr,"%s",err);
             if (send_error(socket, err) < 0) {
                 perror("Impossibile mandare errore al client. (serve_client - send_error)\n");
             }
@@ -500,10 +500,6 @@ void serve_client(int socket, char *client_ip, int port) {
     } else if (file_type == 0){
         char *listing_buffer;
         if ((listing_buffer = get_file_listing(client_buffer, path)) == NULL) {
-            char *err = "File o directory non esistente.\n";
-            if (send_error(socket, err) < 0) {
-                perror("Impossibile mandare errore al client. (serve_client - send_error)\n");
-            }
             if (close(socket) < 0) {
                 perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
             }
@@ -528,6 +524,9 @@ void serve_client(int socket, char *client_ip, int port) {
             perror("Impossibile chiudere il file descriptor. (serve_client - socket)\n");
         }
     } else {
+        if (send_error(socket, "File o directory non esistente.") < 0) {
+            perror("Impossibile mandare errore al client. (serve_client - send_error)\n");
+        }
         free(client_buffer);
     }
 }
