@@ -188,7 +188,7 @@ DWORD WINAPI sender_routine(void *args) {
     free(args);
 }
 
-void handle_requests(int port, int (*handle)(SOCKET, char*, int)) {
+void handle_requests(int port, int (*handle)(int, char*, int)) {
     SOCKET sock, client_socket[BACKLOG];
     struct sockaddr_in server;
     int addrlen;
@@ -287,7 +287,7 @@ int listen_on(int port, struct sockaddr_in *server, int *addrlen, SOCKET *sock) 
     return 0;
 }
 
-int work_with_processes(SOCKET socket, char *client_ip, int port) {
+int work_with_processes(int socket, char *client_ip, int port) {
     char *args = malloc(MAX_PORT_LENGTH + MAX_IP_LENGTH + 2);
     if (args == NULL) {
         print_error("Impossibile allocare memoria per gli argomenti del processo receiver (work_with_processes)");
@@ -377,7 +377,7 @@ PROCESS_INFORMATION create_receiver_process(char *args){
     return receiver_info;
 }
 
-int work_with_threads(SOCKET socket, char *client_ip, int port) {
+int work_with_threads(int socket, char *client_ip, int port) {
     thread_arg_receiver *args = (thread_arg_receiver *)malloc(sizeof(thread_arg_receiver));
     if (args == NULL) {
         print_error("Impossibile allocare memoria per gli argomenti del thread di tipo 'receiver' (work_with_threads)");
@@ -395,7 +395,7 @@ int work_with_threads(SOCKET socket, char *client_ip, int port) {
     return 0;
 }
 
-void serve_client(SOCKET socket, char *client_ip, int port) {
+void serve_client(int socket, char *client_ip, int port) {
     int n; char *err;
     char *client_buffer = get_client_buffer(socket, &n);
 
@@ -436,7 +436,7 @@ void serve_client(SOCKET socket, char *client_ip, int port) {
         DWORD size = GetFileSize(handle,NULL);
         if (size == INVALID_FILE_SIZE) {
             print_error("Impossibile prendere la size del file");
-            send_error("Impossibile gestire la richiesta.\n");
+            send_error(socket,"Impossibile gestire la richiesta.\n");
             if (closesocket(socket) == SOCKET_ERROR) {
                 print_WSA_error("Impossibile chiudere la socket (getting size)");
             }
@@ -667,7 +667,7 @@ char *get_server_ip() {
     return ip;
 }
 
-int send_error(SOCKET socket, char *err) {
+int send_error(int socket, char *err) {
     return send(socket, err, strlen(err), 0);
 }
 
