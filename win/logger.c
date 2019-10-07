@@ -5,6 +5,7 @@
 #include CORE_PATH
 #define PIPENAME "\\\\.\\pipe\\LogPipe"
 #define LOGGER_EVENT "Logger_Event"
+#define PIPE_EVENT   "Pipe_Event"
 
 void _log(char *buffer);
 BOOL WINAPI CtrlHandler2(DWORD fdwCtrlType);
@@ -14,6 +15,7 @@ void print_WSA_error(char *err);
 int main(int argc, char *argv[]) {
     const int PIPE_SIZE = 1024 * 16;
     HANDLE logger_event, h_pipe;
+    HANDLE pipe_event;
     DWORD dw_read;
     int size = MAX_FILENAME_LENGTH + MAX_IP_LENGTH + MAX_PORT_LENGTH + MIN_LOG_LENGTH;
 
@@ -35,6 +37,12 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    pipe_event = CreateEventA(NULL, FALSE, FALSE, PIPE_EVENT);
+    if (pipe_event == NULL) {
+        print_error("Errore durante l'apertura dell'evento pipe (logger - OpenEvent)");
+        exit(1);
+    }
+
     logger_event = OpenEvent(EVENT_MODIFY_STATE, FALSE, LOGGER_EVENT);
     if (logger_event == NULL) {
         print_error("Errore durante l'apertura dell'evento logger (logger - OpenEvent)");
@@ -50,10 +58,14 @@ int main(int argc, char *argv[]) {
     while (TRUE) {
         memset(buffer, 0, size);
         if (ConnectNamedPipe(h_pipe, NULL)) {
-            while (ReadFile(h_pipe, buffer, sizeof(buffer), &dw_read, NULL)) {
-                buffer[dw_read] = '\0';
-                _log(buffer);
+            if (WaitForSingleObject(pipe_event, INFINITE) == WAIT_FAILED){
+                print_error("Errore nell'attesa sul pipe event (logger - WaitForSingleObj)");
             }
+            if (!ReadFile(h_pipe, buffer, sizeof(buffer), &dw_read, NULL)){
+                print_error("Errore nella readfile (logger - Readfile)");
+            }
+            buffer[dw_read] = '\0';
+            _log(buffer);
         }
         if (DisconnectNamedPipe(h_pipe) == 0) {
             print_error("Errore durante la disconnessione dalla named pipe (logger - DisconnectNamedPipe)");

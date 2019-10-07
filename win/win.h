@@ -16,12 +16,13 @@
 #define GLOBAL_MUTEX "Global\\Mutex"
 #define GLOBAL_CONFIG "Global\\Config"
 #define LOGGER_EVENT   "Logger_Event"
+#define PIPE_EVENT   "Pipe_Event"
 
 STARTUPINFO info;
 PROCESS_INFORMATION listener_info;
 
+HANDLE pipe_event;
 HANDLE logger_event;
-HANDLE h_pipe;
 HANDLE mutex;
 HANDLE map_handle;
 

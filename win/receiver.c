@@ -88,15 +88,6 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    h_pipe = CreateFile(PIPENAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-    if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY) {
-        print_error("Errore nella creazione della pipe");
-        if (WSACleanup() == SOCKET_ERROR) {
-            print_WSA_error("Errore durante l'operazione di cleanup WSA (receiver - CreateFile(pipe))");
-        }
-        exit(1);
-    }
-
     DWORD dw_read;
     if (!ReadFile(stdin_handle, &protocol_info, sizeof(protocol_info), &dw_read, NULL)) {
         print_error("Impossibile leggere sullo standard input (receiver)");

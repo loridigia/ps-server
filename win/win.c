@@ -143,12 +143,6 @@ int set_shared_config(){
 
 int start(){
     if (equals(config->server_type, "thread")) {
-        h_pipe = CreateFile(PIPENAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-        if (h_pipe == INVALID_HANDLE_VALUE && GetLastError() != ERROR_PIPE_BUSY) {
-            print_error("Errore nella creazione della pipe (start())");
-            return -1;
-        }
-
         HANDLE thread = CreateThread(NULL, 0, listener_routine, &config->server_port, 0, NULL);
         if (thread == NULL) {
             print_error("Errore durante la creazione del thread listener (start())");
@@ -622,6 +616,8 @@ void *send_routine(void *arg) {
 
 int write_on_pipe(int size, char* route, int port, char *client_ip) {
     DWORD dw_written;
+    HANDLE h_pipe;
+
     int min_size = strlen("name: ") + strlen(" | size: ") + strlen(" | ip: ") + strlen(" | server_port: ") + 2;
     char buffer[strlen(route) + strlen(client_ip) + MAX_PORT_LENGTH + min_size];
     sprintf(buffer, "name: %s | size: %d | ip: %s | server_port: %d\n", route, size, client_ip, port);
@@ -630,11 +626,27 @@ int write_on_pipe(int size, char* route, int port, char *client_ip) {
         print_error("Errore durante l'attesa per l'acquisizione del mutex in scrittura (write_on_pipe)");
         return -1;
     }
-    if (h_pipe != INVALID_HANDLE_VALUE) {
+
+    pipe_event = OpenEvent(EVENT_MODIFY_STATE, FALSE, PIPE_EVENT);
+    if (pipe_event == NULL) {
+        print_error("Errore durante l'apertura dell'evento pipe (write_on_pipe)");
+        return -1;
+    }
+
+    h_pipe = CreateFile(PIPENAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    if (h_pipe == INVALID_HANDLE_VALUE) {
+        print_error("Errore nella creazione della pipe");
+    } else {
         if (WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL) == FALSE) {
             print_error("Errore durante la scrittura su pipe (write_on_pipe)");
+        } else {
+            if (SetEvent(pipe_event) == 0) {
+                print_error("Impossibile settare il pipe event (write_on_pipe)");
+            }
         }
     }
+
+    CloseHandle(pipe_event);
     if (!ReleaseMutex(mutex)) {
         print_error("Impossibile rilasciare il mutex (write_on_pipe)");
     }
