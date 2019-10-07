@@ -96,6 +96,7 @@ void init(int argc, char *argv[]) {
         exit(1);
     }
 
+
     while(1) Sleep(1000);
 }
 
@@ -630,11 +631,30 @@ int write_on_pipe(int size, char* route, int port, char *client_ip) {
         print_error("Errore durante l'attesa per l'acquisizione del mutex in scrittura (write_on_pipe)");
         return -1;
     }
-    if (h_pipe != INVALID_HANDLE_VALUE) {
+
+    print_error("--RECEIVER-- apro event");
+    
+    pipe_event = OpenEvent(EVENT_MODIFY_STATE, FALSE, PIPE_EVENT);
+    if (pipe_event == NULL) {
+        print_error("Errore durante l'apertura dell'evento logger (logger - OpenEvent)");
+        exit(1);
+    }
+
+    if (h_pipe == INVALID_HANDLE_VALUE) {
+        print_error("Errore nell'apertura della pipe");
+    }
+    else {
         if (WriteFile(h_pipe, buffer, strlen(buffer), &dw_written, NULL) == FALSE) {
             print_error("Errore durante la scrittura su pipe (write_on_pipe)");
         }
+        if (SetEvent(pipe_event) == 0) {
+            print_error("Impossibile settare il logger event (logger - SetEvent)");
+            exit(1);
+        }
     }
+
+    //CloseHandle(pipe_event);
+
     if (!ReleaseMutex(mutex)) {
         print_error("Impossibile rilasciare il mutex (write_on_pipe)");
     }
