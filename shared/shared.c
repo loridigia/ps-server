@@ -119,7 +119,7 @@ int is_file(char *path) {
 }
 
 char *get_client_buffer(int socket, int *n) {
-    int size = 32, chunk = 32, len = 0, max_size = 512;
+    int size = 32, chunk = 32, len = 0, max_size = 1024;
     char *client_buffer = (char*)calloc(size, sizeof(char));
     if (client_buffer == NULL) {
         free(client_buffer);

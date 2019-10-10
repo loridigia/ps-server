@@ -17,7 +17,6 @@ int main(int argc, char *argv[]) {
     HANDLE logger_event, h_pipe;
     HANDLE pipe_event;
     DWORD dw_read;
-    int size = MAX_FILENAME_LENGTH + MAX_IP_LENGTH + MAX_PORT_LENGTH + MIN_LOG_LENGTH;
 
     if (SetConsoleCtrlHandler(CtrlHandler2, TRUE) == 0) {
         print_error("Impossibile aggiungere la funzione di handling per CTRL+BREAK (logger - SetConsoleCtrlHandler)");
@@ -54,9 +53,9 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    char buffer[size];
+    char buffer[LOG_SIZE];
     while (TRUE) {
-        memset(buffer, 0, size);
+        memset(buffer, 0, LOG_SIZE);
         if (ConnectNamedPipe(h_pipe, NULL)) {
             if (WaitForSingleObject(pipe_event, INFINITE) == WAIT_FAILED){
                 print_error("Errore nell'attesa sul pipe event (logger - WaitForSingleObj)");

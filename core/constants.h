@@ -17,6 +17,7 @@
 #define MIN_PORT 1024
 #define MAX_PORT 65535
 #define CONFIG_PREFIX_LENGTH 12
+#define LOG_SIZE 2048
 
 #define PORT_FLAG "--port="
 #define TYPE_FLAG "--type="

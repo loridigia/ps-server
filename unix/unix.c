@@ -137,10 +137,9 @@ void init(int argc, char *argv[]) {
 }
 
 void log_routine() {
-    int size = MAX_FILENAME_LENGTH + MAX_IP_LENGTH + MAX_PORT_LENGTH + MIN_LOG_LENGTH;
-    char buffer[size];
+    char buffer[LOG_SIZE];
     while(1) {
-        bzero(buffer, size);
+        bzero(buffer, LOG_SIZE);
         pthread_mutex_lock(mutex);
         pthread_cond_wait(condition, mutex);
         if (read(pipe_fd[0], buffer, sizeof buffer) < 0) {
@@ -528,6 +527,7 @@ void serve_client(int socket, char *client_ip, int port) {
             perror("Impossibile mandare errore al client. (serve_client - send_error)\n");
         }
         free(client_buffer);
+        close(socket);
     }
 }
 
