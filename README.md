@@ -3,11 +3,11 @@
 
 [![Build Status](https://travis-ci.org/joemccann/dillinger.svg?branch=master)](https://travis-ci.org/joemccann/dillinger)
 
-The webserver is portable on Linux / Windows ( auto-detach the platform ) writter entirely on C, based on communication protocol GOPHER with focus on:
+The webserver is portable on Linux / Windows ( auto-detach the platform ) written entirely in C, based on communication protocol GOPHER, with focus on:
 
   - Multithread - Multiprocess ( choose the modality from the config.txt file)
   - Sockets
-  - Support port changes, if there's a client connected to the old port, he'll be served
+  - Support port changes, if there's a client connected to the old port, it'll be served
   - Log file written by a different process
   - On windows use MINGW (Minimalist GNU for windows)
 
@@ -28,7 +28,7 @@ License
 
 MIT
 
-Developed with Jacopo97
+Developed with jacopoRufini
 
 **Free Software, Yeah!**
 
